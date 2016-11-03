@@ -1,4 +1,4 @@
-      ! utils_prms.f90 2016-05-10 15:48:00Z
+      ! utils_prms.f90 2016-11-03 17:58:00Z
 !***********************************************************************
 !     Read CBH File to current time
 !***********************************************************************
@@ -465,7 +465,7 @@
 ! write_outfile - print to model output file
 !***********************************************************************
       SUBROUTINE write_outfile(String)
-      USE PRMS_MODULE, ONLY: PRMS_output_unit
+      USE PRMS_MODULE, ONLY: PRMS_output_unit, Print_debug
       IMPLICIT NONE
       ! Functions
       INTRINSIC LEN_TRIM
@@ -474,6 +474,7 @@
       ! Local variable
       INTEGER nchars
 !***********************************************************************
+      IF ( Print_debug==-2 ) RETURN
       nchars = LEN_TRIM(String)
       IF ( nchars>0 ) THEN
         WRITE ( PRMS_output_unit, '(A)' ) String(:nchars)
@@ -815,7 +816,7 @@
 ! print module version information to user's screen
 !***********************************************************************
       SUBROUTINE print_module(Versn, Description, Ftntype)
-      USE PRMS_MODULE, ONLY: PRMS_output_unit, Model, Logunt
+      USE PRMS_MODULE, ONLY: PRMS_output_unit, Model, Print_debug, Logunt
       IMPLICIT NONE
       ! Arguments
       CHARACTER(LEN=*), INTENT(IN) :: Description, Versn
@@ -823,21 +824,18 @@
       ! Functions
       INTRINSIC INDEX
       ! Local Variables
-      INTEGER nc, n, nb
-      CHARACTER(LEN=72) :: buffer
-      CHARACTER(LEN=32), PARAMETER :: blanks = '                                '
+      INTEGER nc, n
 !***********************************************************************
+      IF ( Print_debug==-2 ) RETURN
       nc = INDEX( Versn, 'Z' )
       IF ( Ftntype==90 ) THEN
         n = INDEX( Versn, '.f90' ) + 3
       ELSE
         n = INDEX( Versn, '.f' ) + 1
       ENDIF
-      nb = 25 - n
-      WRITE (buffer, '(A)' ) Description//'     '//Versn(:n)//blanks(:nb)//Versn(n+2:nc-10)
-      PRINT '(A)', buffer
-      WRITE ( Logunt, '(A)' ) buffer
-      IF ( Model/=2 ) WRITE ( PRMS_output_unit, '(A)' ) buffer
+      PRINT '(A)', Description//' '//Versn(:n)//', version: '//Versn(n+2:nc-10)
+      WRITE ( Logunt, '(A)' ) Description//' '//Versn(:n)//', version: '//Versn(n+2:nc)
+      IF ( Model/=2 ) WRITE ( PRMS_output_unit, '(A)' ) Description//' '//Versn(:n)//', version: '//Versn(n+2:nc)
       END SUBROUTINE print_module
 
 !***********************************************************************
@@ -893,23 +891,6 @@
 !***********************************************************************
 !     Check parameter value limits
 !***********************************************************************
-      SUBROUTINE check_param_value(Ihru, Param, Param_value, Iret)
-! Arguments
-      INTEGER, INTENT(IN) :: Ihru
-      REAL, INTENT(IN) :: Param_value
-      CHARACTER(LEN=*), INTENT(IN) :: Param
-      INTEGER, INTENT(INOUT) :: Iret
-!***********************************************************************
-      IF ( Param_value<0.0 .OR. Param_value>1.0 ) THEN
-        PRINT *, 'ERROR, ', Param, ' < 0.0 or > 1.0 for HRU:', Ihru, '; value:', Param_value
-        PRINT *, ' '
-        Iret = 1
-      ENDIF
-      END SUBROUTINE check_param_value
-
-!***********************************************************************
-!     Check parameter value limits
-!***********************************************************************
       SUBROUTINE check_param_limits(Indx, Param, Param_value, Lower_val, Upper_val, Iret)
 ! Arguments
       INTEGER, INTENT(IN) :: Indx
@@ -925,24 +906,6 @@
         Iret = 1
       ENDIF
       END SUBROUTINE check_param_limits
-
-!***********************************************************************
-!     Check integer parameter value limits
-!***********************************************************************
-      SUBROUTINE checkint_param_limits(Indx, Param, Param_value, Lower_val, Upper_val, Iret)
-! Arguments
-      INTEGER, INTENT(IN) :: Indx, Param_value, Lower_val, Upper_val
-      CHARACTER(LEN=*), INTENT(IN) :: Param
-      INTEGER, INTENT(INOUT) :: Iret
-!***********************************************************************
-      IF ( Param_value<Lower_val .OR. Param_value>Upper_val ) THEN
-        PRINT *, 'ERROR, out-of-bounds value for parameter: ', Param
-        PRINT *, '       value:  ', Param_value, '; array index:', Indx
-        PRINT *, '       minimum:', Lower_val, '; maximum:', Upper_val
-        PRINT *, ' '
-        Iret = 1
-      ENDIF
-      END SUBROUTINE checkint_param_limits
 
 !***********************************************************************
 !     Check parameter value against dimension
