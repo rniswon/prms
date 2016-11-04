@@ -72,14 +72,12 @@
      &     'Total flow leaving each HRU', &
      &     'cfs', Hru_outflow)/=0 ) CALL read_error(3, 'hru_outflow')
 
-      IF ( Strmflow_flag==3 .OR. Model==99 ) THEN
-        ALLOCATE ( Segment_type(Nsegment) )
-        IF ( declparam(MODNAME, 'segment_type', 'nsegment', 'integer', &
-     &       '0', '0', '3', &
-     &       'Segment type', &
-     &       'Segment type (0=segment; 1=diversion; 2=lake; 3=replace inflow)', &
-     &       'none')/=0 ) CALL read_error(1, 'segment_type')
-      ENDIF
+      ALLOCATE ( Segment_type(Nsegment) )
+      IF ( declparam(MODNAME, 'segment_type', 'nsegment', 'integer', &
+     &     '0', '0', '3', &
+     &     'Segment type', &
+     &     'Segment type (0=segment; 1=diversion; 2=lake; 3=replace inflow)', &
+     &     'none')/=0 ) CALL read_error(1, 'segment_type')
 
       ALLOCATE ( Tosegment(Nsegment) )
       IF ( declparam(MODNAME, 'tosegment', 'nsegment', 'integer', &
