@@ -67,12 +67,11 @@
       REAL, SAVE, ALLOCATABLE :: Gravity_stor_res(:), Gvr2sm(:), Unused_potet(:), Grav_gwin(:)
 !   Declared Parameters
       INTEGER, SAVE, ALLOCATABLE :: Soil_type(:), Gvr_hru_id(:)
-      REAL, SAVE, ALLOCATABLE :: Soil_moist_init(:), Ssstor_init(:)
       REAL, SAVE, ALLOCATABLE :: Pref_flow_den(:)
       REAL, SAVE, ALLOCATABLE :: Fastcoef_lin(:), Fastcoef_sq(:)
       REAL, SAVE, ALLOCATABLE :: Slowcoef_lin(:), Slowcoef_sq(:)
       REAL, SAVE, ALLOCATABLE :: Ssr2gw_rate(:), Ssr2gw_exp(:)
-      REAL, SAVE, ALLOCATABLE :: Soil_rechr_init(:), Soil2gw_max(:)
+      REAL, SAVE, ALLOCATABLE :: Soil2gw_max(:)
       REAL, SAVE, ALLOCATABLE :: Lake_evap_adj(:, :)
 !   Declared Variables used by GSFLOW only, in so that soilzone can be one version
       DOUBLE PRECISION, SAVE :: Basin_szreject
@@ -107,16 +106,15 @@
 !***********************************************************************
 !     szdecl - set up parameters for soil zone computations
 !   Declared Parameters
-!     sat_threshold, ssstor_init fastcoef_lin, fastcoef_sq
+!     sat_threshold, ssstor_init_frac fastcoef_lin, fastcoef_sq
 !     ssr2gw_rate, ssr2gw_exp, soil2gw_max, soil_type
-!     soil_rechr_max, soil_rechr_init, soil_moist_max, soil_moist_init
+!     soil_rechr_max_frac, soil_rechr_init_frac, soil_moist_max, soil_moist_init_frac
 !     pref_flow_den, slowcoef_lin, cov_type
 !     hru_area, slowcoef_sq, gvr_hru_id
 !***********************************************************************
       INTEGER FUNCTION szdecl()
       USE PRMS_SOILZONE
-      USE PRMS_MODULE, ONLY: Model, Nhru, Nssr, Nsegment, Nlake, &
-     &    Nhrucell, Print_debug, Cascade_flag, Init_vars_from_file
+      USE PRMS_MODULE, ONLY: Model, Nhru, Nsegment, Nlake, Nhrucell, Print_debug, Cascade_flag
       IMPLICIT NONE
 ! Functions
       INTEGER, EXTERNAL :: declparam, declvar, getdim
@@ -126,7 +124,7 @@
 !***********************************************************************
       szdecl = 0
 
-      Version_soilzone = 'soilzone.f90 2016-11-04 11:48:00Z'
+      Version_soilzone = 'soilzone.f90 2016-10-17 17:13:00Z'
       CALL print_module(Version_soilzone, 'Soil Zone Computations      ', 90 )
       MODNAME = 'soilzone'
 
@@ -554,25 +552,6 @@
      &     'Fraction of the soil zone in which preferential flow occurs for each HRU', &
      &     'decimal fraction')/=0 ) CALL read_error(1,'pref_flow_den')
 
-      IF ( Init_vars_from_file==0 ) THEN
-        ALLOCATE ( Soil_rechr_init(Nhru) )
-        IF ( declparam(MODNAME, 'soil_rechr_init', 'nhru', 'real', &
-     &       '1.0', '0.0', '10.0', &
-     &       'Initial storage of water for soil recharge zone', &
-     &       'Initial storage for soil recharge zone (upper part of'// &
-     &       ' capillary reservoir where losses occur as both'// &
-     &       ' evaporation and transpiration) for each HRU; must be'// &
-     &       ' less than or equal to soil_moist_init', &
-     &       'inches')/=0 ) CALL read_error(1, 'soil_rechr_init')
-
-        ALLOCATE ( Soil_moist_init(Nhru) )
-        IF ( declparam(MODNAME, 'soil_moist_init', 'nhru', 'real', &
-     &       '3.0', '0.0', '10.0', &
-     &       'Initial value of available water in capillary reservoir', &
-     &       'Initial value of available water in capillary reservoir for each HRU', &
-     &       'inches')/=0 ) CALL read_error(1, 'soil_moist_init')
-      ENDIF
-
       ALLOCATE ( Soil2gw_max(Nhru) )
       IF ( declparam(MODNAME, 'soil2gw_max', 'nhru', 'real', &
      &     '0.0', '0.0', '5.0', &
@@ -586,15 +565,6 @@
      &     '2', '1', '3', &
      &     'HRU soil type', 'Soil type of each HRU (1=sand; 2=loam; 3=clay)', &
      &     'none')/=0 ) CALL read_error(1, 'soil_type')
-
-      IF ( Init_vars_from_file==0 ) THEN
-        ALLOCATE ( Ssstor_init(Nssr) )
-        IF ( declparam(MODNAME, 'ssstor_init', 'nssr', 'real', &
-     &       '0.0', '0.0', '5.0', &
-     &       'Initial storage in each GVR and PFR', &
-     &       'Initial storage of the gravity and preferential-flow reservoirs for each HRU', &
-     &       'inches')/=0 ) CALL read_error(1, 'ssstor_init')
-      ENDIF
 
       ALLOCATE ( Fastcoef_lin(Nhru) )
       IF ( declparam(MODNAME, 'fastcoef_lin', 'nhru', 'real', &
@@ -636,7 +606,7 @@
       INTEGER FUNCTION szinit()
       USE PRMS_SOILZONE
       USE PRMS_MODULE, ONLY: Print_debug, Nhru, Nssr, Nlake, Model, Nhrucell, &
-     &    Inputerror_flag, Cascade_flag, Init_vars_from_file, Parameter_check_flag
+     &    Inputerror_flag, Cascade_flag, Init_vars_from_file
       USE PRMS_BASIN, ONLY: Hru_type, Hru_perv, &
      &    Basin_area_inv, Hru_area, CLOSEZERO, Hru_frac_perv, Numlake_hrus
       USE PRMS_FLOWVARS, ONLY: Soil_moist_max, Soil_rechr_max, &
@@ -649,7 +619,7 @@
       INTEGER, EXTERNAL :: getparam
       INTRINSIC MIN, DBLE
 ! Local Variables
-      INTEGER :: i, ii, ihru, icnt, ierr, ierr1
+      INTEGER :: i, ii, ihru, icnt, ierr
       REAL :: hruarea, hruperv
 !***********************************************************************
       szinit = 0
@@ -663,11 +633,6 @@
       IF ( getparam(MODNAME, 'ssr2gw_exp', Nssr, 'real', Ssr2gw_exp)/=0 ) CALL read_error(2, 'ssr2gw_exp')
       IF ( getparam(MODNAME, 'soil_type', Nhru, 'integer', Soil_type)/=0 ) CALL read_error(2, 'soil_type')
       IF ( getparam(MODNAME, 'soil2gw_max', Nhru, 'real', Soil2gw_max)/=0 ) CALL read_error(2, 'soil2gw_max')
-      IF ( Init_vars_from_file==0 ) THEN
-        IF ( getparam(MODNAME, 'ssstor_init', Nssr, 'real', Ssstor_init)/=0 ) CALL read_error(2, 'ssstor_init')
-        IF ( getparam(MODNAME, 'soil_moist_init', Nhru, 'real', Soil_moist_init)/=0 ) CALL read_error(2, 'soil_moist_init')
-        IF ( getparam(MODNAME, 'soil_rechr_init', Nhru, 'real', Soil_rechr_init)/=0 ) CALL read_error(2, 'soil_rechr_init')
-      ENDIF
       IF ( Nlake>0 ) THEN
         IF ( getparam(MODNAME, 'lake_evap_adj', 12*Nlake, 'real', Lake_evap_adj)/=0 ) CALL read_error(2, 'lake_evap_adj')
       ENDIF
@@ -724,6 +689,7 @@
           Soil_moist_tot(i) = 0.0
           Soil_lower(i) = 0.0
           Soil_rechr_ratio(i) = 0.0
+          Soil_rechr_max(i) = 0.0
           Soil_zone_max(i) = 0.0
           Soil_lower_stor_max(i) = 0.0
           Cpr_stor_frac(i) = 0.0
@@ -743,59 +709,8 @@
           Pref_flow_max(i) = Sat_threshold(i) - Pref_flow_thrsh(i)
         ENDIF
 
-        ierr = 0
-        IF ( Soil_rechr_max(i)>Soil_moist_max(i) ) THEN
-          IF ( Parameter_check_flag>0 ) THEN
-            PRINT 9002, i, Soil_rechr_max(i), Soil_moist_max(i)
-            ierr = 1
-          ELSE
-            IF ( Print_debug>-1 ) PRINT 9012, i, Soil_rechr_max(i), Soil_moist_max(i)
-            Soil_rechr_max(i) = Soil_moist_max(i)
-          ENDIF
-        ENDIF
-
         ! hru_type = 1 or 3
-        ierr1 = 0
         IF ( Init_vars_from_file==0 ) THEN
-          Soil_rechr(i) = Soil_rechr_init(i)
-          IF ( Soil_rechr_init(i)>Soil_rechr_max(i) ) THEN
-            IF ( Parameter_check_flag>0 ) THEN
-              PRINT 9003, i, Soil_rechr_init(i), Soil_rechr_max(i)
-              ierr = 1
-            ELSE
-              IF ( Print_debug>-1 ) PRINT 9013, i, Soil_rechr_init(i), Soil_rechr_max(i)
-              Soil_rechr(i) = Soil_rechr_max(i)
-            ENDIF
-          ENDIF
-          Soil_moist(i) = Soil_moist_init(i)
-          IF ( Soil_moist_init(i)>Soil_moist_max(i) ) THEN
-            IF ( Parameter_check_flag>0 ) THEN
-              PRINT 9004, i, Soil_moist_init(i), Soil_moist_max(i)
-              ierr = 1
-            ELSE
-              IF ( Print_debug>-1 ) PRINT 9014, i, Soil_moist_init(i), Soil_moist_max(i)
-              Soil_moist(i) = Soil_moist_max(i)
-            ENDIF
-          ENDIF
-          IF ( Soil_rechr(i)>Soil_moist(i) ) THEN
-            IF ( Parameter_check_flag>0 ) THEN
-              PRINT 9005, i, Soil_rechr(i), Soil_moist(i)
-              ierr = 1
-            ELSE
-              IF ( Print_debug>-1 ) PRINT 9015, i, Soil_rechr(i), Soil_moist(i)
-              Soil_rechr(i) = Soil_moist(i)
-            ENDIF
-          ENDIF
-          Ssres_stor(i) = Ssstor_init(i)
-          IF ( Ssres_stor(i)>Sat_threshold(i) ) THEN
-            IF ( Parameter_check_flag>0 ) THEN
-              PRINT *, 'ERROR, HRU:', i, Ssres_stor(i), Sat_threshold(i), ' ssres_stor > sat_threshold'
-              ierr = 1
-            ELSE
-              PRINT *, 'WARNING, HRU:', i, Ssres_stor(i), Sat_threshold(i), ' ssres_stor > sat_threshold, ssres_stor set to max'
-              Ssres_stor(i) = Sat_threshold(i)
-            ENDIF
-          ENDIF
           Slow_stor(i) = MIN( Ssres_stor(i), Pref_flow_thrsh(i) )
           Pref_flow_stor(i) = Ssres_stor(i) - Slow_stor(i)
         ENDIF
@@ -805,11 +720,6 @@
             Pref_flow_flag(i) = 1
             Pref_flag = 1
           ENDIF
-        ENDIF
-        IF ( ierr+ierr1>0 ) THEN
-          ierr1 = 1
-          Inputerror_flag = 1
-          CYCLE
         ENDIF
 
         hruarea = Hru_area(i)
@@ -855,7 +765,7 @@
       Basin_soil_lower_stor_frac = Basin_soil_lower_stor_frac*Basin_area_inv
       Basin_soil_rechr_stor_frac = Basin_soil_rechr_stor_frac*Basin_area_inv
 
-      IF ( Init_vars_from_file==0 .AND. ierr1==0 ) THEN
+      IF ( Init_vars_from_file==0 ) THEN
 ! initialize arrays (dimensioned Nhru)
         Dunnian_flow = 0.0
         IF ( Cascade_flag==1 ) THEN
@@ -937,20 +847,6 @@
         ENDIF
         IF ( ierr==1 ) Inputerror_flag = 1
       ENDIF
-      IF ( Init_vars_from_file==0 ) DEALLOCATE ( Soil_rechr_init, Soil_moist_init, Ssstor_init )
-
- 9002 FORMAT (/, 'ERROR, HRU:', I7, ' soil_rechr_max > soil_moist_max', 2F10.4)
- 9003 FORMAT (/, 'ERROR, HRU:', I7, ' soil_rechr_init > soil_rechr_max', 2F10.4)
- 9004 FORMAT (/, 'ERROR, HRU:', I7, ' soil_moist_init > soil_moist_max', 2F10.4)
- 9005 FORMAT (/, 'ERROR, HRU:', I7, ' soil_rechr > soil_moist based on init and max values', 2F10.4)
- 9012 FORMAT ('WARNING, HRU:', I7, ' soil_rechr_max > soil_moist_max,', 2F10.4, /, 9X, &
-     &        'soil_rechr_max set to soil_moist_max')
- 9013 FORMAT ('WARNING, HRU:', I7, ' soil_rechr_init > soil_rechr_max,', 2F10.4, /, 9X, &
-     &        'soil_rechr set to soil_rechr_max')
- 9014 FORMAT ('WARNING, HRU:', I7, ' soil_moist_init > soil_moist_max,', 2F10.4, /, 9X, &
-     &        'soil_moist set to soil_moist_max')
- 9015 FORMAT ('WARNING, HRU:', I7, ' soil_rechr_init > soil_moist_init,', 2F10.4, /, 9X, &
-     &        'soil_rechr set to soil_moist based on init and max values')
 
       END FUNCTION szinit
 
