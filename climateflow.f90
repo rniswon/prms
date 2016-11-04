@@ -33,7 +33,7 @@
 !   Declared Parameters and Variables - Solar Radiation
       INTEGER, SAVE :: Basin_solsta
       INTEGER, SAVE, ALLOCATABLE :: Hru_solsta(:), Hru_pansta(:)
-      DOUBLE PRECISION, SAVE :: Basin_potsw, Basin_orad, Basin_horad
+      DOUBLE PRECISION, SAVE :: Basin_potsw, Basin_swrad, Basin_orad, Basin_horad
       REAL, SAVE :: Rad_conv, Orad
       REAL, SAVE, ALLOCATABLE :: Swrad(:), Orad_hru(:)
       REAL, SAVE, ALLOCATABLE :: Ppt_rad_adj(:, :), Radmax(:, :), Radj_sppt(:), Radj_wppt(:)
@@ -250,6 +250,10 @@
       IF ( declvar(Solrad_module, 'basin_horad', 'one', 1, 'double', &
      &     'Potential shortwave radiation for the basin centroid', &
      &     'Langleys', Basin_horad)/=0 ) CALL read_error(3, 'basin_horad')
+
+      IF ( declvar(Solrad_module, 'basin_swrad', 'one', 1, 'double', &
+     &     'Basin area-weighted average shortwave radiation', &
+     &     'Langleys', Basin_swrad)/=0 ) CALL read_error(3, 'basin_swrad')
 
       IF ( declvar(Solrad_module, 'basin_potsw', 'one', 1, 'double', &
      &     'Basin area-weighted average shortwave radiation', &
@@ -1090,7 +1094,7 @@
         WRITE ( Restart_outunit ) MODNAME
         WRITE ( Restart_outunit ) Basin_ppt, Basin_rain, Basin_snow, Basin_obs_ppt, Basin_temp, Basin_orad, &
      &          Basin_tmax, Basin_tmin, Solrad_tmax, Solrad_tmin, Basin_transp_on, Basin_potet, Basin_horad, &
-     &          Basin_potsw, Orad, Flow_out
+     &          Basin_swrad, Orad, Flow_out
         WRITE ( Restart_outunit ) Basin_cfs, Basin_cms, Basin_ssflow_cfs, Basin_sroff_cfs, Basin_stflow_in, &
      &          Basin_gwflow_cfs, Basin_stflow_out, Basin_ssflow, Basin_soil_to_gw, Basin_actet, &
      &          Basin_swale_et, Basin_perv_et, Basin_soil_moist, Basin_ssstor, Basin_lakeevap, Basin_lake_stor
@@ -1150,7 +1154,7 @@
         CALL check_restart(MODNAME, module_name)
         READ ( Restart_inunit ) Basin_ppt, Basin_rain, Basin_snow, Basin_obs_ppt, Basin_temp, Basin_orad, &
      &         Basin_tmax, Basin_tmin, Solrad_tmax, Solrad_tmin, Basin_transp_on, Basin_potet, Basin_horad, &
-     &         Basin_potsw, Orad, Flow_out
+     &         Basin_swrad, Orad, Flow_out
         READ ( Restart_inunit ) Basin_cfs, Basin_cms, Basin_ssflow_cfs, Basin_sroff_cfs, Basin_stflow_in, &
      &         Basin_gwflow_cfs, Basin_stflow_out, Basin_ssflow, Basin_soil_to_gw, Basin_actet, &
      &         Basin_swale_et, Basin_perv_et, Basin_soil_moist, Basin_ssstor, Basin_lakeevap, Basin_lake_stor
