@@ -636,7 +636,7 @@
       INTEGER FUNCTION szinit()
       USE PRMS_SOILZONE
       USE PRMS_MODULE, ONLY: Print_debug, Nhru, Nssr, Nlake, Model, Nhrucell, &
-     &    Inputerror_flag, Cascade_flag, Init_vars_from_file
+     &    Inputerror_flag, Cascade_flag, Init_vars_from_file, Parameter_check_flag
       USE PRMS_BASIN, ONLY: Hru_type, Hru_perv, &
      &    Basin_area_inv, Hru_area, CLOSEZERO, Hru_frac_perv, Numlake_hrus
       USE PRMS_FLOWVARS, ONLY: Soil_moist_max, Soil_rechr_max, &
