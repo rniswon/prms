@@ -7,8 +7,7 @@
 !   Local Variables
       INTEGER, SAVE :: MSGUNT
       CHARACTER(LEN=7), SAVE :: MODNAME
-      INTEGER, SAVE :: Iorder, Igworder, Ndown, Nsegmentp1
-      INTEGER, SAVE :: Outflow_flg, Outflow_gwrflg
+      INTEGER, SAVE :: Iorder, Igworder, Ndown
 !   Computed Variables
       INTEGER, SAVE, ALLOCATABLE :: Hru_down(:, :), Gwr_down(:, :)
       INTEGER, SAVE, ALLOCATABLE :: Ncascade_hru(:), Ncascade_gwr(:)
@@ -71,7 +70,7 @@
 !***********************************************************************
       INTEGER FUNCTION cascdecl()
       USE PRMS_CASCADE
-      USE PRMS_MODULE, ONLY: Model, Nhru, Ngw, Cascade_flag, Cascadegw_flag, Ncascade, Ncascdgw, Print_debug, Nsegment
+      USE PRMS_MODULE, ONLY: Model, Nhru, Ngw, Cascade_flag, Cascadegw_flag, Ncascade, Ncascdgw, Print_debug
       IMPLICIT NONE
 ! Functions
       INTRINSIC INDEX
@@ -86,7 +85,6 @@
       CALL print_module(Version_cascade, 'Cascading Flow              ', 90)
       MODNAME = 'cascade'
 
-      Nsegmentp1 = Nsegment + 1
       IF ( Cascade_flag==1 .OR. Model==99 ) ALLOCATE ( Ncascade_hru(Nhru) )
 
       IF ( Cascadegw_flag>0 .OR. Model==99 ) ALLOCATE ( Ncascade_gwr(Ngw) )
@@ -351,9 +349,6 @@
       Ncascade_hru = 0
       hru_frac = 0.0
 
-      Outflow_flg = 0
-      Outflow_gwrflg = 0
-
       DO i = 1, Ncascade
         kup = Hru_up_id(i)
         IF ( kup<1 ) THEN
@@ -389,14 +384,6 @@
           IF ( Print_debug==13 ) WRITE ( MSGUNT, 9004 ) 'Cascade ignored as lake HRU cannot cascade to an HRU', &
      &                                                  i, kup, jdn, frac, istrm
         ELSE
-          ! if cascade is negative, then farfield, so ignore istrm
-!         IF ( jdn<0 .AND. istrm>0 ) THEN
-          IF ( jdn<0 ) THEN
-            IF ( Print_debug==13 ) WRITE ( MSGUNT, 9004 ) &
-     &           'down HRU<0 thus cascade is to strm_farfield', i, kup, jdn, frac, istrm
-            istrm = 0
-          ENDIF
-
           IF ( jdn>0 .AND. istrm<1 ) THEN
             IF ( Hru_type(jdn)==0 ) THEN
               IF ( Print_debug==13 ) WRITE ( MSGUNT, 9004 ) &
@@ -417,14 +404,7 @@
               IF ( istrm>0 ) THEN
                 Hru_down(1, kup) = -istrm
               ELSE
-                ! if jdn is negative then farfield
-                IF ( jdn<0 ) THEN
-                  IF ( Print_debug==13 ) WRITE ( MSGUNT, 9006 ) i, frac, Nsegmentp1
-                  Hru_down(1, kup) = -Nsegmentp1
-                  Outflow_flg = 1
-                ELSE
-                  Hru_down(1, kup) = jdn
-                ENDIF
+                Hru_down(1, kup) = jdn
               ENDIF
             ENDIF
           ELSE
@@ -444,14 +424,7 @@
             IF ( istrm>0 ) THEN
               Hru_down(kk, kup) = -istrm
             ELSE
-              ! if jdn is negative then farfield
-              IF ( jdn<0 ) THEN
-                IF ( Print_debug==13 ) WRITE ( MSGUNT, 9006 ) i, frac, Nsegmentp1
-                Hru_down(kk, kup) = -Nsegmentp1
-                Outflow_flg = 1
-              ELSE
-                Hru_down(kk, kup) = jdn
-              ENDIF
+              Hru_down(kk, kup) = jdn
             ENDIF
           ENDIF
         ENDIF
@@ -523,8 +496,6 @@
  9005 FORMAT ('*** WARNING, ignoring small cascade, carea<cascade_tol', &
      &        /, '    Cascade:', I7, '; HRU up:', I7, '; HRU down:', I7, &
      &        '; fraction up:', F8.2, '; cascade area:', F8.2)
- 9006 FORMAT ('*** INFO, HRU:', I6, ', fraction:', F8.2, &
-     &        ' is producing far-field flow to segment:', I6)
 
       END SUBROUTINE init_cascade
 
@@ -799,14 +770,6 @@
      &                  i, kup, jdn, frac, istrm
           ENDIF
         ELSE
-          ! if cascade is negative, then farfield, so ignore istrm
-!         IF ( jdn<0 .AND. istrm>0 ) THEN
-          IF ( jdn<0 ) THEN
-            IF ( Print_debug==13 ) WRITE ( MSGUNT, 9004 ) &
-     &           'down GWR<0 thus cascade is to strm_farfield', i, kup, jdn, frac, istrm 
-            istrm = 0
-          ENDIF
-
           IF ( jdn>0 .AND. istrm<1 ) THEN
             IF ( Gwr_type(jdn)==0 ) THEN
               IF ( Print_debug==13 ) WRITE ( MSGUNT, 9004 ) 'Cascade ignored as down GWR is inactive', &
@@ -837,14 +800,7 @@
               IF ( istrm>0 ) THEN
                 Gwr_down(1, kup) = -istrm
               ELSE
-                ! if jdn is negative then farfield
-                IF ( jdn<0 ) THEN
-                  IF ( Print_debug==13 ) WRITE ( MSGUNT, 9006 ) i, frac, Nsegmentp1
-                  Gwr_down(1, kup) = -Nsegmentp1
-                  Outflow_gwrflg = 1
-                ELSE
-                  Gwr_down(1, kup) = jdn
-                ENDIF
+                Gwr_down(1, kup) = jdn
               ENDIF
             ENDIF
           ELSE
@@ -864,14 +820,7 @@
             IF ( istrm>0 ) THEN
               Gwr_down(kk, kup) = -istrm
             ELSE
-              ! if jdn is negative then farfield
-              IF ( jdn<0 ) THEN
-                IF ( Print_debug==13 ) WRITE ( MSGUNT, 9006 ) i, frac, Nsegmentp1
-                Gwr_down(kk, kup) = -Nsegmentp1
-                Outflow_gwrflg = 1
-              ELSE
-                Gwr_down(kk, kup) = jdn
-              ENDIF
+              Gwr_down(kk, kup) = jdn
             ENDIF
           ENDIF
         ENDIF
@@ -940,8 +889,6 @@
  9005 FORMAT ('*** WARNING, ignoring small cascade, carea<cascade_tol', &
      &        /, '    Cascade:', I7, '; GWR up:', I7, '; GWR down:', I7, &
      &        '; fraction up:', F8.2, '; cascade area:', F8.2)
- 9006 FORMAT ('*** INFO, GWR:', I6, ', fraction:', F8.2, &
-     &        ' is producing far-field flow to segment:', I6)
 
       END SUBROUTINE initgw_cascade
 
