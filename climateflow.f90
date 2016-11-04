@@ -893,6 +893,7 @@
       Orad = 0.0
       Basin_horad = 0.0D0
       Basin_potsw = 0.0D0
+      Basin_swrad = 0.0D0
       Transp_on = 0
       Basin_transp_on = 0
       Basin_potet = 0.0D0
