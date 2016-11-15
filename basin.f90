@@ -3,11 +3,10 @@
 !***********************************************************************
       MODULE PRMS_BASIN
       IMPLICIT NONE
-      INTRINSIC :: EPSILON
 !   Local Variables
       REAL, PARAMETER :: NEARZERO = 1.0E-6, INCH2CM = 2.54
-      REAL, PARAMETER :: CLOSEZERO = EPSILON(0.0)
-      DOUBLE PRECISION, PARAMETER :: DNEARZERO = EPSILON(0.0D0), FT2_PER_ACRE = 43560.0D0
+      REAL, PARAMETER :: CLOSEZERO = 1.0E-09
+      DOUBLE PRECISION, PARAMETER :: DNEARZERO = 1.0D-15, FT2_PER_ACRE = 43560.0D0
       DOUBLE PRECISION, PARAMETER :: CFS2CMS_CONV = 0.028316847D0
       REAL, PARAMETER :: INCH2MM = 25.4, INCH2M = 0.0254
       REAL, PARAMETER :: MM2INCH = 1.0/INCH2MM
@@ -35,7 +34,7 @@
       INTEGER, SAVE, ALLOCATABLE :: Lake_hru_id(:), Lake_type(:) !not needed if no lakes
       REAL, SAVE, ALLOCATABLE :: Hru_area(:), Hru_percent_imperv(:), Hru_elev(:), Hru_lat(:)
       REAL, SAVE, ALLOCATABLE :: Covden_sum(:), Covden_win(:)
-      REAL, SAVE, ALLOCATABLE :: Dprst_frac_open(:), Dprst_frac(:)
+      REAL, SAVE, ALLOCATABLE :: Dprst_frac_open(:), Dprst_frac(:), Dprst_area(:)
       END MODULE PRMS_BASIN
 
 !***********************************************************************
@@ -61,7 +60,7 @@
 !     basdecl - set up parameters
 !   Declared Parameters
 !     print_debug, hru_area, hru_percent_imperv, hru_type, hru_elev,
-!     cov_type, hru_lat, dprst_frac_open, dprst_frac, basin_area
+!     cov_type, hru_lat, dprst_frac_open, dprst_frac_hru, dprst_area, basin_area
 !     lake_hru_id
 !***********************************************************************
       INTEGER FUNCTION basdecl()
@@ -75,7 +74,7 @@
 !***********************************************************************
       basdecl = 0
 
-      Version_basin = 'basin.f90 2016-10-28 13:27:00Z'
+      Version_basin = 'basin.f90 2016-11-15 14:56:00Z'
       CALL print_module(Version_basin, 'Basin Definition            ', 90)
       MODNAME = 'basin'
 
@@ -111,12 +110,19 @@
      &       'Aggregate sum of closed surface-depression storage areas of each HRU', &
      &       'acres', Dprst_area_clos_max)/=0 ) CALL read_error(1, 'dprst_area_clos_max')
 
+        ALLOCATE ( Dprst_area(Nhru) )
+        IF ( declparam(MODNAME, 'dprst_area', 'nhru', 'real', &
+     &       '0.0', '0.0', '1.0E9', &
+     &       'Aggregate sum of surface-depression storage areas of each HRU', &
+     &       'Aggregate sum of surface-depression storage areas of each HRU', &
+     &       'acres')/=0 ) CALL read_error(1, 'dprst_area')
+
         ALLOCATE ( Dprst_frac(Nhru) )
-        IF ( declparam(MODNAME, 'dprst_frac', 'nhru', 'real', &
-     &       '0.0', '0.0', '0.999', &
+        IF ( declparam(MODNAME, 'dprst_frac_hru', 'nhru', 'real', &
+     &       '-1.0', '-1.0', '0.999', &
      &       'Fraction of each HRU area that has surface depressions', &
      &       'Fraction of each HRU area that has surface depressions', &
-     &       'decimal fraction')/=0 ) CALL read_error(1, 'dprst_frac')
+     &       'decimal fraction')/=0 ) CALL read_error(1, 'dprst_frac_hru')
 
         ALLOCATE ( Dprst_frac_open(Nhru), Dprst_frac_clos(Nhru) )
         IF ( declparam(MODNAME, 'dprst_frac_open', 'nhru', 'real', &
@@ -233,7 +239,7 @@
       INTRINSIC ABS, DBLE, SNGL
 ! Local Variables
       CHARACTER(LEN=68) :: buffer
-      INTEGER :: i, j, lakeid
+      INTEGER :: i, j, lakeid, dprst_frac_flag
       REAL :: harea
       DOUBLE PRECISION :: basin_imperv, basin_perv, basin_dprst, harea_dble
 !**********************************************************************
@@ -249,9 +255,15 @@
       IF ( getparam(MODNAME, 'elev_units', 1, 'integer', Elev_units)/=0 ) CALL read_error(2, 'elev_units')
       IF ( getparam(MODNAME, 'hru_percent_imperv', Nhru, 'real', Hru_percent_imperv)/=0 ) CALL read_error(2, 'hru_percent_imperv')
 
+      dprst_frac_flag = 0
       IF ( Dprst_flag==1 ) THEN
         IF ( getparam(MODNAME, 'dprst_frac_open', Nhru, 'real', Dprst_frac_open)/=0 ) CALL read_error(2, 'dprst_frac_open')
-        IF ( getparam(MODNAME, 'dprst_frac', Nhru, 'real', Dprst_frac)/=0 ) CALL read_error(2, 'Dprst_frac')
+        IF ( getparam(MODNAME, 'dprst_area', Nhru, 'real', Dprst_area)/=0 ) CALL read_error(2, 'dprst_area')
+        IF ( getparam(MODNAME, 'dprst_frac_hru', Nhru, 'real', Dprst_frac)/=0 ) CALL read_error(2, 'dprst_frac_hru')
+        IF ( Dprst_frac(1)>-1.0 ) THEN
+          IF ( Print_debug>-1 ) PRINT *, 'Using dprst_frac_hru instead of dprst_area'
+          dprst_frac_flag = 1
+        ENDIF
       ENDIF
 
       IF ( Nlake>0 ) THEN
@@ -333,7 +345,21 @@
         Hru_perv(i) = harea - Hru_imperv(i)
 
         IF ( Dprst_flag==1 ) THEN
-          Dprst_area_max(i) = Dprst_frac(i)*harea
+          IF ( dprst_frac_flag==1 ) THEN
+            Dprst_area_max(i) = Dprst_frac(i)*harea
+          ELSE
+            IF ( Dprst_area(i)>harea ) THEN
+              PRINT *, 'ERROR, dprst_area > hru_area for HRU:', i, ', value:', Dprst_area(i)
+              PRINT *, '       hru_area:', harea
+              Inputerror_flag = 1
+            ELSEIF ( Dprst_area(i)>0.999*harea ) THEN
+              PRINT *, 'ERROR, dprst_area > 0.999*hru_area for HRU:', i, ', value:', Dprst_area(i)
+              PRINT *, '       hru_area:', harea, '; fraction', 0.999*harea
+              Inputerror_flag = 1
+            ENDIF
+            Dprst_area_max(i) = Dprst_area(i)
+            Dprst_frac(i) = Dprst_area_max(i)/harea
+          ENDIF
           IF ( Dprst_area_max(i)>0.0 ) THEN
             Dprst_area_open_max(i) = Dprst_area_max(i)*Dprst_frac_open(i)
             Dprst_frac_clos(i) = 1.0 - Dprst_frac_open(i)

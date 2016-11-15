@@ -15,10 +15,10 @@
       DOUBLE PRECISION, SAVE :: Monthdays
       INTEGER, SAVE, ALLOCATABLE :: Monthlyunit(:), Yearlyunit(:)
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Nhru_var_monthly(:, :), Nhru_var_yearly(:, :)
-! Paramters
-      INTEGER, SAVE, ALLOCATABLE :: Nhm_id(:)
+! Declared Parameters
+      INTEGER, SAVE :: Prms_warmup
 ! Control Parameters
-      INTEGER, SAVE :: NhruOutVars, NhruOut_freq, Prms_warmup
+      INTEGER, SAVE :: NhruOutVars, NhruOut_freq
       CHARACTER(LEN=36), SAVE, ALLOCATABLE :: NhruOutVar_names(:)
       CHARACTER(LEN=MAXFILE_LENGTH), SAVE :: NhruOutBaseFileName
       END MODULE PRMS_NHRU_SUMMARY
@@ -47,7 +47,7 @@
 !***********************************************************************
       SUBROUTINE nhru_summarydecl()
       USE PRMS_NHRU_SUMMARY
-      USE PRMS_MODULE, ONLY: Model, Inputerror_flag, NhruOutON_OFF, Nhru
+      USE PRMS_MODULE, ONLY: Model, Inputerror_flag
       IMPLICIT NONE
 ! Functions
       INTRINSIC CHAR
@@ -57,14 +57,13 @@
       INTEGER :: i
       CHARACTER(LEN=80), SAVE :: Version_nhru_summary
 !***********************************************************************
-      Version_nhru_summary = 'nhru_summary.f90 2016-10-28 13:24:00Z'
+      Version_nhru_summary = 'nhru_summary.f90 2016-11-15 12:42:00Z'
       CALL print_module(Version_nhru_summary, 'Output Summary              ', 90)
       MODNAME = 'nhru_summary'
 
       IF ( control_integer(NhruOutVars, 'nhruOutVars')/=0 ) NhruOutVars = 0
       ! 1 = daily, 2 = monthly, 3 = both, 4 = mean monthly, 5 = mean yearly, 6 = yearly total
       IF ( control_integer(NhruOut_freq, 'nhruOut_freq')/=0 ) NhruOut_freq = 0
-      IF ( control_integer(Prms_warmup, 'prms_warmup')/=0 ) prms_warmup = 0
 
       IF ( NhruOutVars==0 ) THEN
         IF ( Model/=99 ) THEN
@@ -83,13 +82,12 @@
         IF ( control_string(NhruOutBaseFileName, 'nhruOutBaseFileName')/=0 ) CALL read_error(5, 'nhruOutBaseFileName')
       ENDIF
 
-      IF ( NhruOutON_OFF==2 ) THEN
-        ALLOCATE ( Nhm_id(Nhru) )
-        IF ( declparam(MODNAME, 'nhm_id', 'nhru', 'integer', &
-     &       '1', '1', '9999999', &
-     &       'National Hydrologic Model HRU ID', 'National Hydrologic Model HRU ID', &
-     &       'none') /= 0 ) CALL read_error(1, 'nhm_id')
-      ENDIF
+! Declared Parameters
+      IF ( declparam(MODNAME, 'prms_warmup', 'one', 'integer', &
+     &     '1', '0', '12', &
+     &     'Number of years to simulate before writing mapped results', &
+     &     'Number of years to simulate before writing mapped results', &
+     &     'years')/=0 ) CALL read_error(1, 'prms_warmup')
 
       END SUBROUTINE nhru_summarydecl
 
@@ -98,7 +96,7 @@
 !***********************************************************************
       SUBROUTINE nhru_summaryinit()
       USE PRMS_NHRU_SUMMARY
-      USE PRMS_MODULE, ONLY: Nhru, Inputerror_flag , MAXFILE_LENGTH, Start_year, End_year, NhruOutON_OFF
+      USE PRMS_MODULE, ONLY: Nhru, Inputerror_flag , MAXFILE_LENGTH, Start_year, End_year
       IMPLICIT NONE
       INTRINSIC ABS
       INTEGER, EXTERNAL :: getvartype, numchars, getvarsize, getparam
@@ -109,6 +107,7 @@
 !***********************************************************************
       Begin_results = 1
       Begyr = Start_year
+      IF ( getparam(MODNAME, 'prms_warmup', 1, 'integer', Prms_warmup)/=0 ) CALL read_error(2, 'prms_warmup')
       IF ( Prms_warmup>0 ) Begin_results = 0
       Begyr = Begyr + Prms_warmup
       IF ( Begyr>End_year ) THEN
@@ -172,7 +171,7 @@
           !print *, fileName
           CALL PRMS_open_output_file(Dailyunit(jj), fileName, 'xxx', 0, ios)
           IF ( ios/=0 ) STOP 'in nhru_summary'
-          IF ( NhruOutON_OFF<2 ) WRITE ( Dailyunit(jj), Output_fmt2 ) (j, j=1,Nhru)
+          WRITE ( Dailyunit(jj), Output_fmt2 ) (j, j=1,Nhru)
         ENDIF
         IF ( NhruOut_freq==5 ) THEN
           fileName = NhruOutBaseFileName(:numchars(NhruOutBaseFileName))//NhruOutVar_names(jj)(:Nc_vars(jj))//'_yearly.csv'
@@ -188,21 +187,9 @@
           !print *, fileName
           CALL PRMS_open_output_file(Monthlyunit(jj), fileName, 'xxx', 0, ios)
           IF ( ios/=0 ) STOP 'in nhru_summary, monthly'
-          IF ( NhruOutON_OFF<2 ) WRITE ( Monthlyunit(jj), Output_fmt2 ) (j, j=1,Nhru)
+          WRITE ( Monthlyunit(jj), Output_fmt2 ) (j, j=1,Nhru)
         ENDIF
       ENDDO
-
-      IF ( NhruOutON_OFF==2 ) THEN
-        IF ( getparam(MODNAME, 'nhm_id', Nhru, 'integer', Nhm_id)/=0 ) CALL read_error(2, 'nhm_id')
-        DO jj = 1, NhruOutVars
-          IF ( Daily_flag==1 ) WRITE ( Dailyunit(jj), Output_fmt2 ) (Nhm_id(j), j=1,Nhru)
-          IF ( NhruOut_freq==5 ) THEN
-            WRITE ( Yearlyunit(jj), Output_fmt2 ) (Nhm_id(j), j=1,Nhru)
-          ELSEIF ( Monthly_flag==1 ) THEN
-            WRITE ( Monthlyunit(jj), Output_fmt2 ) (Nhm_id(j), j=1,Nhru)
-          ENDIF
-        ENDDO
-      ENDIF
 
  9001 FORMAT ('(I4, 2(''-'',I2.2),',I6,'('',''ES10.3))')
  9002 FORMAT ('("Date "',I6,'('',''I6))')
