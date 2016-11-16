@@ -402,7 +402,7 @@
      &    Cov_type, Basin_area_inv, NEARZERO, Dprst_frac, Covden_win, Covden_sum, DNEARZERO
       USE PRMS_CLIMATEVARS, ONLY: Transp_on, Epan_coef
       USE PRMS_FLOWVARS, ONLY: Basin_soil_moist, Soil_moist, Soil_rechr, Imperv_stor, Sat_threshold, &
-     &    Soil_rechr_max, Soil_moist_max, Imperv_stor_max, Dprst_vol_open, Dprst_vol_clos, Ssres_stor
+     &    Soil_rechr_max, Soil_moist_max, Imperv_stor_max, Dprst_vol_open, Dprst_vol_clos, Ssres_stor, Soil_rechr_max_frac
       USE PRMS_POTET_JH, ONLY: Jh_coef, Jh_coef_hru
       USE PRMS_POTET_PM, ONLY: Pm_n_coef, Pm_d_coef
       USE PRMS_POTET_PT, ONLY: Pt_alpha
@@ -737,7 +737,7 @@
         IF ( Soil_rechr_next_mo/=0 ) THEN
           IF ( Soil_rechr_next_yr==Nowyear .AND. Soil_rechr_next_mo==Nowmonth .AND. Soil_rechr_next_day==Nowday ) THEN
             READ ( Soil_rechr_unit, * ) Soil_rechr_next_yr, Soil_rechr_next_mo, Soil_rechr_next_day, Temp
-            CALL write_dynparam(Output_unit, Nhru, Updated_hrus, Temp, Soil_rechr_max, 'soil_rechr_max')
+            CALL write_dynparam(Output_unit, Nhru, Updated_hrus, Temp, Soil_rechr_max_frac, 'soil_rechr_max_frac')
             CALL is_eof(Soil_rechr_unit, Soil_rechr_next_yr, Soil_rechr_next_mo, Soil_rechr_next_day)
           ENDIF
         ENDIF
@@ -762,11 +762,12 @@
             istop = 1
             PRINT 9001, 'soil_moist_max', NEARZERO, i, Soil_moist_max(i), NEARZERO
           ENDIF
-          IF ( Soil_rechr_max(i)<NEARZERO ) THEN
+          IF ( Soil_rechr_max_frac(i)<NEARZERO ) THEN
             istop = 1
-            PRINT 9001, 'soil_rechr_max', NEARZERO, i, Soil_rechr_max(i), NEARZERO
+            PRINT 9001, 'soil_rechr_max_frac', NEARZERO, i, Soil_rechr_max_frac(i), NEARZERO
           ENDIF
           IF ( istop==1 ) CYCLE
+          Soil_rechr_max(i) = Soil_moist_max(i)*Soil_rechr_max_frac(i)
           Soil_zone_max(i) = Sat_threshold(i) + Soil_moist_max(i)*Hru_frac_perv(i)
           Soil_moist_tot(i) = Ssres_stor(i) + Soil_moist(i)*Hru_frac_perv(i)
           Soil_moist_frac(i) = Soil_moist_tot(i)/Soil_zone_max(i)

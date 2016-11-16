@@ -33,7 +33,7 @@
 !   Declared Parameters and Variables - Solar Radiation
       INTEGER, SAVE :: Basin_solsta
       INTEGER, SAVE, ALLOCATABLE :: Hru_solsta(:), Hru_pansta(:)
-      DOUBLE PRECISION, SAVE :: Basin_potsw, Basin_swrad, Basin_orad, Basin_horad
+      DOUBLE PRECISION, SAVE :: Basin_swrad, Basin_orad, Basin_horad
       REAL, SAVE :: Rad_conv, Orad
       REAL, SAVE, ALLOCATABLE :: Swrad(:), Orad_hru(:)
       REAL, SAVE, ALLOCATABLE :: Ppt_rad_adj(:, :), Radmax(:, :), Radj_sppt(:), Radj_wppt(:)
@@ -255,10 +255,6 @@
       IF ( declvar(Solrad_module, 'basin_swrad', 'one', 1, 'double', &
      &     'Basin area-weighted average shortwave radiation', &
      &     'Langleys', Basin_swrad)/=0 ) CALL read_error(3, 'basin_swrad')
-
-      IF ( declvar(Solrad_module, 'basin_potsw', 'one', 1, 'double', &
-     &     'Basin area-weighted average shortwave radiation', &
-     &     'Langleys', Basin_potsw)/=0 ) CALL read_error(3, 'basin_potsw')
 
       IF ( Solrad_flag==1 .OR. Solrad_flag==2 .OR. Model==99 ) THEN
         IF ( declvar(Solrad_module, 'basin_orad', 'one', 1, 'double', &
@@ -951,7 +947,6 @@
       Swrad = 0.0
       Orad = 0.0
       Basin_horad = 0.0D0
-      Basin_potsw = 0.0D0
       Basin_swrad = 0.0D0
       Transp_on = 0
       Basin_transp_on = 0

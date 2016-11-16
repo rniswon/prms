@@ -124,7 +124,7 @@
 !***********************************************************************
       szdecl = 0
 
-      Version_soilzone = 'soilzone.f90 2016-11-16 15:55:00Z'
+      Version_soilzone = 'soilzone.f90 2016-11-16 14:41:00Z'
       CALL print_module(Version_soilzone, 'Soil Zone Computations      ', 90 )
       MODNAME = 'soilzone'
 
