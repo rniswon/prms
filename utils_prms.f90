@@ -65,10 +65,10 @@
               Day_file = 0
               RETURN
             ENDIF
-            IF ( Month_file>=Month ) i = 1
+            IF ( Month_file>=Month .OR. Year_file/=Year ) i = 1
           ENDDO
         ENDIF
-        IF ( Month_file==Month ) THEN
+        IF ( Year_file==Year .AND. Month_file==Month ) THEN
           IF ( Day_file<Day ) THEN
             i = 0
             DO WHILE ( i==0 )
