@@ -1,4 +1,4 @@
-      ! utils_prms.f90 2016-10-14 15:59:00Z
+      ! utils_prms.f90 2016-11-03 17:58:00Z
 !***********************************************************************
 !     Read CBH File to current time
 !***********************************************************************
@@ -65,10 +65,10 @@
               Day_file = 0
               RETURN
             ENDIF
-            IF ( Month_file>=Month ) i = 1
+            IF ( Month_file>=Month .OR. Year_file/=Year ) i = 1
           ENDDO
         ENDIF
-        IF ( Month_file==Month ) THEN
+        IF ( Year_file==Year .AND. Month_file==Month ) THEN
           IF ( Day_file<Day ) THEN
             i = 0
             DO WHILE ( i==0 )
@@ -816,7 +816,7 @@
 ! print module version information to user's screen
 !***********************************************************************
       SUBROUTINE print_module(Versn, Description, Ftntype)
-      USE PRMS_MODULE, ONLY: PRMS_output_unit, Model, Print_debug , Logunt
+      USE PRMS_MODULE, ONLY: PRMS_output_unit, Model, Print_debug, Logunt
       IMPLICIT NONE
       ! Arguments
       CHARACTER(LEN=*), INTENT(IN) :: Description, Versn

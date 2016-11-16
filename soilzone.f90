@@ -124,7 +124,7 @@
 !***********************************************************************
       szdecl = 0
 
-      Version_soilzone = 'soilzone.f90 2016-10-17 17:13:00Z'
+      Version_soilzone = 'soilzone.f90 2016-11-16 15:55:00Z'
       CALL print_module(Version_soilzone, 'Soil Zone Computations      ', 90 )
       MODNAME = 'soilzone'
 
@@ -171,27 +171,27 @@
      &     'Total soil-zone water storage (soil_moist + ssres_stor)', &
      &     'inches', Soil_moist_tot)/=0 ) CALL read_error(3, 'soil_moist_tot')
 
-      IF ( declvar(MODNAME, 'basin_cpr_stor_frac', 'nhru', Nhru, 'double', &
+      IF ( declvar(MODNAME, 'basin_cpr_stor_frac', 'one', 1, 'double', &
      &     'Basin area-weighted average fraction of capillary reservoir storage of the maximum storage', &
      &     'decimal fraction', Basin_cpr_stor_frac)/=0 ) CALL read_error(3, 'basin_cpr_stor_frac')
 
-      IF ( declvar(MODNAME, 'basin_gvr_stor_frac', 'nhru', Nhru, 'double', &
+      IF ( declvar(MODNAME, 'basin_gvr_stor_frac', 'one', 1, 'double', &
      &     'Basin area-weighted average fraction of gravity reservoir storage of the maximum storage', &
      &     'decimal fraction', Basin_gvr_stor_frac)/=0 ) CALL read_error(3, 'basin_gvr_stor_frac')
 
-      IF ( declvar(MODNAME, 'basin_pfr_stor_frac', 'nhru', Nhru, 'double', &
+      IF ( declvar(MODNAME, 'basin_pfr_stor_frac', 'one', 1, 'double', &
      &     'Basin area-weighted average fraction of preferential-flow reservoir storage of the maximum storage', &
      &     'decimal fraction', Basin_pfr_stor_frac)/=0 ) CALL read_error(3, 'basin_pfr_stor_frac')
 
-      IF ( declvar(MODNAME, 'basin_soil_lower_stor_frac', 'nhru', Nhru, 'double', &
+      IF ( declvar(MODNAME, 'basin_soil_lower_stor_frac', 'one', 1, 'double', &
      &     'Basin area-weighted average fraction of soil lower zone storage of the maximum storage', &
      &     'decimal fraction', Basin_soil_lower_stor_frac)/=0 ) CALL read_error(3, 'basin_soil_lower_stor_frac')
 
-      IF ( declvar(MODNAME, 'basin_soil_rechr_stor_frac', 'nhru', Nhru, 'double', &
+      IF ( declvar(MODNAME, 'basin_soil_rechr_stor_frac', 'one', 1, 'double', &
      &     'Basin area-weighted average fraction of soil recharge zone storage of the maximum storage', &
      &     'decimal fraction', Basin_soil_rechr_stor_frac)/=0 ) CALL read_error(3, 'basin_soil_rechr_stor_frac')
 
-      IF ( declvar(MODNAME, 'basin_sz_stor_frac', 'nhru', Nhru, 'double', &
+      IF ( declvar(MODNAME, 'basin_sz_stor_frac', 'one', 1, 'double', &
      &     'Basin area-weighted average fraction of soil zone storage of the maximum storage', &
      &     'decimal fraction', Basin_sz_stor_frac)/=0 ) CALL read_error(3, 'basin_sz_stor_frac')
 

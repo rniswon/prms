@@ -111,7 +111,7 @@
         Basin_cloud_cover = Basin_cloud_cover*Basin_area_inv
 
       ELSEIF ( Process(:4)=='decl' ) THEN
-        Version_ccsolrad = 'ccsolrad.f90 2016-05-10 18:52:00Z'
+        Version_ccsolrad = 'ccsolrad.f90 2016-11-03 17:50:00Z'
         CALL print_module(Version_ccsolrad, 'Solar Radiation Distribution', 90)
         MODNAME = 'ccsolrad'
 

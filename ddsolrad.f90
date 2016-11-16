@@ -119,7 +119,7 @@
         Basin_potsw = Basin_swrad
 
       ELSEIF ( Process(:4)=='decl' ) THEN
-        Version_ddsolrad = 'ddsolrad.f90 2016-03-22 19:20:54Z'
+        Version_ddsolrad = 'ddsolrad.f90 2016-11-03 17:48:00Z'
         CALL print_module(Version_ddsolrad, 'Solar Radiation Distribution', 90)
         MODNAME = 'ddsolrad'
 

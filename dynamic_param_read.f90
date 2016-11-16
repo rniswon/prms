@@ -54,7 +54,7 @@
       IF ( Process(:3)=='run' ) THEN
         dynamic_param_read = dynparamrun()
       ELSEIF ( Process(:4)=='decl' ) THEN
-        Version_dynamic_param_read = 'dynamic_param_read.f90 2016-06-14 13:47:00Z'
+        Version_dynamic_param_read = 'dynamic_param_read.f90 2016-11-16 10:42:00Z'
         CALL print_module(Version_dynamic_param_read, 'Time Series Data            ', 90)
         !MODNAME = 'dynamic_param_read'
       ELSEIF ( Process(:4)=='init' ) THEN
@@ -71,7 +71,7 @@
       USE PRMS_MODULE, ONLY: Nhru, Starttime, Dyn_imperv_flag, Dyn_dprst_flag, Dyn_intcp_flag, Dyn_covden_flag, &
      &    Dyn_covtype_flag, Dyn_potet_flag, Dyn_transp_flag, Dyn_soil_flag, Dyn_radtrncf_flag, Dyn_transp_on_flag, &
      &    Dyn_sro2dprst_perv_flag, Dyn_sro2dprst_imperv_flag, Transp_flag, Dprst_flag, Dyn_fallfrost_flag, &
-     &    Dyn_springfrost_flag, Dyn_snareathresh_flag, MAXFILE_LENGTH
+     &    Dyn_springfrost_flag, Dyn_snareathresh_flag, MAXFILE_LENGTH, Print_debug
       IMPLICIT NONE
       INTEGER, EXTERNAL :: control_string, get_ftnunit
       EXTERNAL read_error, find_header_end, find_current_file_time
@@ -379,9 +379,11 @@
 
       IF ( istop==1 ) STOP 'ERROR in dynamic_param_read initialize procedure'
 
-      Output_unit = get_ftnunit(520)
-      OPEN ( Output_unit, FILE='dynamic_parameter.out' )
-      PRINT '(/,A,//)', 'A summary of dynamic parameter events are written to file: dynamic_parameter.out'
+      IF ( Print_debug>-2 ) THEN
+        Output_unit = get_ftnunit(520)
+        OPEN ( Output_unit, FILE='dynamic_parameter.out' )
+        PRINT '(/,A,//)', 'A summary of dynamic parameter events are written to file: dynamic_parameter.out'
+      ENDIF
 
       END FUNCTION dynparaminit
 
@@ -859,7 +861,8 @@
           Updated_hrus(num) = i
         ENDIF
       ENDDO
-      WRITE ( Output_unit, '(/,3A,I4,2("/",I2.2))' ) 'Parameter ', Param_name, ' updated on: ', Nowyear, Nowmonth, Nowday
+      IF ( Print_debug>-2 ) &
+    &      WRITE ( Output_unit, '(/,3A,I4,2("/",I2.2))' ) 'Parameter ', Param_name, ' updated on: ', Nowyear, Nowmonth, Nowday
       IF ( Print_debug>-1 ) THEN
         WRITE ( Output_unit, '(/,A,I5,2("/",I2.2))' ) 'List of updated HRUs; Date:', Nowyear, Nowmonth, Nowday
         WRITE ( Output_unit, '(20I7)' ) (Updated_hrus(i), i=1,num)
@@ -894,7 +897,8 @@
           Param(i) = Values(i)
         ENDIF
       ENDDO
-      WRITE ( Output_unit, '(/,3A,I4,2("/",I2.2))' ) 'Parameter ', Param_name, ' updated on: ', Nowyear, Nowmonth, Nowday
+      IF ( Print_debug>-2 ) &
+     &     WRITE ( Output_unit, '(/,3A,I4,2("/",I2.2))' ) 'Parameter ', Param_name, ' updated on: ', Nowyear, Nowmonth, Nowday
       IF ( Print_debug>-1 ) THEN
         WRITE ( Output_unit, '(/,A,I5,2("/",I2.2))' ) 'List of updated HRUs; Date:', Nowyear, Nowmonth, Nowday
         WRITE ( Output_unit, '(20I7)' ) (Updated_hrus(i), i=1,num)
@@ -929,7 +933,8 @@
           Updated_hrus(num) = i
         ENDIF
       ENDDO
-      WRITE ( Output_unit, '(/,3A,I4,2("/",I2.2))' ) 'Parameter ', Param_name, ' updated on: ', Nowyear, Nowmonth, Nowday
+      IF ( Print_debug>-2 ) &
+     &     WRITE ( Output_unit, '(/,3A,I4,2("/",I2.2))' ) 'Parameter ', Param_name, ' updated on: ', Nowyear, Nowmonth, Nowday
       IF ( Print_debug>-1 ) THEN
         WRITE ( Output_unit, '(/,A,I5,2("/",I2.2))' ) 'List of updated HRUs; Date:', Nowyear, Nowmonth, Nowday
         WRITE ( Output_unit, '(20I7)' ) (Updated_hrus(i), i=1,num)
@@ -966,7 +971,8 @@
 !          Updated_hrus(num) = i
 !        ENDIF
 !      ENDDO
-!      WRITE ( Output_unit, '(/,3A,I4,2("/",I2.2))' ) 'Parameter ', Param_name, ' updated on: ', Nowyear, Nowmonth, Nowday
+!      IF ( Print_debug>-2 ) &
+!     &     WRITE ( Output_unit, '(/,3A,I4,2("/",I2.2))' ) 'Parameter ', Param_name, ' updated on: ', Nowyear, Nowmonth, Nowday
 !      IF ( Print_debug>-1 ) THEN
 !        WRITE ( Output_unit, '(/,A,I5,2("/",I2.2))' ) 'List of updated HRUs; Date:', Nowyear, Nowmonth, Nowday
 !        WRITE ( Output_unit, '(20I7)' ) (Updated_hrus(i), i=1,num)
@@ -1000,7 +1006,8 @@
           Updated_hrus(num) = i
         ENDIF
       ENDDO
-      WRITE ( Output_unit, '(/,3A,I4,2("/",I2.2))' ) 'Parameter ', Param_name, ' updated on: ', Nowyear, Nowmonth, Nowday
+      IF ( Print_debug>-2 ) &
+     &     WRITE ( Output_unit, '(/,3A,I4,2("/",I2.2))' ) 'Parameter ', Param_name, ' updated on: ', Nowyear, Nowmonth, Nowday
       IF ( Print_debug>-1 ) THEN
         WRITE ( Output_unit, '(/,A,I5,2("/",I2.2))' ) 'List of updated HRUs; Date:', Nowyear, Nowmonth, Nowday
         WRITE ( Output_unit, '(20I7)' ) (Updated_hrus(i), i=1,num)
