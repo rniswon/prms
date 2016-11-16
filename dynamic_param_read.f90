@@ -54,7 +54,7 @@
       IF ( Process(:3)=='run' ) THEN
         dynamic_param_read = dynparamrun()
       ELSEIF ( Process(:4)=='decl' ) THEN
-        Version_dynamic_param_read = 'dynamic_param_read.f90 2016-06-14 13:47:00Z'
+        Version_dynamic_param_read = 'dynamic_param_read.f90 2016-11-16 10:42:00Z'
         CALL print_module(Version_dynamic_param_read, 'Time Series Data            ', 90)
         !MODNAME = 'dynamic_param_read'
       ELSEIF ( Process(:4)=='init' ) THEN
@@ -939,7 +939,7 @@
         WRITE ( Output_unit, '(/,A,I5,2("/",I2.2))' ) 'List of updated HRUs; Date:', Nowyear, Nowmonth, Nowday
         WRITE ( Output_unit, '(20I7)' ) (Updated_hrus(i), i=1,num)
       ENDIF
-    END SUBROUTINE write_dynparam
+      END SUBROUTINE write_dynparam
 
 !***********************************************************************
 !     Values are read in, Parm are are updated or old
