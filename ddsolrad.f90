@@ -25,7 +25,7 @@
       USE PRMS_BASIN, ONLY: Active_hrus, Hru_route_order, Hru_area, Basin_area_inv
       USE PRMS_CLIMATEVARS, ONLY: Swrad, Tmax_hru, Basin_orad, Orad_hru, &
      &    Rad_conv, Hru_solsta, Basin_horad, &
-     &    Basin_potsw, Basin_swrad, Basin_solsta, Orad, Hru_ppt, Tmax_allrain, &
+     &    Basin_swrad, Basin_solsta, Orad, Hru_ppt, Tmax_allrain, &
      &    Solsta_flag, Radj_sppt, Radj_wppt, Ppt_rad_adj, Radmax
       USE PRMS_SOLTAB, ONLY: Soltab_potsw, Soltab_basinpotsw, Hru_cossl, Soltab_horad_potsw
       USE PRMS_SET_TIME, ONLY: Jday, Nowmonth, Summer_flag
@@ -116,7 +116,6 @@
           Orad = SNGL( Basin_orad )
         ENDIF
         Basin_swrad = Basin_swrad*Basin_area_inv
-        Basin_potsw = Basin_swrad
 
       ELSEIF ( Process(:4)=='decl' ) THEN
         Version_ddsolrad = 'ddsolrad.f90 2016-11-03 17:48:00Z'

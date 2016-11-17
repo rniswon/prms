@@ -33,7 +33,7 @@
      &    Tavgc, Hru_ppt, Hru_rain, Hru_snow, Prmx, Pptmix, Newsnow, &
      &    Precip_units, Tmax_allrain_f, Adjmix_rain, &
      &    Basin_ppt, Basin_potet, Potet, Basin_snow, Basin_rain, &
-     &    Basin_horad, Orad, Swrad, Basin_potsw, Basin_swrad, Basin_obs_ppt, &
+     &    Basin_horad, Orad, Swrad, Basin_swrad, Basin_obs_ppt, &
      &    Transp_on, Basin_transp_on, Tmax_allsnow_f
       USE PRMS_SET_TIME, ONLY: Nowmonth, Jday
       USE PRMS_SOLTAB, ONLY: Soltab_basinpotsw, Hru_cossl, Soltab_potsw
@@ -236,7 +236,6 @@
           Basin_horad = Soltab_basinpotsw(Jday)
           IF ( Orad_flag==0 ) Orad = SNGL( (DBLE(Swrad(1))*Hru_cossl(1)*Basin_horad)/Soltab_potsw(Jday,1) ) ! ??bad assumption using HRU 1
           Basin_swrad = Basin_swrad*Basin_area_inv
-          Basin_potsw = Basin_swrad
         ENDIF
         IF ( Humidity_cbh_flag==1 ) Basin_humidity = Basin_humidity*Basin_area_inv
         IF ( Windspeed_cbh_flag==1 ) Basin_windspeed = Basin_windspeed*Basin_area_inv
