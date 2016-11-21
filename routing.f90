@@ -16,6 +16,7 @@
       REAL, SAVE, ALLOCATABLE :: Ts(:), C0(:), C1(:), C2(:)
 !   Declared Variables
       DOUBLE PRECISION, SAVE :: Basin_segment_storage
+      DOUBLE PRECISION, SAVE :: Flow_to_lakes
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Seginc_ssflow(:), Seginc_sroff(:), Segment_delta_flow(:)
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Seginc_gwflow(:), Seginc_swrad(:), Seginc_potet(:)
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Hru_outflow(:), Seg_ssflow(:), Seg_sroff(:), Seg_gwflow(:)
@@ -62,7 +63,7 @@
 !***********************************************************************
       routingdecl = 0
 
-      Version_routing = 'routing.f90 2016-10-28 14:09:00Z'
+      Version_routing = 'routing.f90 2016-11-21 15:49:00Z'
       CALL print_module(Version_routing, 'Routing Initialization      ', 90)
       MODNAME = 'routing'
 
@@ -71,6 +72,10 @@
       IF ( declvar(MODNAME, 'hru_outflow', 'nhru', Nhru, 'double', &
      &     'Total flow leaving each HRU', &
      &     'cfs', Hru_outflow)/=0 ) CALL read_error(3, 'hru_outflow')
+
+      IF ( declvar(MODNAME, 'flow_to_lakes', 'one', 1, 'double', &
+     &     'Total flow to lakes (segment_type=2)', &
+     &     'cfs', Flow_to_lakes)/=0 ) CALL read_error(3, 'flow_to_lakes')
 
       ALLOCATE ( Segment_type(Nsegment) )
       IF ( declparam(MODNAME, 'segment_type', 'nsegment', 'integer', &
@@ -226,6 +231,7 @@
         Hru_outflow = 0.0D0
         Basin_segment_storage = 0.0D0
         Segment_delta_flow = 0.0D0
+        Flow_to_lakes = 0.0D0
       ENDIF
 
       Cfs2acft = Timestep_seconds/FT2_PER_ACRE
@@ -561,6 +567,7 @@
         WRITE ( Restart_outunit ) Hru_outflow
         WRITE ( Restart_outunit ) Basin_segment_storage
         WRITE ( Restart_outunit ) Segment_delta_flow
+        WRITE ( Restart_outunit ) Flow_to_lakes
       ELSE
         READ ( Restart_inunit ) module_name
         CALL check_restart(MODNAME, module_name)
@@ -573,5 +580,6 @@
         READ ( Restart_inunit ) Hru_outflow
         READ ( Restart_inunit ) Basin_segment_storage
         READ ( Restart_inunit ) Segment_delta_flow
+        READ ( Restart_inunit ) Flow_to_lakes
       ENDIF
       END SUBROUTINE routing_restart

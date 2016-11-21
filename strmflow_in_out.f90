@@ -9,7 +9,7 @@
       USE PRMS_FLOWVARS, ONLY: Basin_ssflow, Basin_cfs, Basin_cms, Basin_stflow_in, &
      &    Basin_sroff_cfs, Basin_ssflow_cfs, Basin_gwflow_cfs, Basin_stflow_out, &
      &    Seg_inflow, Seg_outflow, Seg_upstream_inflow, Seg_lateral_inflow, Flow_out
-      USE PRMS_ROUTING, ONLY: Obsin_segment, Segment_order, Tosegment, Obsout_segment, Segment_type
+      USE PRMS_ROUTING, ONLY: Obsin_segment, Segment_order, Tosegment, Obsout_segment, Segment_type, Flow_to_lakes
       USE PRMS_SRUNOFF, ONLY: Basin_sroff
       USE PRMS_OBS, ONLY: Streamflow_cfs
       IMPLICIT NONE
@@ -17,7 +17,7 @@
       EXTERNAL :: print_module
 ! Local Variables
       INTEGER :: i, iorder, toseg
-      DOUBLE PRECISION :: area_fac, Flow_to_lakes
+      DOUBLE PRECISION :: area_fac
       CHARACTER(LEN=80), SAVE :: Version_strmflow
 !***********************************************************************
       strmflow_in_out = 0
@@ -54,7 +54,7 @@
         Basin_ssflow_cfs = Basin_ssflow*area_fac
         Basin_gwflow_cfs = Basin_gwflow*area_fac
       ELSEIF ( Process(:4)=='decl' ) THEN
-        Version_strmflow = 'strmflow_in_out.f90 2016-10-28 14:14:00Z'
+        Version_strmflow = 'strmflow_in_out.f90 2016-11-21 16:01:00Z'
         CALL print_module(Version_strmflow, 'Streamflow Routing          ', 90)
       ENDIF
 

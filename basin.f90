@@ -205,8 +205,8 @@
      &       ' more than one HRU can be associated with each lake', &
      &       'none')/=0 ) CALL read_error(1, 'lake_hru_id')
         IF ( (Lake_route_flag==1 .AND. Model/=0) .OR. Model==99 ) THEN
-          ALLOCATE ( Lake_type(Nlake) )
-          IF ( declparam(MODNAME, 'lake_type', 'nlake', 'integer', &
+          ALLOCATE ( Lake_type(Numlakes) )
+          IF ( declparam(MODNAME, 'lake_type', 'numlakes', 'integer', &
      &         '1', '1', '6', &
      &         'Type of lake routing method', &
      &         'Type of lake routing method (1=Puls routing; 2=linear routing; 3=flow through;'// &
@@ -223,7 +223,7 @@
 !**********************************************************************
       INTEGER FUNCTION basinit()
       USE PRMS_BASIN
-      USE PRMS_MODULE, ONLY: Nhru, Nlake, Dprst_flag, &
+      USE PRMS_MODULE, ONLY: Nhru, Nlake, Dprst_flag, Numlakes, &
      &    Print_debug, Inputerror_flag, Model, PRMS_VERSION, Starttime, Endtime, &
      &    Lake_route_flag, Et_flag, Precip_flag, Cascadegw_flag
       IMPLICIT NONE
@@ -258,7 +258,7 @@
         IF ( getparam(MODNAME, 'lake_hru_id', Nhru, 'integer', Lake_hru_id)/=0 ) CALL read_error(1, 'lake_hru_id')
         Lake_area = 0.0D0
         IF ( Lake_route_flag==1 .AND. Model/=0 ) THEN
-          IF ( getparam(MODNAME, 'lake_type', Nlake, 'integer', Lake_type)/=0 ) CALL read_error(2, 'lake_type')
+          IF ( getparam(MODNAME, 'lake_type', Numlakes, 'integer', Lake_type)/=0 ) CALL read_error(2, 'lake_type')
         ENDIF
       ENDIF
 
@@ -378,7 +378,7 @@
         Inputerror_flag = 1
       ENDIF
       IF ( Nlake>0 ) THEN
-        DO i = 1, Numlakes_check
+        DO i = 1, Numlakes
           IF ( Lake_area(i)<DNEARZERO ) THEN
             PRINT *, 'ERROR, Lake:', i, ' has 0 area, thus no value of lake_hru_id is associated with the lake'
             Inputerror_flag = 1
@@ -390,7 +390,7 @@
             PRINT *, 'does not equal dimension nlake:', Nlake, ', number of lakes:', Numlakes_check
 !            Inputerror_flag = 1 ! make warning for now to allow PRMS-only with multiple HRU lakes
           ENDIF
-          DO i = 1, Nlake ! maybe lake_type is per lake instead of each lake ???
+          DO i = 1, Numlakes
             IF ( Lake_route_flag==1 ) THEN
               IF ( Lake_type(i)==4 .OR. Lake_type(i)==5 ) Weir_gate_flag = 1
             ENDIF

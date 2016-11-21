@@ -84,7 +84,6 @@
       IMPLICIT NONE
 !   Local Variables
       DOUBLE PRECISION, PARAMETER :: ONE_24TH = 1.0D0 / 24.0D0
-      DOUBLE PRECISION, SAVE :: Flow_to_lakes
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Currinsum(:), Pastin(:), Pastout(:)
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Outflow_ts(:), Inflow_ts(:)
       CHARACTER(LEN=9), SAVE :: MODNAME
@@ -134,7 +133,7 @@
 !***********************************************************************
       muskingum_decl = 0
 
-      Version_muskingum = 'muskingum.f90 2016-10-28 13:53:00Z'
+      Version_muskingum = 'muskingum.f90 2016-11-21 15:55:00Z'
       CALL print_module(Version_muskingum, 'Streamflow Routing          ', 90)
       MODNAME = 'muskingum'
 
@@ -203,7 +202,7 @@
       USE PRMS_OBS, ONLY: Streamflow_cfs
       USE PRMS_SET_TIME, ONLY: Cfs_conv
       USE PRMS_ROUTING, ONLY: Use_transfer_segment, Segment_delta_flow, Basin_segment_storage, &
-     &    Obsin_segment, Segment_order, Tosegment, C0, C1, C2, Ts, Ts_i, Obsout_segment, Segment_type
+     &    Obsin_segment, Segment_order, Tosegment, C0, C1, C2, Ts, Ts_i, Obsout_segment, Segment_type, Flow_to_lakes
       USE PRMS_SRUNOFF, ONLY: Basin_sroff
       USE PRMS_GWFLOW, ONLY: Basin_gwflow
       IMPLICIT NONE
@@ -298,7 +297,12 @@
           ENDIF
 
           ! Seg_outflow (the mean daily flow rate for each segment) will be the average of the hourly values.
-          Seg_outflow(iorder) = Seg_outflow(iorder) + Outflow_ts(iorder)
+          IF ( Obsout_segment(iorder)==0 ) THEN
+            Seg_outflow(iorder) = Seg_outflow(iorder) + Outflow_ts(iorder)
+          ELSE
+            Seg_outflow(iorder) = Seg_outflow(iorder) + Streamflow_cfs(Obsout_segment(iorder))
+          ENDIF
+
           ! pastout is equal to the Inflow_ts on the previous routed timestep
           Pastout(iorder) = Outflow_ts(iorder)
 
@@ -319,11 +323,7 @@
       Flow_out = 0.0D0
       Flow_to_lakes = 0.0D0
       DO i = 1, Nsegment
-        IF ( Obsout_segment(iorder)==0 ) THEN
-          Seg_outflow(i) = Seg_outflow(i) * ONE_24TH
-        ELSE
-          Seg_outflow(iorder) = Seg_outflow(iorder) + Streamflow_cfs(Obsout_segment(iorder))
-        ENDIF
+        Seg_outflow(i) = Seg_outflow(i) * ONE_24TH
         Seg_inflow(i) = Seg_inflow(i) * ONE_24TH
         Seg_upstream_inflow(i) = Currinsum(i) * ONE_24TH
 ! Flow_out is the total flow out of the basin, which allows for multiple outlets
@@ -360,7 +360,7 @@
       ! Argument
       INTEGER, INTENT(IN) :: In_out
       ! Function
-      EXTERNAL check_restart
+      EXTERNAL :: check_restart
       ! Local Variable
       CHARACTER(LEN=9) :: module_name
 !***********************************************************************
