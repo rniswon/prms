@@ -110,6 +110,7 @@
 !   Declared Parameters
       REAL, SAVE, ALLOCATABLE :: Segment_flow_init(:)
       INTEGER, SAVE, ALLOCATABLE :: Obsout_lake(:), Lake_out2(:), Nsos(:), Ratetbl_lake(:), Lake_hru(:)
+!      INTEGER, SAVE, ALLOCATABLE :: Lake_segment_id(:)
       REAL, SAVE, ALLOCATABLE :: Lake_qro(:), Lake_coef(:), Elev_outflow(:), Weir_coef(:), Weir_len(:)
       REAL, SAVE, ALLOCATABLE :: Lake_out2_a(:), Lake_out2_b(:), O2(:, :), S2(:, :)
       REAL, SAVE, ALLOCATABLE :: Lake_din1(:), Lake_init(:), Lake_vol_init(:)
@@ -191,13 +192,13 @@
 !     muskingum_lake_decl - Declare parameters and variables and allocate arrays
 !   Declared Parameters
 !     tosegment, hru_segment, obsin_segment, K_coef, x_coef, segment_type
-!     lake_type, lake_init, lake_qro, lake_din1, lake_coef, o2, s2, nsos, hru_area, lake_hru
+!     lake_type, lake_init, lake_qro, lake_din1, lake_coef, o2, s2, nsos, hru_area, lake_hru !, lake_segment_id
 !     tbl_stage, tbl_gate, lake_vol_init, rate_table, weir_coef, weir_len, elev_outflow, elevlake_init
 !     lake_out2, lake_out2_a, lake_out2_b
 !***********************************************************************
       INTEGER FUNCTION muskingum_lake_decl()
       USE PRMS_MUSKINGUM_LAKE
-      USE PRMS_MODULE, ONLY: Model, Nsegment, Init_vars_from_file, Nlake, Nratetbl, Cascade_flag
+      USE PRMS_MODULE, ONLY: Model, Nsegment, Init_vars_from_file, Nlake, Nratetbl, Cascade_flag !, Numlakes
       IMPLICIT NONE
 ! Functions
       INTEGER, EXTERNAL :: declparam, declvar, getdim
@@ -207,7 +208,7 @@
 !***********************************************************************
       muskingum_lake_decl = 0
 
-      Version_muskingum_lake = 'muskingum_lake.f90 2016-10-28 16:01:00Z'
+      Version_muskingum_lake = 'muskingum_lake.f90 2016-11-22 10:46:00Z'
       CALL print_module(Version_muskingum_lake, 'Streamflow Routing          ', 90)
       MODNAME = 'muskingum_lake'
 
@@ -399,6 +400,13 @@
      &     'Index of HRU for each lake HRU', &
      &     'Index of HRU for each lake HRU', &
      &     'none')/=0 ) CALL read_error(1, 'lake_hru')
+
+!      ALLOCATE ( Lake_segment_id(Numlakes) )
+!      IF ( declparam(MODNAME, 'lake_segment_id', 'numlakes', 'integer', &
+!     &     '0', 'bounded', 'nsegment', &
+!     &     'Index of segment for each lake', &
+!     &     'Index of segment for each lake', &
+!     &     'none')/=0 ) CALL read_error(1, 'lake_segment_id')
 
       IF ( Init_vars_from_file==0 ) THEN
         ALLOCATE ( Lake_qro(Nlake) )
@@ -683,6 +691,7 @@
       ENDIF
 
       IF ( getparam(MODNAME, 'lake_hru', Nlake, 'real', Lake_hru)/=0 ) CALL read_error(2, 'lake_hru')
+!      IF ( getparam(MODNAME, 'lake_segment_id', Numlakes, 'real', Lake_segment_id)/=0 ) CALL read_error(2, 'lake_segment_id')
 
       Secondoutflow_flag = 0
       IF ( Gate_flag==1 ) THEN
@@ -879,7 +888,7 @@
             Inputerror_flag = 1
             CYCLE
           ENDIF
-          Gwr_type(Lake_hru(j)) = 2
+          Gwr_type(Lake_hru(j)) = 2 ! ??? need to fix for nlake
           Basin_lake_stor = Basin_lake_stor + Lake_vol(j)*12.0D0
         ENDIF
       ENDDO
@@ -917,7 +926,7 @@
       EXTERNAL route_lake
 ! Local Variables
       INTEGER :: i, j, iorder, toseg, imod, tspd, lakeid, k, jj
-      DOUBLE PRECISION :: area_fac, currin, tocfs
+      DOUBLE PRECISION :: area_fac, segout, currin, tocfs
 !***********************************************************************
       muskingum_lake_run = 0
 
@@ -981,6 +990,7 @@
 ! Outflow_ts is the value from last hour
               Outflow_ts(iorder) = Inflow_ts(iorder)
             ENDIF
+            IF ( Obsout_segment(iorder)>0 ) Outflow_ts(iorder) = Streamflow_cfs(Obsout_segment(iorder))
 
             ! pastin is equal to the Inflow_ts on the previous routed timestep
             Pastin(iorder) = Inflow_ts(iorder)
@@ -1025,21 +1035,18 @@
       Flow_out = 0.0D0
       Flow_to_lakes = 0.0D0
       DO i = 1, Nsegment
-        IF ( Obsout_segment(iorder)==0 ) THEN
-          Seg_outflow(i) = Seg_outflow(i) * ONE_24TH
-        ELSE ! could cause problem to set lake segment outflow to observed value as computed below
-          Seg_outflow(iorder) = Seg_outflow(iorder) + Streamflow_cfs(Obsout_segment(iorder))
-        ENDIF
+        Seg_outflow(i) = Seg_outflow(i) * ONE_24TH
         Seg_inflow(i) = Seg_inflow(i) * ONE_24TH
+        segout = Seg_outflow(i)
         Seg_upstream_inflow(i) = Currinsum(i) * ONE_24TH
 ! Flow_out is the total flow out of the basin, which allows for multiple outlets
 ! includes closed basins (tosegment=0)
         IF ( Tosegment(i)==0 ) THEN
-          Flow_out = Flow_out + Seg_outflow(i)
+          Flow_out = Flow_out + segout
         ELSEIF ( Segment_type(i)==2 ) THEN
-          Flow_to_lakes = Flow_to_lakes + Seg_outflow(i)
+          Flow_to_lakes = Flow_to_lakes + segout
         ENDIF
-        Segment_delta_flow(i) = Segment_delta_flow(i) + Seg_inflow(i) - Seg_outflow(i)
+        Segment_delta_flow(i) = Segment_delta_flow(i) + Seg_inflow(i) - segout
 !        IF ( Segment_delta_flow(i) < 0.0D0 ) PRINT *, 'negative delta flow', Segment_delta_flow(i)
         Basin_segment_storage = Basin_segment_storage + Segment_delta_flow(i)
       ENDDO
@@ -1394,7 +1401,7 @@
       ! Argument
       INTEGER, INTENT(IN) :: In_out
       ! Function
-      EXTERNAL check_restart
+      EXTERNAL :: check_restart
       ! Local Variable
       CHARACTER(LEN=14) :: module_name
 !***********************************************************************

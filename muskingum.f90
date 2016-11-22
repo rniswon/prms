@@ -134,7 +134,7 @@
 !***********************************************************************
       muskingum_decl = 0
 
-      Version_muskingum = 'muskingum.f90 2016-10-28 13:53:00Z'
+      Version_muskingum = 'muskingum.f90 2016-11-22 10:45:00Z'
       CALL print_module(Version_muskingum, 'Streamflow Routing          ', 90)
       MODNAME = 'muskingum'
 
@@ -211,7 +211,7 @@
       INTRINSIC MOD
 ! Local Variables
       INTEGER :: i, j, iorder, toseg, imod, tspd
-      DOUBLE PRECISION :: area_fac, currin
+      DOUBLE PRECISION :: area_fac, segout, currin
 !***********************************************************************
       muskingum_run = 0
 
@@ -275,6 +275,7 @@
 ! Outflow_ts is the value from last hour
               Outflow_ts(iorder) = Inflow_ts(iorder)
             ENDIF
+            IF ( Obsout_segment(iorder)>0 ) Outflow_ts(iorder) = Streamflow_cfs(Obsout_segment(iorder))
 
             ! pastin is equal to the Inflow_ts on the previous routed timestep
             Pastin(iorder) = Inflow_ts(iorder)
@@ -319,21 +320,18 @@
       Flow_out = 0.0D0
       Flow_to_lakes = 0.0D0
       DO i = 1, Nsegment
-        IF ( Obsout_segment(iorder)==0 ) THEN
-          Seg_outflow(i) = Seg_outflow(i) * ONE_24TH
-        ELSE
-          Seg_outflow(iorder) = Seg_outflow(iorder) + Streamflow_cfs(Obsout_segment(iorder))
-        ENDIF
+        Seg_outflow(i) = Seg_outflow(i) * ONE_24TH
         Seg_inflow(i) = Seg_inflow(i) * ONE_24TH
+        segout = Seg_outflow(i)
         Seg_upstream_inflow(i) = Currinsum(i) * ONE_24TH
 ! Flow_out is the total flow out of the basin, which allows for multiple outlets
 ! includes closed basins (tosegment=0)
         IF ( Tosegment(i)==0 ) THEN
-          Flow_out = Flow_out + Seg_outflow(i)
+          Flow_out = Flow_out + segout
         ELSEIF ( Segment_type(i)==2 ) THEN
-          Flow_to_lakes = Flow_to_lakes + Seg_outflow(i)
+          Flow_to_lakes = Flow_to_lakes + segout
         ENDIF
-        Segment_delta_flow(i) = Segment_delta_flow(i) + Seg_inflow(i) - Seg_outflow(i)
+        Segment_delta_flow(i) = Segment_delta_flow(i) + Seg_inflow(i) - segout
 !        IF ( Segment_delta_flow(i) < 0.0D0 ) PRINT *, 'negative delta flow', Segment_delta_flow(i)
         Basin_segment_storage = Basin_segment_storage + Segment_delta_flow(i)
       ENDDO
@@ -360,7 +358,7 @@
       ! Argument
       INTEGER, INTENT(IN) :: In_out
       ! Function
-      EXTERNAL check_restart
+      EXTERNAL :: check_restart
       ! Local Variable
       CHARACTER(LEN=9) :: module_name
 !***********************************************************************
