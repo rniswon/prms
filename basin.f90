@@ -75,7 +75,7 @@
 !***********************************************************************
       basdecl = 0
 
-      Version_basin = 'basin.f90 2016-10-28 13:27:00Z'
+      Version_basin = 'basin.f90 2016-11-28 09:45:00Z'
       CALL print_module(Version_basin, 'Basin Definition            ', 90)
       MODNAME = 'basin'
 
@@ -157,7 +157,7 @@
       IF ( declparam(MODNAME, 'hru_lat', 'nhru', 'real', &
      &     '40.0', '-90.0', '90.0', &
      &     'HRU latitude', 'Latitude of each HRU', &
-     &     'angular degrees')/=0 ) CALL read_error(1, 'hru_lat')
+     &     'degrees North')/=0 ) CALL read_error(1, 'hru_lat')
 
       ALLOCATE ( Hru_percent_imperv(Nhru) )
       IF ( declparam(MODNAME, 'hru_percent_imperv', 'nhru', 'real', &
