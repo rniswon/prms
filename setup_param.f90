@@ -34,7 +34,7 @@
 !***********************************************************************
       setupdecl = 0
 
-      Version_setup = 'setup_param.f90 2016-10-19 11:19:00Z'
+      Version_setup = 'setup_param.f90 2016-11-28 09:44:00Z'
       CALL print_module(Version_setup, 'Parameter Setup             ', 90)
       MODNAME = 'setup'
 
@@ -97,7 +97,7 @@
       IF ( declparam(MODNAME, 'hru_lon', 'nhru', 'real', &
      &     '-105.0', '-360.0', '360.0', &
      &     'HRU longitude', 'Longitude of each HRU', &
-     &     'angular degrees')/=0 ) CALL read_error(1, 'hru_lon')
+     &     'degrees East')/=0 ) CALL read_error(1, 'hru_lon')
 
       IF ( declparam(MODNAME, 'hru_x', 'nhru', 'real', &
      &     '0.0', '-1.0E7', '1.0E7', &
