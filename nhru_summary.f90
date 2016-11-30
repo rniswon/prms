@@ -57,8 +57,8 @@
       INTEGER :: i
       CHARACTER(LEN=80), SAVE :: Version_nhru_summary
 !***********************************************************************
-      Version_nhru_summary = 'nhru_summary.f90 2016-11-15 12:42:00Z'
-      CALL print_module(Version_nhru_summary, 'Output Summary              ', 90)
+      Version_nhru_summary = 'nhru_summary.f90 2016-11-30 11:04:00Z'
+      CALL print_module(Version_nhru_summary, 'Nhru Output Summary         ', 90)
       MODNAME = 'nhru_summary'
 
       IF ( control_integer(NhruOutVars, 'nhruOutVars')/=0 ) NhruOutVars = 0
@@ -151,7 +151,7 @@
       Monthly_flag = 0
       IF ( NhruOut_freq==2 .OR. NhruOut_freq==3 .OR. NhruOut_freq==4 ) Monthly_flag = 1
 
-      IF ( NhruOut_freq==5 ) THEN
+      IF ( NhruOut_freq>4 ) THEN
         Yeardays = 0
         ALLOCATE ( Nhru_var_yearly(Nhru, NhruOutVars), Yearlyunit(NhruOutVars) )
         Nhru_var_yearly = 0.0D0
@@ -174,6 +174,10 @@
           WRITE ( Dailyunit(jj), Output_fmt2 ) (j, j=1,Nhru)
         ENDIF
         IF ( NhruOut_freq==5 ) THEN
+          fileName = NhruOutBaseFileName(:numchars(NhruOutBaseFileName))//NhruOutVar_names(jj)(:Nc_vars(jj))//'_meanyearly.csv'
+          CALL PRMS_open_output_file(Yearlyunit(jj), fileName, 'xxx', 0, ios)
+          IF ( ios/=0 ) STOP 'in nhru_summary, mean yearly'
+        ELSEIF ( NhruOut_freq==6 ) THEN
           fileName = NhruOutBaseFileName(:numchars(NhruOutBaseFileName))//NhruOutVar_names(jj)(:Nc_vars(jj))//'_yearly.csv'
           CALL PRMS_open_output_file(Yearlyunit(jj), fileName, 'xxx', 0, ios)
           IF ( ios/=0 ) STOP 'in nhru_summary, yearly'
@@ -235,7 +239,7 @@
 
       write_month = 0
       write_year = 0
-      IF ( NhruOut_freq==5 ) THEN
+      IF ( NhruOut_freq>4 ) THEN
         last_day = 0
         IF ( Nowyear==End_year .AND. Nowmonth==End_month .AND. Nowday==End_day ) last_day = 1
         IF ( Lastyear/=Nowyear .OR. last_day==1 ) THEN
@@ -245,10 +249,6 @@
                 DO j = 1, Active_hrus
                   i = Hru_route_order(j)
                   Nhru_var_yearly(i, jj) = Nhru_var_yearly(i, jj)/Yeardays
-                  IF ( Nhru_var_yearly(i, jj)>200.0D0 ) THEN
-                    PRINT *, 'glacier, HRU', j, Nhru_var_yearly(i, jj)
-                    Nhru_var_yearly(i, jj) = 200.0D0
-                  ENDIF
                 ENDDO
               ENDIF
               WRITE ( Yearlyunit(jj), Output_fmt3) Lastyear, (Nhru_var_yearly(j,jj), j=1,Nhru)
@@ -282,7 +282,7 @@
         ENDDO
       ENDIF
 
-      IF ( NhruOut_freq==5 ) THEN
+      IF ( NhruOut_freq>4 ) THEN
         DO jj = 1, NhruOutVars
           DO j = 1, Active_hrus
             i = Hru_route_order(j)
