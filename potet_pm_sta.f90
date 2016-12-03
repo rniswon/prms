@@ -159,7 +159,7 @@
         IF ( declparam(MODNAME, 'crop_coef', 'nhru,nmonths', 'real', &
      &       '1.0', '0.0', '2.0', &
      &       'Crop coefficient for each HRU', &
-     &       'Crop coefficient for each HRU', &
+     &       'Monthly (January to December) crop coefficient for each HRU', &
      &       'decimal fraction')/=0 ) CALL read_error(1, 'crop_coef')
 
         ALLOCATE ( Hru_windspeed_sta(Nhru) )
