@@ -33,7 +33,7 @@
 !   Declared Parameters and Variables - Solar Radiation
       INTEGER, SAVE :: Basin_solsta
       INTEGER, SAVE, ALLOCATABLE :: Hru_solsta(:), Hru_pansta(:)
-      DOUBLE PRECISION, SAVE :: Basin_swrad, Basin_orad, Basin_horad
+      DOUBLE PRECISION, SAVE :: Basin_potsw, Basin_swrad, Basin_orad, Basin_horad
       REAL, SAVE :: Rad_conv, Orad
       REAL, SAVE, ALLOCATABLE :: Swrad(:), Orad_hru(:)
       REAL, SAVE, ALLOCATABLE :: Ppt_rad_adj(:, :), Radmax(:, :), Radj_sppt(:), Radj_wppt(:)
@@ -129,7 +129,7 @@
 !***********************************************************************
       climateflow_decl = 0
 
-      Version_climateflow = 'climateflow.f90 2016-10-14 16:43:00Z'
+      Version_climateflow = 'climateflow.f90 2016-12-09 11:58:00Z'
       CALL print_module(Version_climateflow, 'Common States and Fluxes    ', 90)
       MODNAME = 'climateflow'
 
@@ -251,6 +251,10 @@
       IF ( declvar(Solrad_module, 'basin_horad', 'one', 1, 'double', &
      &     'Potential shortwave radiation for the basin centroid', &
      &     'Langleys', Basin_horad)/=0 ) CALL read_error(3, 'basin_horad')
+
+      IF ( declvar(Solrad_module, 'basin_potsw', 'one', 1, 'double', &
+     &     'Basin area-weighted average shortwave radiation', &
+     &     'Langleys', Basin_potsw)/=0 ) CALL read_error(3, 'basin_potsw')
 
       IF ( declvar(Solrad_module, 'basin_swrad', 'one', 1, 'double', &
      &     'Basin area-weighted average shortwave radiation', &
@@ -409,10 +413,10 @@
      &     'inches', Basin_soil_to_gw)/=0 ) CALL read_error(3, 'basin_soil_to_gw')
 
       ALLOCATE ( Soil_rechr_max(Nhru) )
-      IF ( declvar(Soilzone_module, 'soil_rechr_max', 'nhru', Nhru, 'real', &
-     &     'Maximum storage for soil recharge zone (upper portion of'// &
-     &     ' capillary reservoir where losses occur as both evaporation and transpiration)', &
-     &     'inches', Soil_rechr_max)/=0 ) CALL read_error(1, 'soil_rechr_max')
+!      IF ( declvar(Soilzone_module, 'soil_rechr_max', 'nhru', Nhru, 'real', &
+!     &     'Maximum storage for soil recharge zone (upper portion of'// &
+!     &     ' capillary reservoir where losses occur as both evaporation and transpiration)', &
+!     &     'inches', Soil_rechr_max)/=0 ) CALL read_error(1, 'soil_rechr_max')
 
 ! gwflow
       ALLOCATE ( Gwres_stor(Nhru) )
@@ -710,10 +714,9 @@
       ALLOCATE ( Soil_rechr_max_frac(Nhru) )
       IF ( declparam(Soilzone_module, 'soil_rechr_max_frac', 'nhru', 'real', &
      &     '1.0', '0.00001', '1.0', &
-     &     'Maximum storage for soil recharge zone as fraction of soil_moist_max', &
-     &     'Maximum storage for soil recharge zone (upper portion of'// &
-     &     ' capillary reservoir where losses occur as both'// &
-     &     ' evaporation and transpiration) as a fraction of soil_moist_max', &
+     &     'Fraction of capillary reservoir where losses occur as both evaporation and transpiration (soil recharge zone)', &
+     &     'Fraction of the capillary reservoir water-holding capacity (soil_moist_max) where losses occur as both'// &
+     &     ' evaporation and transpiration (upper zone of capillary reservoir) for each HRU', &
      &     'decimal fraction')/=0 ) CALL read_error(1, 'soil_rechr_max_frac')
 
       ALLOCATE ( Snowinfil_max(Nhru) )
@@ -734,20 +737,22 @@
         ALLOCATE ( Soil_rechr_init_frac(Nhru) )
         IF ( declparam(Soilzone_module, 'soil_rechr_init_frac', 'nhru', 'real', &
      &       '0.0', '0.0', '1.0', &
-     &       'Initial fraction of the soil recharge zone maximum water content', &
-     &       'Initial fraction of the soil recharge zone maximum water content for each HRU', &
+     &       'Initial fraction of available water in the soil recharge zone within the capillary reservoir', &
+     &       'Initial fraction of available water in the capillary reservoir where losses occur'// &
+     &       ' as both evaporation and transpiration (upper zone of capillary reservoir) for each HRU', &
      &       'decimal fraction')/=0 ) CALL read_error(1, 'soil_rechr_init_frac')
         ALLOCATE ( Soil_moist_init_frac(Nhru) )
         IF ( declparam(Soilzone_module, 'soil_moist_init_frac', 'nhru', 'real', &
      &       '0.0', '0.0', '1.0', &
-     &       'Initial fraction of the capillary reservoir maximum water content', &
-     &       'Initial fraction of the capillary reservoir maximum water content for each HRU', &
+     &       'Initial fraction available water in the capillary reservoir', &
+     &       'Initial fraction of available water in the capillary reservoir (fraction of soil_moist_max for each HRU', &
      &       'decimal fraction')/=0 ) CALL read_error(1, 'soil_moist_init_frac')
         ALLOCATE ( Ssstor_init_frac(Nssr) )
         IF ( declparam(Soilzone_module, 'ssstor_init_frac', 'nssr', 'real', &
      &       '0.0', '0.0', '1.0', &
-     &       'Initial fraction of the gravity and preferential-flow reservoirs maximum water content', &
-     &       'Initial fraction of the gravity and preferential-flow reservoirs maximum water content for each HRU', &
+     &       'Initial fraction of available water in the gravity plus preferential-flow reservoirs', &
+     &       'Initial fraction of available water in the gravity plus preferential-flow reservoirs'// &
+     &       ' (fraction of sat_threshold) for each HRU', &
      &       'decimal fraction')/=0 ) CALL read_error(1, 'ssstor_init_frac')
       ENDIF
 
@@ -947,6 +952,7 @@
       Swrad = 0.0
       Orad = 0.0
       Basin_horad = 0.0D0
+      Basin_potsw = 0.0D0
       Basin_swrad = 0.0D0
       Transp_on = 0
       Basin_transp_on = 0
