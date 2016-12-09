@@ -110,8 +110,8 @@
       ALLOCATE ( Obsout_segment(Nsegment) )
       IF ( declparam(MODNAME, 'obsout_segment', 'nsegment', 'integer', &
      &     '0', 'bounded', 'nobs', &
-     &     'Index of measured streamflow station that replaces outflow to a segment', &
-     &     'Index of measured streamflow station that replaces outflow to a segment', &
+     &     'Index of measured streamflow station that replaces outflow from a segment', &
+     &     'Index of measured streamflow station that replaces outflow from a segment', &
      &     'none')/=0 ) CALL read_error(1, 'obsout_segment')
 
       IF ( Strmflow_flag==3 .OR. Strmflow_flag==4 .OR. Model==99 ) THEN

@@ -72,7 +72,7 @@
 !***********************************************************************
       map_resultsdecl = 0
 
-      Version_map_results = 'map_results.f90 2016-06-01 11:46:00Z'
+      Version_map_results = 'map_results.f90 2016-12-09 11:34:00Z'
       CALL print_module(Version_map_results, 'Output Summary              ', 90)
       MODNAME = 'map_results'
 
@@ -171,6 +171,7 @@
       USE PRMS_MAP_RESULTS
       USE PRMS_MODULE, ONLY: Nhru, Print_debug, Nhrucell, Ngwcell, Inputerror_flag, MapOutON_OFF, &
      &                       Start_year, Start_month, Start_day, End_year, Parameter_check_flag
+      USE PRMS_BASIN, ONLY: NEARZERO, CLOSEZERO
       IMPLICIT NONE
       INTRINSIC ABS, DBLE
       INTEGER, EXTERNAL :: getparam, getvartype, numchars, getvarsize
@@ -336,14 +337,19 @@
           ENDDO
 
           DO i = 1, Ngwcell
-            IF ( ABS(map_frac(i)-1.0)>1.0001 ) THEN
-              IF ( map_frac(i)>1.0 ) THEN
-                PRINT *, 'ERROR, excess accounting for area of mapped spatial unit:'
+            IF ( map_frac(i)<0.0 ) THEN
+              PRINT *, 'ERROR, map_frac<0, map id:', i, ' Fraction:', map_frac(i)
+              Inputerror_flag = 1
+            ELSEIF ( map_frac(i)<CLOSEZERO ) THEN
+              CYCLE
+            ELSEIF ( ABS(map_frac(i)-1.0)>NEARZERO ) THEN
+              IF ( Print_debug>-1 ) THEN
+                IF ( map_frac(i)>1.0 ) THEN
+                  PRINT *, 'WARNING, excess accounting for area of mapped spatial unit:'
+                ELSE
+                  PRINT *, 'WARNING, incomplete accounting for area of mapped spatial unit'
+                ENDIF
                 PRINT *, '           Map id:', i, ' Fraction:', map_frac(i)
-                Inputerror_flag = 1
-              ELSEIF ( Print_debug>-1 ) THEN
-                PRINT *, 'WARNING, incomplete accounting for area of mapped spatial unit'
-                PRINT *, '         Map unit:', i, 'Fraction:', map_frac(i)
               ENDIF
             ENDIF
           ENDDO

@@ -57,8 +57,8 @@
       INTEGER :: i
       CHARACTER(LEN=80), SAVE :: Version_nhru_summary
 !***********************************************************************
-      Version_nhru_summary = 'nhru_summary.f90 2016-10-28 13:24:00Z'
-      CALL print_module(Version_nhru_summary, 'Output Summary              ', 90)
+      Version_nhru_summary = 'nhru_summary.f90 2016-11-30 11:04:00Z'
+      CALL print_module(Version_nhru_summary, 'Nhru Output Summary         ', 90)
       MODNAME = 'nhru_summary'
 
       IF ( control_integer(NhruOutVars, 'nhruOutVars')/=0 ) NhruOutVars = 0
