@@ -1109,7 +1109,7 @@
  9008 FORMAT ('WARNING, GWR', I7, ' does not cascade or receive flow', /, &
      &        9X, 'and gwr_swale_flag > 0 and type = 1,', /, 9X, &
      &        'type changed to 3 (swale)', /)
- 9009 FORMAT ('WARNING, GWR', I7, ' receives flow but does not cascade', &
+ 9009 FORMAT ('WARNING, GWR', I7, ' receives flow but does not cascade', /, &
      &        9X, 'and gwr_swale_flag > 0 and type = 1,', /, 9X, &
      &        'type changed to 3 (swale)', /)
  9010 FORMAT ('ERROR, GWR', I7, ' does not cascade or receive flow and gwr_swale_flag = 0')

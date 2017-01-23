@@ -98,7 +98,7 @@
 !***********************************************************************
       snodecl = 0
 
-      Version_snowcomp = 'snowcomp.f90 2016-11-15 14:48:00Z'
+      Version_snowcomp = 'snowcomp.f90 2016-06-16 13:25:00Z'
       CALL print_module(Version_snowcomp, 'Snow Dynamics               ', 90)
       MODNAME = 'snowcomp'
 
@@ -569,7 +569,7 @@
 !***********************************************************************
       INTEGER FUNCTION snorun()
       USE PRMS_SNOW
-      USE PRMS_MODULE, ONLY: Nhru, Print_debug
+      USE PRMS_MODULE, ONLY: Nhru, Ndepl, Print_debug
       USE PRMS_BASIN, ONLY: DNEARZERO, Hru_area, Active_hrus, Hru_type, &
      &    Basin_area_inv, Hru_route_order, Cov_type
       USE PRMS_CLIMATEVARS, ONLY: Newsnow, Pptmix, Orad, Basin_horad, Potet_sublim, &
@@ -687,13 +687,16 @@
 
           ! HRU STEP 2 - CALCULATE THE NEW SNOW COVERED AREA
           !**********************************************************
-          ! Compute snow-covered area from depletion curve
-          k = Hru_deplcrv(i)
-          ! calculate the new snow covered area
-          CALL snowcov(Iasw(i), Newsnow(i), Snowcov_area(i), &
-     &                 Snarea_curve(1, k), Pkwater_equiv(i), Pst(i), &
-     &                 Snarea_thresh(i), Net_snow(i), Scrv(i), &
-     &                 Pksv(i), Snowcov_areasv(i), Ai(i), i)
+          ! Compute snow-covered area if depletion curves are available
+          IF ( Ndepl>0 ) THEN
+            ! use the snow depletion curve for the current HRU
+            k = Hru_deplcrv(i)
+            ! calculate the new snow covered area
+            CALL snowcov(Iasw(i), Newsnow(i), Snowcov_area(i), &
+     &                   Snarea_curve(1, k), Pkwater_equiv(i), Pst(i), &
+     &                   Snarea_thresh(i), Net_snow(i), Scrv(i), &
+     &                   Pksv(i), Snowcov_areasv(i), Ai(i), i)
+          ENDIF
 
           ! HRU STEP 3 - COMPUTE THE NEW ALBEDO
           !**********************************************************
