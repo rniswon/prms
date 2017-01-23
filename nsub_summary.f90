@@ -58,7 +58,7 @@
       INTEGER :: i
       CHARACTER(LEN=80), SAVE :: Version_nsub_summary
 !***********************************************************************
-      Version_nsub_summary = 'nsub_summary.f90 2016-11-30 11:22:00Z'
+      Version_nsub_summary = 'nsub_summary.f90 2017-01-23 11:24:00Z'
       CALL print_module(Version_nsub_summary, 'Subbasin Output Summary     ', 90)
       MODNAME = 'nsub_summary'
 
@@ -98,7 +98,7 @@
 !***********************************************************************
       SUBROUTINE nsub_summaryinit()
       USE PRMS_NSUB_SUMMARY
-      USE PRMS_MODULE, ONLY: Nhru, Nsub, Inputerror_flag, MAXFILE_LENGTH, Start_year, End_year, NsubOutON_OFF
+      USE PRMS_MODULE, ONLY: Nhru, Nsub, Inputerror_flag, MAXFILE_LENGTH, Start_year, End_year
 	  USE PRMS_BASIN, ONLY: Hru_area_dble, DNEARZERO, Active_hrus, Hru_route_order
       IMPLICIT NONE
       INTRINSIC ABS
@@ -177,17 +177,19 @@
           fileName = NsubOutBaseFileName(:numchars(NsubOutBaseFileName))//NsubOutVar_names(jj)(:Nc_vars(jj))//'.csv'
           !print *, fileName
           CALL PRMS_open_output_file(Dailyunit(jj), fileName, 'xxx', 0, ios)
-          IF ( ios/=0 ) STOP 'in nsub_summary'
-          WRITE ( Dailyunit(jj), Output_fmt2 ) ( NsubOutVar_names(j)(:Nc_vars(j)), j=1,Nsub )
+          IF ( ios/=0 ) STOP 'in nsub_summary, daily'
+          WRITE ( Dailyunit(jj), Output_fmt2 ) (j, j=1,Nsub)
         ENDIF
         IF ( NsubOut_freq==5 ) THEN
           fileName = NsubOutBaseFileName(:numchars(NsubOutBaseFileName))//NsubOutVar_names(jj)(:Nc_vars(jj))//'_meanyearly.csv'
           CALL PRMS_open_output_file(Yearlyunit(jj), fileName, 'xxx', 0, ios)
           IF ( ios/=0 ) STOP 'in nsub_summary, mean yearly'
+          WRITE ( Yearlyunit(jj), Output_fmt2 ) (j, j=1,Nsub)
         ELSEIF ( NsubOut_freq==6 ) THEN
           fileName = NsubOutBaseFileName(:numchars(NsubOutBaseFileName))//NsubOutVar_names(jj)(:Nc_vars(jj))//'_yearly.csv'
           CALL PRMS_open_output_file(Yearlyunit(jj), fileName, 'xxx', 0, ios)
           IF ( ios/=0 ) STOP 'in nsub_summary, yearly'
+          WRITE ( Yearlyunit(jj), Output_fmt2 ) (j, j=1,Nsub)
         ELSEIF ( Monthly_flag==1 ) THEN
           IF ( NsubOut_freq==4 ) THEN
             fileName = NsubOutBaseFileName(:numchars(NsubOutBaseFileName))//NsubOutVar_names(jj)(:Nc_vars(jj))// &
@@ -198,7 +200,7 @@
           !print *, fileName
           CALL PRMS_open_output_file(Monthlyunit(jj), fileName, 'xxx', 0, ios)
           IF ( ios/=0 ) STOP 'in nsub_summary, monthly'
-          IF ( NsubOutON_OFF<2 ) WRITE ( Monthlyunit(jj), Output_fmt2 ) (j, j=1,Nsub)
+          WRITE ( Monthlyunit(jj), Output_fmt2 ) (j, j=1,Nsub)
         ENDIF
       ENDDO
 
@@ -217,7 +219,7 @@
 	  ENDDO
 
  9001 FORMAT ('(I4, 2(''-'',I2.2),',I6,'('',''ES10.3))')
- 9002 FORMAT ('("Date"',I6,'('',''A))')
+ 9002 FORMAT ('("Date"',I6,'('',''I4))')
  9003 FORMAT ('(I4,', I6,'('',''ES10.3))')
 
       END SUBROUTINE nsub_summaryinit
