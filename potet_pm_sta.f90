@@ -70,7 +70,7 @@
           heat_flux = 0.0 ! Irmak and others (2012) says equal to zero for daily time step ! G
 
 ! Dew point temperature (Lawrence(2005) eqn. 8), degrees C
-! Humidity_hru is input as percent so divided by 100 to be in units of decimal fraction
+! Hru_humidity_sta is input as percent so divided by 100 to be in units of decimal fraction
           A1 = 17.625
           B1 = 243.04
           t1 = A1 * Tavgc(i) / (B1 + Tavgc(i))
@@ -115,15 +115,15 @@
            Lwrad_net(i) = 4.903E-09 * (((Tmaxc(i) + 273.16)**4 + (Tminc(i) + 273.16)**4)/2.0 ) &
       &                  * (0.34 - 0.14*SQRT(Vp_actual(i)) * ((1.35*sw) / stab) - 0.35)
 
-          ! Net radiation (Irmak eqn. 8) MJ / m2 / day
-          ! 1 Langley = 0.04184 MJ/m2
+! Net radiation (Irmak eqn. 8) MJ / m2 / day
+! 1 Langley = 0.04184 MJ/m2
           net_rad = Swrad(i)*0.04184 - Lwrad_net(i) - heat_flux
 
           a = Vp_slope(i) * net_rad / elh / 1000000.0
           b = psycnst * Pm_n_coef(i,Nowmonth) * Wind_speed(Hru_windspeed_sta(i)) * vp_deficit / (Tavgc(i) + 273.0)
           c = (Vp_slope(i) + psycnst * (1.0 + Pm_d_coef(i,Nowmonth) * Wind_speed(Hru_windspeed_sta(i))))
 
-!  PM equation with corp_coef in mm/day
+!  PM equation with crop_coef in mm/day
 !          Potet(i) = (a + b)/c
           Potet(i) = Crop_coef(i,Nowmonth) * (a + b)/c
           Potet(i) = Potet(i) / 25.4
@@ -136,7 +136,7 @@
         Basin_potet = Basin_potet*Basin_area_inv
 
       ELSEIF ( Process(:4)=='decl' ) THEN
-        Version_potet = 'potet_pm_sta.f90 2016-07-20 15:37:00Z'
+        Version_potet = 'potet_pm_sta.f90 2017-01-23 11:27:00Z'
         CALL print_module(Version_potet, 'Potential Evapotranspiration', 90)
         MODNAME = 'potet_pm_sta'
 
