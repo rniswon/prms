@@ -72,7 +72,7 @@
 !***********************************************************************
       map_resultsdecl = 0
 
-      Version_map_results = 'map_results.f90 2016-06-01 11:46:00Z'
+      Version_map_results = 'map_results.f90 2017-01-23 15:29:00Z'
       CALL print_module(Version_map_results, 'Output Summary              ', 90)
       MODNAME = 'map_results'
 
@@ -336,11 +336,10 @@
           ENDDO
 
           DO i = 1, Ngwcell
-            IF ( ABS(map_frac(i)-1.0)>1.0001 ) THEN
+            IF ( ABS(map_frac(i)-1.0)>0.0001 ) THEN
               IF ( map_frac(i)>1.0 ) THEN
-                PRINT *, 'ERROR, excess accounting for area of mapped spatial unit:'
-                PRINT *, '           Map id:', i, ' Fraction:', map_frac(i)
-                Inputerror_flag = 1
+                PRINT *, 'WARNING, excess accounting for area of mapped spatial unit:'
+                PRINT *, '         Map id:', i, ' Fraction:', map_frac(i)
               ELSEIF ( Print_debug>-1 ) THEN
                 PRINT *, 'WARNING, incomplete accounting for area of mapped spatial unit'
                 PRINT *, '         Map unit:', i, 'Fraction:', map_frac(i)
