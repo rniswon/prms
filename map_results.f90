@@ -171,6 +171,7 @@
       USE PRMS_MAP_RESULTS
       USE PRMS_MODULE, ONLY: Nhru, Print_debug, Nhrucell, Ngwcell, Inputerror_flag, MapOutON_OFF, &
      &                       Start_year, Start_month, Start_day, End_year, Parameter_check_flag
+      USE PRMS_BASIN, ONLY: NEARZERO
       IMPLICIT NONE
       INTRINSIC ABS, DBLE
       INTEGER, EXTERNAL :: getparam, getvartype, numchars, getvarsize
@@ -336,11 +337,16 @@
           ENDDO
 
           DO i = 1, Ngwcell
-            IF ( ABS(map_frac(i)-1.0)>0.0001 ) THEN
-              IF ( map_frac(i)>1.0 ) THEN
-                PRINT *, 'WARNING, excess accounting for area of mapped spatial unit:'
-                PRINT *, '         Map id:', i, ' Fraction:', map_frac(i)
-              ELSEIF ( Print_debug>-1 ) THEN
+            IF ( map_frac(i)<0.0 ) THEN
+              PRINT *, 'ERROR, accounting for area of mapped spatial unit is negative:'
+              PRINT *, '       Map id:', i, ' Fraction:', map_frac(i)
+            ELSEIF ( map_frac(i)<NEARZERO ) THEN
+              CYCLE              
+            ELSEIF ( map_frac(i)>1.0001 ) THEN
+              PRINT *, 'WARNING, excess accounting for area of mapped spatial unit:'
+              PRINT *, '         Map id:', i, ' Fraction:', map_frac(i)
+            ELSEIF ( map_frac(i)<0.9999 ) THEN
+              IF ( Print_debug>-1 ) THEN
                 PRINT *, 'WARNING, incomplete accounting for area of mapped spatial unit'
                 PRINT *, '         Map unit:', i, 'Fraction:', map_frac(i)
               ENDIF
