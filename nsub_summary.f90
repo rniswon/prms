@@ -333,7 +333,7 @@
         DO jj = 1, NsubOutVars
           DO j = 1, Active_hrus
             i = Hru_route_order(j)
-            k = Hru_subbasin(j)
+            k = Hru_subbasin(i)
             IF ( k>0 ) Nsub_var_daily(k, jj) = Nsub_var_daily(k, jj) + DBLE( Nhru_var_daily(i, jj) )*Hru_area_dble(i)
           ENDDO
           DO k = 1, Nsub
