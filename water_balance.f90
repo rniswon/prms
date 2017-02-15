@@ -53,7 +53,7 @@
 ! Local Variables
       CHARACTER(LEN=80), SAVE :: Version_water_balance
 !***********************************************************************
-      Version_water_balance = 'water_balance.f90 2016-10-14 16:26:00Z'
+      Version_water_balance = 'water_balance.f90 2016-06-03 12:58:00Z'
       CALL print_module(Version_water_balance, 'Water Balance Computations  ', 90 )
       MODNAME_WB = 'water_balance'
 
@@ -110,9 +110,9 @@
  9004 FORMAT ('    Date     Water Bal last store  GWR store', &
               '   GW input    GW flow    GW sink GW upslope minarea_in   downflow')
  9005 FORMAT ('    Date     Water Bal     Robal      Sroff      Infil  Impervevap Impervstor Dprst_evap Dprst_seep', &
-     &        '   Perv Sro Imperv Sro  Dprst Sro')
+     &        '   Perv Sro Imperv Sro  Dprst Sro  CFGI Sro')
  9006 FORMAT ('    Date     Water Bal     Robal      Sroff      Infil  Impervevap Impervstor Dprst_evap Dprst_seep', &
-     &        '   Perv Sro Imperv Sro  Dprst Sro  Sroffdown  Srofflake')
+     &        '   Perv Sro Imperv Sro  Dprst Sro  Sroffdown  Srofflake  CFGI Sro')
  9007 FORMAT ('    Date     Water Bal  Snowpack    Snowmelt   Snowevap  Snowcover' )
 
       END SUBROUTINE water_balance_decl
@@ -164,7 +164,7 @@
      &    Basin_dprst_evap, Basin_dprst_seep, Basin_sroff, Hru_impervevap, Dprst_seep_hru, &
      &    Dprst_evap_hru, Dprst_sroff_hru, Dprst_insroff_hru, &
      &    Sro_to_dprst_perv, Dprst_area_clos, Hortonian_flow, Dprst_in, Hru_sroffp, Hru_sroffi, Imperv_stor_ante, &
-     &    Dprst_stor_ante, Use_sroff_transfer
+     &    Dprst_stor_ante, Use_sroff_transfer, Basin_cfgi_sroff
       USE PRMS_SOILZONE, ONLY: Swale_actet, Dunnian_flow, Basin_sz2gw, &
      &    Perv_actet, Cap_infil_tot, Pref_flow_infil, Cap_waterin, Upslope_interflow, &
      &    Upslope_dunnianflow, Pref_flow, Pref_flow_stor, Soil_lower, Gvr2pfr, Basin_ssin, &
@@ -257,6 +257,7 @@
               robal = robal + Net_rain(i)
             ENDIF
             !IF ( Net_snow(i)<NEARZERO ) robal = robal + Net_rain(i)
+            !??  IF ( frzen==1 ) robal = robal + Net_rain(i)
           ENDIF
         ENDIF
         IF ( Cascade_flag==1 ) robal = robal + SNGL( Upslope_hortonian(i) - Hru_hortn_cascflow(i) )
@@ -425,19 +426,19 @@
      &                         Basin_snowmelt, Basin_snowevap, Basin_snowcov
 
 ! srunoff
-      brobal = Basin_sroff - Basin_sroffp - Basin_sroffi - Basin_dprst_sroff
+      brobal = Basin_sroff - Basin_sroffp - Basin_sroffi - Basin_dprst_sroff - Basin_cfgi_sroff
       IF ( Cascade_flag==1 ) THEN
         brobal = brobal + Basin_sroff_down
         WRITE ( SROUNIT, 9002 ) Nowyear, Nowmonth, Nowday, basin_robal, &
      &          brobal, Basin_sroff, Basin_infil, Basin_imperv_evap, &
      &          Basin_imperv_stor, Basin_dprst_evap, Basin_dprst_seep, &
      &          Basin_sroffp, Basin_sroffi, Basin_dprst_sroff, &
-     &          Basin_sroff_down, Basin_hortonian_lakes
+     &          Basin_sroff_down, Basin_hortonian_lakes, Basin_cfgi_sroff
       ELSE
         WRITE ( SROUNIT, 9002 ) Nowyear, Nowmonth, Nowday, basin_robal, &
      &          brobal, Basin_sroff, Basin_infil, Basin_imperv_evap, &
      &          Basin_imperv_stor, Basin_dprst_evap, Basin_dprst_seep, &
-     &          Basin_sroffp, Basin_sroffi, Basin_dprst_sroff
+     &          Basin_sroffp, Basin_sroffi, Basin_dprst_sroff, Basin_cfgi_sroff
       ENDIF
       IF ( DABS(basin_robal)>DSMALL ) THEN
         WRITE ( BALUNT, 9003 ) 'possible srunoff basin water balance ERROR', &

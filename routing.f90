@@ -16,7 +16,9 @@
       REAL, SAVE, ALLOCATABLE :: Ts(:), C0(:), C1(:), C2(:)
 !   Declared Variables
       DOUBLE PRECISION, SAVE :: Basin_segment_storage
-      DOUBLE PRECISION, SAVE :: Flow_to_lakes
+      DOUBLE PRECISION, SAVE :: Flow_to_lakes, Flow_to_ocean, Flow_to_great_lakes, Flow_out_region
+      DOUBLE PRECISION, SAVE :: Flow_in_region, Flow_in_nation, Flow_headwater, Flow_out_NHM
+      DOUBLE PRECISION, SAVE :: Flow_in_great_lakes, Flow_replacement, Flow_terminus
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Seginc_ssflow(:), Seginc_sroff(:), Segment_delta_flow(:)
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Seginc_gwflow(:), Seginc_swrad(:), Seginc_potet(:)
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Hru_outflow(:), Seg_ssflow(:), Seg_sroff(:), Seg_gwflow(:)
@@ -63,7 +65,7 @@
 !***********************************************************************
       routingdecl = 0
 
-      Version_routing = 'routing.f90 2016-11-21 15:49:00Z'
+      Version_routing = 'routing.f90 2017-02-14 16:47:00Z'
       CALL print_module(Version_routing, 'Routing Initialization      ', 90)
       MODNAME = 'routing'
 
@@ -77,16 +79,66 @@
      &     'Total flow to lakes (segment_type=2)', &
      &     'cfs', Flow_to_lakes)/=0 ) CALL read_error(3, 'flow_to_lakes')
 
+      IF ( declvar(MODNAME, 'flow_terminus', 'one', 1, 'double', &
+     &     'Total flow to terminus segments (segment_type=9)', &
+     &     'cfs', Flow_terminus)/=0 ) CALL read_error(3, 'flow_terminus')
+
+      IF ( declvar(MODNAME, 'flow_to_ocean', 'one', 1, 'double', &
+     &     'Total flow to oceans (segment_type=8)', &
+     &     'cfs', Flow_to_ocean)/=0 ) CALL read_error(3, 'flow_to_ocean')
+
+      IF ( declvar(MODNAME, 'flow_to_great_lakes', 'one', 1, 'double', &
+     &     'Total flow to Great Lakes (segment_type=11)', &
+     &     'cfs', Flow_to_great_lakes)/=0 ) CALL read_error(3, 'Flow_to_great_lakes')
+
+      IF ( declvar(MODNAME, 'flow_out_region', 'one', 1, 'double', &
+     &     'Total flow out of region (segment_type=7)', &
+     &     'cfs', Flow_out_region)/=0 ) CALL read_error(3, 'flow_out_region')
+
+      IF ( declvar(MODNAME, 'flow_out_NHM', 'one', 1, 'double', &
+     &     'Total flow out of model domain to Mexico or Canada (segment_type=5)', &
+     &     'cfs', Flow_out_NHM)/=0 ) CALL read_error(3, 'flow_out_NHM')
+
+      IF ( declvar(MODNAME, 'flow_in_region', 'one', 1, 'double', &
+     &     'Total flow into region (segment_type=6)', &
+     &     'cfs', Flow_in_region)/=0 ) CALL read_error(3, 'flow_in_region')
+
+      IF ( declvar(MODNAME, 'flow_in_nation', 'one', 1, 'double', &
+     &     'Total flow into model domain from Mexico or Canada (segment_type=4)', &
+     &     'cfs', Flow_in_nation)/=0 ) CALL read_error(3, 'flow_in_nation')
+
+      IF ( declvar(MODNAME, 'flow_headwater', 'one', 1, 'double', &
+     &     'Total flow out of headwater segments (segment_type=1)', &
+     &     'cfs', Flow_headwater)/=0 ) CALL read_error(3, 'flow_headwater')
+
+      IF ( declvar(MODNAME, 'flow_in_great_lakes', 'one', 1, 'double', &
+     &     'Total flow out into model domain from Great Lakes (segment_type=10)', &
+     &     'cfs', Flow_in_great_lakes)/=0 ) CALL read_error(3, 'flow_in_great_lakes')
+
+      IF ( declvar(MODNAME, 'flow_replacement', 'one', 1, 'double', &
+     &     'Total flow out from replacement flow (segment_type=3)', &
+     &     'cfs', Flow_replacement)/=0 ) CALL read_error(3, 'flow_replacement')
+
+      ! 0 = normal; 1 = headwater; 2 = lake; 3 = replacement flow; 4 = inbound to nation;
+      ! 5 = outbound from nation; 6 = inbound to region; 7 = outbound from region;
+      ! 8 = drains to ocean; 9 = sink (terminus to soil); 10 = inbound from Great Lakes;
+      ! 11 = outbound to Great Lakes; 12 = ephemeral; + 100 user updated; 1000 user virtual segment
+      ! 100 = user normal; 101 - 108 = not used; 109 sink (tosegment used by Lumen)
       ALLOCATE ( Segment_type(Nsegment) )
       IF ( declparam(MODNAME, 'segment_type', 'nsegment', 'integer', &
-     &     '0', '0', '3', &
+     &     '0', '0', '111', &
      &     'Segment type', &
-     &     'Segment type (0=segment; 1=diversion; 2=lake; 3=replace inflow)', &
+     &     'Segment type (0=segment; 1=headwater; 2=lake; 3=replace inflow; 4=inbound to NHM;'// &
+     &     ' 5=outbound from NHM; 6=inbound to region; 7=outbound from region; 8=drains to ocean;'// &
+     &     ' 9=sink; 10=inbound from Great Lakes; 11=outbound to Great Lakes)', &
      &     'none')/=0 ) CALL read_error(1, 'segment_type')
 
+      ! user updated values if different than tosegment_orig
+      ! -5 = outbound from NHM; -6 = inbound from region; -7 = outbound from region;
+      ! -8 = drains to ocean; -11 = drains to Great Lake
       ALLOCATE ( Tosegment(Nsegment) )
       IF ( declparam(MODNAME, 'tosegment', 'nsegment', 'integer', &
-     &     '0', 'bounded', 'nsegment', &
+     &     '0', '-11', '1000000', &
      &     'The index of the downstream segment', &
      &     'Index of downstream segment to which the segment'// &
      &     ' streamflow flows, for segments that do not flow to another segment enter 0', &
@@ -206,6 +258,7 @@
       USE PRMS_BASIN, ONLY: FT2_PER_ACRE, DNEARZERO, Active_hrus, Hru_route_order, Hru_area_dble, NEARZERO !, Active_area
       IMPLICIT NONE
 ! Functions
+      INTRINSIC MOD
       INTEGER, EXTERNAL :: getparam
       EXTERNAL :: read_error
 ! Local Variable
@@ -231,12 +284,25 @@
         Hru_outflow = 0.0D0
         Basin_segment_storage = 0.0D0
         Segment_delta_flow = 0.0D0
+        Flow_to_ocean = 0.0D0
+        Flow_to_great_lakes = 0.0D0
+        Flow_out_region = 0.0D0
+        Flow_out_NHM = 0.0D0
+        Flow_terminus = 0.0D0
         Flow_to_lakes = 0.0D0
+        Flow_in_nation = 0.0D0
+        Flow_in_region = 0.0D0
+        Flow_headwater = 0.0D0
+        Flow_in_great_lakes = 0.0D0
+        Flow_replacement = 0.0D0
       ENDIF
 
       Cfs2acft = Timestep_seconds/FT2_PER_ACRE
 
       IF ( getparam(MODNAME, 'segment_type', Nsegment, 'integer', Segment_type)/=0 ) CALL read_error(2, 'segment_type')
+      DO i = 1, Nsegment
+        Segment_type(i) = MOD( Segment_type(i), 100 )
+      ENDDO
 
       IF ( getparam(MODNAME, 'tosegment', Nsegment, 'integer', Tosegment)/=0 ) CALL read_error(2, 'tosegment')
       IF ( getparam(MODNAME, 'hru_segment', Nhru, 'integer', Hru_segment)/=0 ) CALL read_error(2, 'hru_segment')
@@ -567,7 +633,8 @@
         WRITE ( Restart_outunit ) Hru_outflow
         WRITE ( Restart_outunit ) Basin_segment_storage
         WRITE ( Restart_outunit ) Segment_delta_flow
-        WRITE ( Restart_outunit ) Flow_to_lakes
+        WRITE ( Restart_outunit ) Flow_to_ocean, Flow_to_great_lakes, Flow_out_region, Flow_out_NHM, Flow_terminus
+        WRITE ( Restart_outunit ) Flow_to_lakes, Flow_in_nation, Flow_in_region, Flow_headwater, Flow_in_great_lakes, Flow_replacement
       ELSE
         READ ( Restart_inunit ) module_name
         CALL check_restart(MODNAME, module_name)
@@ -580,6 +647,7 @@
         READ ( Restart_inunit ) Hru_outflow
         READ ( Restart_inunit ) Basin_segment_storage
         READ ( Restart_inunit ) Segment_delta_flow
-        READ ( Restart_inunit ) Flow_to_lakes
+        READ ( Restart_inunit ) Flow_to_ocean, Flow_to_great_lakes, Flow_out_region, Flow_out_NHM, Flow_terminus
+        READ ( Restart_inunit ) Flow_to_lakes, Flow_in_nation, Flow_in_region, Flow_headwater, Flow_in_great_lakes, Flow_replacement
       ENDIF
       END SUBROUTINE routing_restart

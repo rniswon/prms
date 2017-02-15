@@ -70,7 +70,7 @@
 !***********************************************************************
       subdecl = 0
 
-      Version_subbasin = 'subbasin.f90 2016-10-17 17:18:00Z'
+      Version_subbasin = 'subbasin.f90 2017-02-15 10:39:00Z'
       CALL print_module(Version_subbasin, 'Output Summary              ', 90)
       MODNAME = 'subbasin'
 
@@ -546,8 +546,8 @@
           Subinc_tmaxc(k) = Subinc_tmaxc(k) + DBLE(Tmaxc(j))*harea
           Subinc_tavgc(k) = Subinc_tavgc(k) + DBLE(Tavgc(j))*harea
           Subinc_recharge(k) = Subinc_recharge(k) + Recharge(j)*harea
-          Subinc_szstor_frac(k) = Subinc_szstor_frac(k) + Soil_moist_frac(j)*harea
-          Subinc_capstor_frac(k) = Cpr_stor_frac(k) + Recharge(j)*harea
+          Subinc_szstor_frac(k) = Subinc_szstor_frac(k) + Soil_moist_frac(j)
+          Subinc_capstor_frac(k) = Subinc_capstor_frac(k) + Cpr_stor_frac(k)
           Subinc_stor(k) = Subinc_stor(k) + soilstor + snowstor + landstor
           IF ( Model/=0 ) THEN
             gwq = DBLE(Gwres_flow(j))*harea

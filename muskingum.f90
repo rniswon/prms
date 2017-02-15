@@ -133,7 +133,7 @@
 !***********************************************************************
       muskingum_decl = 0
 
-      Version_muskingum = 'muskingum.f90 2016-11-22 12:41:00Z'
+      Version_muskingum = 'muskingum.f90 2017-02-14 16:22:00Z'
       CALL print_module(Version_muskingum, 'Streamflow Routing          ', 90)
       MODNAME = 'muskingum'
 
@@ -202,14 +202,16 @@
       USE PRMS_OBS, ONLY: Streamflow_cfs
       USE PRMS_SET_TIME, ONLY: Cfs_conv
       USE PRMS_ROUTING, ONLY: Use_transfer_segment, Segment_delta_flow, Basin_segment_storage, &
-     &    Obsin_segment, Segment_order, Tosegment, C0, C1, C2, Ts, Ts_i, Obsout_segment, Segment_type, Flow_to_lakes
+     &    Obsin_segment, Segment_order, Tosegment, C0, C1, C2, Ts, Ts_i, Obsout_segment, &
+     &    Flow_to_ocean, Flow_to_great_lakes, Flow_out_region, Flow_out_NHM, Segment_type, Flow_terminus, &
+     &    Flow_to_lakes, Flow_replacement, Flow_in_region, Flow_in_nation, Flow_headwater, Flow_in_great_lakes
       USE PRMS_SRUNOFF, ONLY: Basin_sroff
       USE PRMS_GWFLOW, ONLY: Basin_gwflow
       IMPLICIT NONE
 ! Functions
       INTRINSIC MOD
 ! Local Variables
-      INTEGER :: i, j, iorder, toseg, imod, tspd
+      INTEGER :: i, j, iorder, toseg, imod, tspd, segtype
       DOUBLE PRECISION :: area_fac, segout, currin
 !***********************************************************************
       muskingum_run = 0
@@ -274,7 +276,6 @@
 ! Outflow_ts is the value from last hour
               Outflow_ts(iorder) = Inflow_ts(iorder)
             ENDIF
-            IF ( Obsout_segment(iorder)>0 ) Outflow_ts(iorder) = Streamflow_cfs(Obsout_segment(iorder))
 
             ! pastin is equal to the Inflow_ts on the previous routed timestep
             Pastin(iorder) = Inflow_ts(iorder)
@@ -283,6 +284,8 @@
 ! can be computed next routing timestep.
             Inflow_ts(iorder) = 0.0D0
           ENDIF
+
+          IF ( Obsout_segment(iorder)>0 ) Outflow_ts(iorder) = Streamflow_cfs(Obsout_segment(iorder))
 
           ! water-use removed/added in routing module
           ! check for negative flow
@@ -318,17 +321,51 @@
       Basin_segment_storage = 0.0D0
       Flow_out = 0.0D0
       Flow_to_lakes = 0.0D0
+      Flow_to_ocean = 0.0D0
+      Flow_to_great_lakes = 0.0D0
+      Flow_out_region = 0.0D0
+      Flow_out_NHM = 0.0D0
+      Flow_in_region = 0.0D0
+      Flow_terminus = 0.0D0
+      Flow_in_nation = 0.0D0
+      Flow_headwater = 0.0D0
+      Flow_in_great_lakes = 0.0D0
+      Flow_replacement = 0.0D0
       DO i = 1, Nsegment
         Seg_outflow(i) = Seg_outflow(i) * ONE_24TH
         segout = Seg_outflow(i)
+        segtype = Segment_type(i)
         Seg_inflow(i) = Seg_inflow(i) * ONE_24TH
         Seg_upstream_inflow(i) = Currinsum(i) * ONE_24TH
 ! Flow_out is the total flow out of the basin, which allows for multiple outlets
 ! includes closed basins (tosegment=0)
-        IF ( Tosegment(i)==0 ) THEN
-          Flow_out = Flow_out + segout
-        ELSEIF ( Segment_type(i)==2 ) THEN
+        IF ( segtype==1 ) THEN
+          Flow_headwater = Flow_headwater + segout
+        ELSEIF ( segtype==2 ) THEN
           Flow_to_lakes = Flow_to_lakes + segout
+        ELSEIF ( segtype==3 ) THEN
+          Flow_replacement = Flow_replacement + segout
+        ELSEIF ( segtype==4 ) THEN
+          Flow_in_nation = Flow_in_nation + segout
+        ELSEIF ( segtype==5 ) THEN
+          Flow_out_NHM = Flow_out_NHM + segout
+        ELSEIF ( segtype==6 ) THEN
+          Flow_in_region = Flow_in_region + segout
+        ELSEIF ( segtype==7 ) THEN
+          Flow_out_region = Flow_out_region + segout
+        ELSEIF ( segtype==8 ) THEN
+          Flow_to_ocean = Flow_to_ocean + segout
+        ELSEIF ( segtype==9 ) THEN
+          Flow_terminus = Flow_terminus + segout
+        ELSEIF ( segtype==10 ) THEN
+          Flow_in_great_lakes = Flow_in_great_lakes + segout
+        ELSEIF ( segtype==11 ) THEN
+          Flow_to_great_lakes = Flow_to_great_lakes + segout
+        ENDIF
+        IF ( toseg==0 ) THEN
+          Flow_out = Flow_out + segout
+        ELSE
+          Seg_upstream_inflow(toseg) = Seg_upstream_inflow(toseg) + segout
         ENDIF
         Segment_delta_flow(i) = Segment_delta_flow(i) + Seg_inflow(i) - segout
 !        IF ( Segment_delta_flow(i) < 0.0D0 ) PRINT *, 'negative delta flow', Segment_delta_flow(i)
@@ -336,7 +373,7 @@
       ENDDO
 
       area_fac = Cfs_conv/Basin_area_inv
-      Basin_stflow_in = Basin_sroff + Basin_gwflow + Basin_ssflow ! not equal to stflow_out if replacement flows
+      Basin_stflow_in = Basin_sroff + Basin_gwflow + Basin_ssflow ! not equal to basin_stflow_out if replacement flows
       Basin_cfs = Flow_out
       Basin_stflow_out = Basin_cfs / area_fac
       Basin_cms = Basin_cfs*CFS2CMS_CONV

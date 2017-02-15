@@ -3,7 +3,18 @@
 ! non-linear (smidx) and linear (carea) variable-source-area method
 ! Combinded smidx and carea modules 3/12/2013
 !
+!     version: 2.1 combined with srunoff_cfgi.f from M.C.Mastin
+!          includes glacr_melt for HRU's w/ glaciers,IE: hru_type(HRU#)=4
+!          modified 6/98 by JJ Vaccaro
+!      MODIFIED 5/00 by JJ Vaccaro to account for irrigation application
+!      MODIFIED 9/04 by M.C.Mastin to include a Continuous Frozen Ground
+!         Index (cfgi) that shuts off infiltration once the index reaches
+!         a threshold value (parameter cfgi_thrshld). A daily decay of
+!         the index is defined by cfgi_decay parameter.
 !     version: 2.2 added cascading flow for infiltration and runoff
+!
+! rsr, 10/1/2008 added Vaccaro code
+! rsr, 10/21/2008 added frozen ground code
 ! rsr, 10/30/2008 added depression storage code
 ! rsr, 04/11/2011 changed so dprst_area to be a parameter (does not change)
 ! rsr, 07/1/2013 combined smidx and carea into one module
@@ -18,7 +29,7 @@
       REAL, SAVE, ALLOCATABLE :: Carea_dif(:), Imperv_stor_ante(:)
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Dprst_stor_ante(:)
       REAL, SAVE :: Srp, Sri, Perv_frac, Imperv_frac, Hruarea_imperv, Hruarea
-      DOUBLE PRECISION, SAVE :: Hruarea_dble, Basin_apply_sroff
+      DOUBLE PRECISION, SAVE :: Hruarea_dble, Basin_apply_sroff, Basin_cfgi_sroff
       INTEGER, SAVE :: Use_sroff_transfer
 !   Declared Variables
       DOUBLE PRECISION, SAVE :: Basin_sroff_down, Basin_sroff_upslope
@@ -32,7 +43,10 @@
       REAL, SAVE, ALLOCATABLE :: Hortonian_flow(:)
       REAL, SAVE, ALLOCATABLE :: Hru_impervevap(:), Hru_impervstor(:)
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Strm_seg_in(:), Hortonian_lakes(:), Hru_hortn_cascflow(:)
+      REAL, SAVE, ALLOCATABLE :: Cfgi(:), Cfgi_prev(:)
+      INTEGER, SAVE, ALLOCATABLE :: Frozen(:)
 !   Declared Parameters
+      REAL, SAVE :: Cfgi_thrshld, Cfgi_decay
       REAL, SAVE, ALLOCATABLE :: Smidx_coef(:), Smidx_exp(:)
       REAL, SAVE, ALLOCATABLE :: Carea_min(:), Carea_max(:)
 !   Declared Parameters for Depression Storage
@@ -80,11 +94,12 @@
 !   Declared Parameters
 !     smidx_coef, smidx_exp, carea_max, imperv_stor_max, snowinfil_max
 !     hru_area, soil_moist_max, soil_rechr_max, carea_min
+!     cfgi_thrshld, cfgi_decay
 !***********************************************************************
       INTEGER FUNCTION srunoffdecl()
       USE PRMS_SRUNOFF
       USE PRMS_MODULE, ONLY: Model, Dprst_flag, Nhru, Nsegment, Print_debug, &
-     &    Cascade_flag, Sroff_flag, Nlake, Init_vars_from_file, Call_cascade
+     &    Cascade_flag, Sroff_flag, Nlake, Init_vars_from_file, Call_cascade, Frozen_flag
       IMPLICIT NONE
 ! Functions
       INTEGER, EXTERNAL :: declvar, declparam
@@ -94,7 +109,7 @@
 !***********************************************************************
       srunoffdecl = 0
 
-      Version_srunoff = 'srunoff.f90 2016-10-14 16:29:00Z'
+      Version_srunoff = 'srunoff.f90 2016-07-22 17:14:00Z'
       IF ( Sroff_flag==1 ) THEN
         MODNAME = 'srunoff_smidx'
       ELSE
@@ -284,6 +299,36 @@
      &       'cfs', Strm_seg_in)/=0 ) CALL read_error(3,'strm_seg_in')
       ENDIF
 
+! frozen ground variables and parameters
+      IF ( Frozen_flag==1 .OR. Model==99 ) THEN
+        ALLOCATE ( Frozen(Nhru) )
+        IF ( declvar(MODNAME, 'frozen', 'nhru', Nhru, 'integer', &
+     &       'Flag for frozen ground (0=no; 1=yes)', &
+     &       'none', Frozen)/=0 ) CALL read_error(3, 'frozen')
+
+        ALLOCATE ( Cfgi(Nhru) )
+        IF ( declvar(MODNAME, 'cfgi', 'nhru', Nhru, 'real', &
+     &       'Continuous Frozen Ground Index', &
+     &       'index', Cfgi)/=0 ) CALL read_error(3, 'cfgi')
+
+        ALLOCATE ( Cfgi_prev(Nhru) )
+        IF ( declvar(MODNAME, 'cfgi_prev', 'nhru', Nhru, 'real', &
+     &       'Continuous Frozen Ground Index from previous day', &
+     &       'index', Cfgi_prev)/=0 ) CALL read_error(3, 'cfgi_prev')
+
+        IF ( declparam(MODNAME, 'cfgi_decay', 'one', 'real', &
+     &       '0.97', '0.01', '1.0', &
+     &       'CFGI daily decay of index, value of 1.0 is no decay', &
+     &       'CFGI daily decay of index, value of 1.0 is no decay', &
+     &       'decimal fraction')/=0 ) CALL read_error(1, 'cfgi_decay')
+
+        IF ( declparam(MODNAME, 'cfgi_thrshld', 'one', 'real', &
+     &       '83.0', '1.0', '500.0', &
+     &       'CFGI threshold value indicating frozen soil', &
+     &       'CFGI threshold value indicating frozen soil', &
+     &       'index')/=0 ) CALL read_error(1, 'cfgi_thrshld')
+      ENDIF
+
 ! Declare parameters
       IF ( Sroff_flag==1 .OR. Model==99 ) THEN
         ALLOCATE ( Smidx_coef(Nhru) )
@@ -428,7 +473,8 @@
       INTEGER FUNCTION srunoffinit()
       USE PRMS_SRUNOFF
       USE PRMS_MODULE, ONLY: Dprst_flag, Nhru, Nlake, Cascade_flag, Sroff_flag, &
-     &    Parameter_check_flag, Print_debug, Init_vars_from_file, Call_cascade, Water_use_flag
+     &    Parameter_check_flag, Print_debug, Init_vars_from_file, Call_cascade, &
+     &    Water_use_flag, Frozen_flag
       USE PRMS_BASIN, ONLY: Active_hrus, Hru_route_order
       USE PRMS_FLOWVARS, ONLY: Soil_moist_max
       IMPLICIT NONE
@@ -476,6 +522,12 @@
           Upslope_hortonian = 0.0D0
           Hru_hortn_cascflow = 0.0D0
           IF ( Nlake>0 ) Hortonian_lakes = 0.0D0
+        ENDIF
+
+        IF ( Frozen_flag==1 ) THEN
+          Frozen = 0
+          Cfgi = 0.0
+          Cfgi_prev = 0.0
         ENDIF
       ENDIF
 
@@ -525,6 +577,12 @@
 !     &         'carea_max very sensitive for those HRUs'
 !      ENDIF
 
+! Frozen soil parameters
+      IF ( Frozen_flag==1 ) THEN
+        IF ( getparam(MODNAME, 'cfgi_thrshld', 1, 'real', Cfgi_thrshld)/=0 ) CALL read_error(2, 'cfgi_thrshld')
+        IF ( getparam(MODNAME, 'cfgi_decay', 1, 'real', Cfgi_decay)/=0 ) CALL read_error(2, 'cfgi_decay')
+      ENDIF
+
 ! Depression Storage parameters and variables:
       IF ( Dprst_flag==1 ) CALL dprst_init()
 
@@ -541,24 +599,25 @@
 !***********************************************************************
       INTEGER FUNCTION srunoffrun()
       USE PRMS_SRUNOFF
-      USE PRMS_MODULE, ONLY: Dprst_flag, Cascade_flag, Call_cascade, Print_debug
+      USE PRMS_MODULE, ONLY: Dprst_flag, Cascade_flag, Call_cascade, Print_debug, Frozen_flag
       USE PRMS_BASIN, ONLY: Active_hrus, Hru_route_order, &
      &    Hru_perv, Hru_imperv, Hru_percent_imperv, Hru_frac_perv, &
      &    Dprst_area_max, Hru_area, Hru_type, Basin_area_inv, &
      &    Dprst_area_clos_max, Dprst_area_open_max, DNEARZERO, CLOSEZERO, Hru_area_dble
-      USE PRMS_CLIMATEVARS, ONLY: Potet
+      USE PRMS_CLIMATEVARS, ONLY: Potet, Tavgc
       USE PRMS_FLOWVARS, ONLY: Sroff, Infil, Imperv_stor, Pkwater_equiv, Dprst_vol_open, Dprst_vol_clos, &
      &    Imperv_stor_max, Snowinfil_max
       USE PRMS_CASCADE, ONLY: Ncascade_hru
       USE PRMS_INTCP, ONLY: Net_rain, Net_snow, Net_ppt, Hru_intcpevap, Net_apply
-      USE PRMS_SNOW, ONLY: Snow_evap, Snowcov_area, Snowmelt
+      USE PRMS_SNOW, ONLY: Snow_evap, Snowcov_area, Snowmelt, Pk_depth
       IMPLICIT NONE
       INTRINSIC SNGL, DBLE
       EXTERNAL imperv_et, compute_infil, run_cascade_sroff, dprst_comp, perv_comp
 ! Local Variables
-      INTEGER :: i, k, dprst_chk
+      INTEGER :: i, k, dprst_chk, frzen
       REAL :: srunoff, avail_et, hperv, sra
       DOUBLE PRECISION :: hru_sroff_down, runoff, apply_sroff
+      REAL :: cfgi_sroff, cfgi_k, depth_cm
 !***********************************************************************
       srunoffrun = 0
 
@@ -574,6 +633,7 @@
       Basin_imperv_stor = 0.0D0
       Basin_hortonian = 0.0D0
       Basin_contrib_fraction = 0.0D0
+      Basin_cfgi_sroff = 0.0D0
       Basin_apply_sroff = 0.0D0
 
       IF ( Call_cascade==1 ) Strm_seg_in = 0.0D0
@@ -631,7 +691,30 @@
 
         avail_et = Potet(i) - Snow_evap(i) - Hru_intcpevap(i)
 
-!******Compute runoff for pervious, impervious, and depression storage area
+        frzen = 0
+        IF ( Frozen_flag==1 ) THEN
+          IF ( Tavgc(i)>0.0 ) THEN
+            cfgi_k = 0.5
+          ELSE
+            cfgi_k = 0.08
+          ENDIF
+          depth_cm = Pk_depth(i)*2.54
+          Cfgi(i) = (Cfgi_decay*Cfgi_prev(i)) - (Tavgc(i)*(2.71828**(-0.4*cfgi_k*depth_cm)))
+          IF ( Cfgi(i)<0.0 ) Cfgi(i) = 0.0
+          Cfgi_prev(i) = Cfgi(i)
+          IF ( Cfgi(i)>=Cfgi_thrshld ) THEN
+            frzen = 1
+            ! depression storage states are not changed if frozen
+            cfgi_sroff = (Snowmelt(i) + Net_rain(i) + Upslope_hortonian(i))*Hruarea
+            IF ( Use_sroff_transfer==1 ) cfgi_sroff = cfgi_sroff + Net_apply(i)*Hruarea
+            runoff = runoff + cfgi_sroff
+            Basin_cfgi_sroff = Basin_cfgi_sroff + cfgi_sroff
+          ENDIF
+          Frozen(i) = frzen
+        ENDIF
+
+!******Compute runoff for pervious, impervious, and depression storage area, only if not frozen ground
+        IF ( frzen==0 ) THEN
 ! DO IRRIGATION APPLICATION, ONLY DONE HERE, ASSUMES NO SNOW and
 ! only for pervious areas (just like infiltration)
         IF ( Use_sroff_transfer==1 ) THEN
@@ -646,10 +729,12 @@
               runoff = runoff + apply_sroff
             ENDIF
           ENDIF
-        ENDIF
+          ENDIF
 
-        CALL compute_infil(Net_rain(i), Net_ppt(i), Imperv_stor(i), Imperv_stor_max(i), Snowmelt(i), &
-     &                     Snowinfil_max(i), Net_snow(i), Pkwater_equiv(i), Infil(i), Hru_type(i))
+          CALL compute_infil(Net_rain(i), Net_ppt(i), Imperv_stor(i), Imperv_stor_max(i), Snowmelt(i), &
+     &                       Snowinfil_max(i), Net_snow(i), Pkwater_equiv(i), Infil(i), Hru_type(i))
+
+        ENDIF
 
         IF ( Dprst_flag==1 ) THEN
           Dprst_in(i) = 0.0D0
@@ -658,11 +743,13 @@
             dprst_chk = 1
 !           ******Compute the depression storage component
 !           only call if total depression surface area for each HRU is > 0.0
+            IF ( frzen==0 ) THEN
             CALL dprst_comp(Dprst_vol_clos(i), Dprst_area_clos_max(i), Dprst_area_clos(i), &
      &                      Dprst_vol_open_max(i), Dprst_vol_open(i), Dprst_area_open_max(i), Dprst_area_open(i), &
      &                      Dprst_sroff_hru(i), Dprst_seep_hru(i), Sro_to_dprst_perv(i), Sro_to_dprst_imperv(i), &
      &                      Dprst_evap_hru(i), avail_et, Net_rain(i), Dprst_in(i))
             runoff = runoff + Dprst_sroff_hru(i)*Hruarea_dble
+            ENDIF
           ENDIF
         ENDIF
 !         **********************************************************
@@ -695,6 +782,7 @@
         Basin_contrib_fraction = Basin_contrib_fraction + DBLE( Contrib_fraction(i)*hperv )
 
 !******Compute evaporation from impervious area
+        IF ( frzen==0 ) THEN
         IF ( Hruarea_imperv>0.0 ) THEN
           IF ( Imperv_stor(i)>0.0 ) THEN
             CALL imperv_et(Imperv_stor(i), Potet(i), Imperv_evap(i), Snowcov_area(i), avail_et)
@@ -716,6 +804,7 @@
           ENDIF
           Hru_sroffi(i) = Sri*Imperv_frac
           Basin_sroffi = Basin_sroffi + DBLE( Sri*Hruarea_imperv )
+        ENDIF
         ENDIF
 
         IF ( dprst_chk==1 ) Dprst_stor_hru(i) = (Dprst_vol_open(i)+Dprst_vol_clos(i))/Hruarea_dble
@@ -1361,7 +1450,8 @@
 !     srunoff_restart - write or read srunoff restart file
 !***********************************************************************
       SUBROUTINE srunoff_restart(In_out)
-      USE PRMS_MODULE, ONLY: Restart_outunit, Restart_inunit, Nlake, Dprst_flag, Cascade_flag, Call_cascade
+      USE PRMS_MODULE, ONLY: Restart_outunit, Restart_inunit, Nlake, Dprst_flag, &
+     &    Cascade_flag, Call_cascade, Frozen_flag
       USE PRMS_SRUNOFF
       IMPLICIT NONE
       ! Argument
@@ -1400,6 +1490,11 @@
           WRITE ( Restart_outunit ) Dprst_stor_hru
           WRITE ( Restart_outunit ) Dprst_vol_thres_open
         ENDIF
+        IF ( Frozen_flag==1 ) THEN
+          WRITE ( Restart_outunit ) Frozen
+          WRITE ( Restart_outunit ) Cfgi
+          WRITE ( Restart_outunit ) Cfgi_prev
+        ENDIF
       ELSE
         READ ( Restart_inunit ) module_name
         CALL check_restart(MODNAME, module_name)
@@ -1430,6 +1525,11 @@
           READ ( Restart_inunit ) Dprst_area_clos
           READ ( Restart_inunit ) Dprst_stor_hru
           READ ( Restart_inunit ) Dprst_vol_thres_open
+        ENDIF
+        IF ( Frozen_flag==1 ) THEN ! could be problem for restart
+          READ ( Restart_inunit ) Frozen
+          READ ( Restart_inunit ) Cfgi
+          READ ( Restart_inunit ) Cfgi_prev
         ENDIF
       ENDIF
       END SUBROUTINE srunoff_restart

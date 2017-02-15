@@ -57,7 +57,7 @@
       INTEGER :: i
       CHARACTER(LEN=80), SAVE :: Version_nhru_summary
 !***********************************************************************
-      Version_nhru_summary = 'nhru_summary.f90 2016-11-30 11:04:00Z'
+      Version_nhru_summary = 'nhru_summary.f90 2017-01-23 15:37:00Z'
       CALL print_module(Version_nhru_summary, 'Nhru Output Summary         ', 90)
       MODNAME = 'nhru_summary'
 
@@ -178,10 +178,12 @@
           fileName = NhruOutBaseFileName(:numchars(NhruOutBaseFileName))//NhruOutVar_names(jj)(:Nc_vars(jj))//'_meanyearly.csv'
           CALL PRMS_open_output_file(Yearlyunit(jj), fileName, 'xxx', 0, ios)
           IF ( ios/=0 ) STOP 'in nhru_summary, mean yearly'
+          IF ( NhruOutON_OFF<2 ) WRITE ( Yearlyunit(jj), Output_fmt2 ) (j, j=1,Nhru)
         ELSEIF ( NhruOut_freq==6 ) THEN
           fileName = NhruOutBaseFileName(:numchars(NhruOutBaseFileName))//NhruOutVar_names(jj)(:Nc_vars(jj))//'_yearly.csv'
           CALL PRMS_open_output_file(Yearlyunit(jj), fileName, 'xxx', 0, ios)
           IF ( ios/=0 ) STOP 'in nhru_summary, yearly'
+          WRITE ( Yearlyunit(jj), Output_fmt2 ) (j, j=1,Nhru)
         ELSEIF ( Monthly_flag==1 ) THEN
           IF ( NhruOut_freq==4 ) THEN
             fileName = NhruOutBaseFileName(:numchars(NhruOutBaseFileName))//NhruOutVar_names(jj)(:Nc_vars(jj))// &

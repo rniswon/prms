@@ -124,7 +124,7 @@
 !***********************************************************************
       szdecl = 0
 
-      Version_soilzone = 'soilzone.f90 2016-11-16 14:41:00Z'
+      Version_soilzone = 'soilzone.f90 2017-02-15 12:42:00Z'
       CALL print_module(Version_soilzone, 'Soil Zone Computations      ', 90 )
       MODNAME = 'soilzone'
 
@@ -675,7 +675,7 @@
       Basin_gvr_stor_frac = 0.0D0
       Basin_pfr_stor_frac = 0.0D0
       Pfr_stor_frac = 0.0
-      ! Sanity checks for parameters
+
       DO i = 1, Nhru
         Snow_free(i) = 1.0 - Snowcov_area(i)
 
@@ -860,7 +860,7 @@
       INTEGER FUNCTION szrun()
       USE PRMS_SOILZONE
       USE PRMS_MODULE, ONLY: Dprst_flag, Print_debug, Kkiter, &
-     &    Model, Nlake, Nhrucell, Cascade_flag, Dprst_flag
+     &    Model, Nlake, Nhrucell, Cascade_flag, Dprst_flag, Frozen_flag
       USE PRMS_BASIN, ONLY: Hru_type, Hru_perv, Hru_frac_perv, &
      &    Hru_route_order, Active_hrus, Basin_area_inv, Hru_area, &
      &    NEARZERO, Lake_hru_id, Cov_type, Numlake_hrus, CLOSEZERO, Hru_area_dble
@@ -873,10 +873,10 @@
      &    Basin_soil_moist, Basin_ssstor, Slow_stor, Slow_flow, &
      &    Ssres_stor, Soil_moist, Sat_threshold, Soil_rechr, Basin_lake_stor
       USE PRMS_CASCADE, ONLY: Ncascade_hru
-      USE PRMS_SET_TIME, ONLY: Nowmonth, Nowday
+      USE PRMS_SET_TIME, ONLY: Nowmonth !, Nowday
       USE PRMS_INTCP, ONLY: Hru_intcpevap
       USE PRMS_SNOW, ONLY: Snowcov_area, Snow_evap
-      USE PRMS_SRUNOFF, ONLY: Basin_sroff, Hru_impervevap, Strm_seg_in, Dprst_evap_hru, Dprst_seep_hru
+      USE PRMS_SRUNOFF, ONLY: Basin_sroff, Hru_impervevap, Strm_seg_in, Dprst_evap_hru, Dprst_seep_hru, Frozen
       IMPLICIT NONE
 ! Functions
       INTRINSIC MIN, ABS, MAX, SNGL, DBLE
@@ -886,11 +886,12 @@
       INTEGER :: i, k, update_potet
       REAL :: dunnianflw, interflow, perv_area, harea
       REAL :: dnslowflow, dnpreflow, dndunn, availh2o, avail_potet
-      REAL :: tmp, gvr_maxin, topfr
+      REAL :: gvr_maxin, topfr ! , tmp
       REAL :: dunnianflw_pfr, dunnianflw_gvr, pref_flow_maxin
       REAL :: perv_frac, capacity, capwater_maxin, ssresin
       REAL :: unsatisfied_et, pervactet, prefflow
       DOUBLE PRECISION :: gwin
+      INTEGER :: cfgi_frozen_hru
 !***********************************************************************
       szrun = 0
 
@@ -1037,6 +1038,14 @@
         ! perv_frac has to be > 0.001
         ! infil for pervious portion of HRU
         capwater_maxin = Infil(i)
+
+        cfgi_frozen_hru = 0
+        !??? how do you know if frozen gravity reservoir, frozen is HRU variable
+        ! For CFGI all inflow is assumed to be Dunnian Flow when frozen
+        IF ( Frozen_flag==1 ) THEN
+          IF ( Frozen(i)==1 ) cfgi_frozen_hru = 1
+        ENDIF
+
         ! compute preferential flow and storage, and any dunnian flow
         prefflow = 0.0
         IF ( Pref_flow_flag(i)==1 ) THEN
@@ -1046,6 +1055,10 @@
             pref_flow_maxin = capwater_maxin*Pref_flow_den(i)
             capwater_maxin = capwater_maxin - pref_flow_maxin
             pref_flow_maxin = pref_flow_maxin*perv_frac
+            IF ( cfgi_frozen_hru==1 ) THEN
+              dunnianflw_pfr = pref_flow_maxin
+              Basin_dunnian_pfr = Basin_dunnian_pfr + dunnianflw_pfr*harea
+            ELSE
             ! compute contribution to preferential-flow reservoir storage
             Pref_flow_stor(i) = Pref_flow_stor(i) + pref_flow_maxin
             dunnianflw_pfr = MAX( 0.0, Pref_flow_stor(i)-Pref_flow_max(i) )
@@ -1055,6 +1068,7 @@
             ENDIF
             Pref_flow_infil(i) = pref_flow_maxin - dunnianflw_pfr
             Basin_pref_flow_infil = Basin_pref_flow_infil + Pref_flow_infil(i)*harea
+            ENDIF
           ENDIF
           Pfr_dunnian_flow(i) = dunnianflw_pfr
         ENDIF
@@ -1071,6 +1085,7 @@
         gvr_maxin = 0.0
         Cap_waterin(i) = capwater_maxin
 
+        IF ( cfgi_frozen_hru==0 ) THEN
         ! call even if capwater_maxin = 0, just in case soil_moist now > Soil_moist_max
         IF ( capwater_maxin+Soil_moist(i)>0.0 ) THEN
           CALL compute_soilmoist(Cap_waterin(i), Soil_moist_max(i), &
@@ -1080,6 +1095,7 @@
           Basin_capwaterin = Basin_capwaterin + DBLE( Cap_waterin(i)*harea )
           Basin_soil_to_gw = Basin_soil_to_gw + DBLE( Soil_to_gw(i)*harea )
           Basin_sm2gvr_max = Basin_sm2gvr_max + DBLE( gvr_maxin*harea )
+        ENDIF
         ENDIF
         ! Soil_to_ssr for whole HRU
         Soil_to_ssr(i) = gvr_maxin
@@ -1102,9 +1118,9 @@
             Soil_rechr(i) = Soil_rechr(i) + Gvr2sm(i)/perv_frac*Replenish_frac(i)
             Soil_rechr(i) = MIN( Soil_rechr_max(i), Soil_rechr(i) )
             Basin_gvr2sm = Basin_gvr2sm + DBLE( Gvr2sm(i)*harea )
-          ELSEIF ( Gvr2sm(i)<-NEARZERO ) THEN
-            PRINT *, 'negative gvr2sm, HRU:', i, Gvr2sm(i)
-            Gvr2sm(i) = 0.0
+!          ELSEIF ( Gvr2sm(i)<-NEARZERO ) THEN
+!            PRINT *, 'negative gvr2sm, HRU:', i, Gvr2sm(i)
+!            Gvr2sm(i) = 0.0
           ENDIF
           Grav_gwin(i) = SNGL( gwin )
           Basin_sz_gwin = Basin_sz_gwin + gwin*DBLE( harea )
@@ -1159,48 +1175,48 @@
         Potet_rechr(i) = 0.0
         Potet_lower(i) = 0.0
         pervactet = 0.0
-        IF ( Soil_moist(i)>0.0 ) THEN
+        IF ( Soil_moist(i)>0.0 .AND. cfgi_frozen_hru==0 ) THEN
           CALL compute_szactet(Soil_moist_max(i), Soil_rechr_max(i), Transp_on(i), Cov_type(i), &
      &                         Soil_type(i), Soil_moist(i), Soil_rechr(i), pervactet, &
      &                         avail_potet, Snow_free(i), Potet_rechr(i), Potet_lower(i))
           ! sanity check
-          IF ( pervactet>avail_potet ) THEN
-            Soil_moist(i) = Soil_moist(i) + pervactet - avail_potet
-            pervactet = avail_potet
+!          IF ( pervactet>avail_potet ) THEN
+!            Soil_moist(i) = Soil_moist(i) + pervactet - avail_potet
+!            pervactet = avail_potet
 !            PRINT *, 'perv_et problem', pervactet, Avail_potet
-          ENDIF
+!          ENDIF
         ENDIF
         Perv_avail_et(i) = avail_potet
 
         ! sanity check
-        IF ( Soil_moist(i)<0.0 ) THEN
-          IF ( Print_debug>-1 ) PRINT *, i, Soil_moist(i), ' negative'
-          IF ( pervactet>=ABS(Soil_moist(i)) ) THEN
-            pervactet = pervactet + Soil_moist(i)
-            Soil_moist(i) = 0.0
-          ENDIF
-          IF ( Soil_moist(i)<-NEARZERO ) THEN
-            IF ( Print_debug>-1 ) PRINT *, 'HRU:', i, ' soil_moist<0.0', Soil_moist(i)
-          ENDIF
-          Soil_moist(i) = 0.0
-        ENDIF
+!        IF ( Soil_moist(i)<0.0 ) THEN
+!          IF ( Print_debug>-1 ) PRINT *, i, Soil_moist(i), ' negative'
+!          IF ( pervactet>=ABS(Soil_moist(i)) ) THEN
+!            pervactet = pervactet + Soil_moist(i)
+!            Soil_moist(i) = 0.0
+!          ENDIF
+!          IF ( Soil_moist(i)<-NEARZERO ) THEN
+!            IF ( Print_debug>-1 ) PRINT *, 'HRU:', i, ' soil_moist<0.0', Soil_moist(i)
+!          ENDIF
+!          Soil_moist(i) = 0.0
+!        ENDIF
 
         Hru_actet(i) = Hru_actet(i) + pervactet*perv_frac
         avail_potet = Potet(i) - Hru_actet(i)
         ! sanity check
-        IF ( avail_potet<0.0 ) THEN
-          IF ( Print_debug>-1 ) THEN
-            IF ( avail_potet<-NEARZERO ) PRINT *, 'hru_actet>potet', i, &
-     &           Nowmonth, Nowday, Hru_actet(i), Potet(i), avail_potet
-          ENDIF
-          Hru_actet(i) = Potet(i)
-          tmp = avail_potet/perv_frac
-          pervactet = pervactet + tmp
-          Soil_moist(i) = Soil_moist(i) - tmp
-          Soil_rechr(i) = Soil_rechr(i) - tmp
-          IF ( Soil_rechr(i)<0.0 ) Soil_rechr(i) = 0.0
-          IF ( Soil_moist(i)<0.0 ) Soil_moist(i) = 0.0
-        ENDIF
+!        IF ( avail_potet<0.0 ) THEN
+!          IF ( Print_debug>-1 ) THEN
+!            IF ( avail_potet<-NEARZERO ) PRINT *, 'hru_actet>potet', i, &
+!     &           Nowmonth, Nowday, Hru_actet(i), Potet(i), avail_potet
+!          ENDIF
+!          Hru_actet(i) = Potet(i)
+!          tmp = avail_potet/perv_frac
+!          pervactet = pervactet + tmp
+!          Soil_moist(i) = Soil_moist(i) - tmp
+!          Soil_rechr(i) = Soil_rechr(i) - tmp
+!          IF ( Soil_rechr(i)<0.0 ) Soil_rechr(i) = 0.0
+!          IF ( Soil_moist(i)<0.0 ) Soil_moist(i) = 0.0
+!        ENDIF
         Perv_actet(i) = pervactet
 
 ! soil_moist & soil_rechr multiplied by perv_area instead of harea
@@ -1494,11 +1510,11 @@
       ENDIF
       Perv_actet = et
       ! sanity check
-      IF ( Perv_actet>Avail_potet ) THEN
-        PRINT *, 'perv_et problem', Perv_actet, Avail_potet
-        Soil_moist = Soil_moist + Perv_actet - Avail_potet
-        Perv_actet = Avail_potet
-      ENDIF
+!      IF ( Perv_actet>Avail_potet ) THEN
+!        PRINT *, 'perv_et problem', Perv_actet, Avail_potet
+!        Soil_moist = Soil_moist + Perv_actet - Avail_potet
+!        Perv_actet = Avail_potet
+!      ENDIF
 
       END SUBROUTINE compute_szactet
 
@@ -1559,22 +1575,24 @@
       ENDIF
 
 ! sanity check
-      IF ( Inter_flow<0.0 ) THEN
-        IF ( Inter_flow<-NEARZERO ) PRINT *, 'interflow<0', Inter_flow, Ssres_in, Storage
-        Storage = Storage - Inter_flow
-        Inter_flow = 0.0
-      ELSEIF ( Inter_flow>Storage ) THEN
-        Inter_flow = Storage
-      ENDIF
+!      IF ( Inter_flow<0.0 ) THEN
+!        IF ( Inter_flow<-NEARZERO ) PRINT *, 'interflow<0', Inter_flow, Ssres_in, Storage
+!        Storage = Storage - Inter_flow
+!        Inter_flow = 0.0
+!      ELSEIF ( Inter_flow>Storage ) THEN
+!        Inter_flow = Storage
+!      ENDIF
+      IF ( Inter_flow>Storage ) Inter_flow = Storage
       Storage = Storage - Inter_flow
-      IF ( Storage<0.0 ) THEN
-        IF ( Storage<-CLOSEZERO ) PRINT *, 'Sanity check, ssres_stor<0.0', Storage
-        Storage = 0.0
+!      IF ( Storage<0.0 ) THEN
+!        IF ( Storage<-CLOSEZERO ) PRINT *, 'Sanity check, ssres_stor<0.0', Storage
+!        Storage = 0.0
 ! rsr, if very small storage, add it to interflow
-      ELSEIF ( Storage>0.0 .AND. Storage<NEARZERO ) THEN
-        Inter_flow = Inter_flow + Storage
-        Storage = 0.0
-      ENDIF
+!      ELSEIF ( Storage>0.0 .AND. Storage<NEARZERO ) THEN
+!        print *, 'small storage', storage, inter_flow
+!        Inter_flow = Inter_flow + Storage
+!        Storage = 0.0
+!      ENDIF
 
       END SUBROUTINE compute_interflow
 

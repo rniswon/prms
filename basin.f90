@@ -75,7 +75,7 @@
 !***********************************************************************
       basdecl = 0
 
-      Version_basin = 'basin.f90 2016-11-28 09:45:00Z'
+      Version_basin = 'basin.f90 2017-02-15 10:21:00Z'
       CALL print_module(Version_basin, 'Basin Definition            ', 90)
       MODNAME = 'basin'
 
@@ -167,8 +167,8 @@
 
       ALLOCATE ( Hru_type(Nhru) )
       IF ( declparam(MODNAME, 'hru_type', 'nhru', 'integer', &
-     &     '1', '0', '3', &
-     &     'HRU type', 'Type of each HRU (0=inactive; 1=land; 2=lake; 3=swale)', &
+     &     '1', '0', '105', &
+     &     'HRU type', 'Type of each HRU (0=inactive; 1=land; 2=lake; 3=swale; 4=glacier; 5=coastal)', &
      &     'none')/=0 ) CALL read_error(1, 'hru_type')
 
       ALLOCATE ( Cov_type(Nhru) )
@@ -223,14 +223,14 @@
 !**********************************************************************
       INTEGER FUNCTION basinit()
       USE PRMS_BASIN
-      USE PRMS_MODULE, ONLY: Nhru, Nlake, Dprst_flag, Numlakes, &
+      USE PRMS_MODULE, ONLY: Nhru, Nlake, Dprst_flag, &
      &    Print_debug, Inputerror_flag, Model, PRMS_VERSION, Starttime, Endtime, &
-     &    Lake_route_flag, Et_flag, Precip_flag, Cascadegw_flag
+     &    Lake_route_flag, Numlakes, Et_flag, Precip_flag, Cascadegw_flag
       IMPLICIT NONE
 ! Functions
       INTEGER, EXTERNAL :: getparam
       EXTERNAL write_outfile
-      INTRINSIC ABS, DBLE, SNGL
+      INTRINSIC ABS, DBLE, SNGL, MOD
 ! Local Variables
       CHARACTER(LEN=68) :: buffer
       INTEGER :: i, j, lakeid
@@ -287,6 +287,8 @@
         Hru_area_dble(i) = harea_dble
         Totarea = Totarea + harea_dble
 
+        Hru_type(i) = MOD( Hru_type(i), 100 )
+        IF ( Hru_type(i)==5 ) Hru_type(i) = 1 ! treat coastal HRUs as land HRUs
         IF ( Hru_type(i)==0 .OR. Hru_type(i)==2 ) THEN ! inactive or lakes
           Hru_frac_perv(i) = 1.0
           Hru_imperv(i) = 0.0
@@ -378,7 +380,12 @@
         Inputerror_flag = 1
       ENDIF
       IF ( Nlake>0 ) THEN
+        IF ( Numlakes_check/=Numlakes ) THEN
+          PRINT *, 'ERROR, number of lakes specified:', Numlakes_check, ' does not equal dimension numlakes:', Numlakes
+          Inputerror_flag = 1
+        ENDIF
         DO i = 1, Numlakes
+          IF ( Lake_route_flag==1 .AND. (Lake_type(i)==4.OR.Lake_type(i)==5) ) Weir_gate_flag = 1
           IF ( Lake_area(i)<DNEARZERO ) THEN
             PRINT *, 'ERROR, Lake:', i, ' has 0 area, thus no value of lake_hru_id is associated with the lake'
             Inputerror_flag = 1
@@ -390,11 +397,6 @@
             PRINT *, 'does not equal dimension nlake:', Nlake, ', number of lakes:', Numlakes_check
 !            Inputerror_flag = 1 ! make warning for now to allow PRMS-only with multiple HRU lakes
           ENDIF
-          DO i = 1, Numlakes
-            IF ( Lake_route_flag==1 ) THEN
-              IF ( Lake_type(i)==4 .OR. Lake_type(i)==5 ) Weir_gate_flag = 1
-            ENDIF
-          ENDDO
         ENDIF
       ENDIF
 

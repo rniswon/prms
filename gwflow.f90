@@ -71,7 +71,7 @@
       INTEGER FUNCTION gwflowdecl()
       USE PRMS_GWFLOW
       USE PRMS_MODULE, ONLY: Nhru, Ngw, Model, Dprst_flag, &
-     &    Cascadegw_flag, Init_vars_from_file, Nlake, Lake_route_flag
+     &    Cascadegw_flag, Init_vars_from_file, Nlake, Lake_route_flag, Numlakes
       IMPLICIT NONE
 ! Functions
       INTRINSIC INDEX
@@ -82,7 +82,7 @@
 !***********************************************************************
       gwflowdecl = 0
 
-      Version_gwflow = 'gwflow.f90 2016-10-17 16:01:00Z'
+      Version_gwflow = 'gwflow.f90 2017-02-15 10:46:00Z'
       CALL print_module(Version_gwflow, 'Groundwater                 ', 90)
       MODNAME = 'gwflow'
 
@@ -165,13 +165,13 @@
      &       'Basin area-weighted average of lake-bed seepage to GWRs', &
      &       'acre-inches', Basin_lake_seep)/=0 ) CALL read_error(3, 'basin_lake_seep')
 
-        ALLOCATE ( Lake_seepage(Nlake) )
-        IF ( declvar(MODNAME, 'lake_seepage', 'nlake', Nlake, 'double', &
+        ALLOCATE ( Lake_seepage(Numlakes) )
+        IF ( declvar(MODNAME, 'lake_seepage', 'numlakes', Numlakes, 'double', &
      &       'Lake-bed seepage from each lake to associated GWRs', &
      &       'inches', Lake_seepage)/=0 ) CALL read_error(3, 'lake_seepage')
 
-        ALLOCATE ( Gw_seep_lakein(Nlake) )
-        IF ( declvar(MODNAME, 'gw_seep_lakein', 'nlake', Nlake, 'double', &
+        ALLOCATE ( Gw_seep_lakein(Numlakes) )
+        IF ( declvar(MODNAME, 'gw_seep_lakein', 'numlakes', Numlakes, 'double', &
      &       'Groundwater discharge to any associated lake for each GWR', &
      &       'inches', Gw_seep_lakein)/=0 ) CALL read_error(3, 'gw_seep_lakein')
 
@@ -180,8 +180,8 @@
      &       'Net lake-bed seepage to associated GWRs', &
      &       'inches', Lake_seepage_gwr)/=0 ) CALL read_error(3, 'lake_seepage_gwr')
 
-        ALLOCATE ( Elevlake(Nlake) )
-        IF ( declvar(MODNAME, 'elevlake', 'nlake', Nlake, 'real', &
+        ALLOCATE ( Elevlake(Numlakes) )
+        IF ( declvar(MODNAME, 'elevlake', 'numlakes', Numlakes, 'real', &
      &       'Surface elevation of each lake', &
      &       'inches', Elevlake)/=0 ) CALL read_error(3, 'elevlake')
       ENDIF
@@ -211,8 +211,8 @@
      &     'fraction/day')/=0 ) CALL read_error(1, 'gwsink_coef')
 
       IF ( Lake_route_flag==1 .OR. Model==99 ) THEN
-        ALLOCATE ( Lake_seep_elev(Nlake) )
-        IF ( declparam(MODNAME, 'lake_seep_elev', 'nlake', 'real', &
+        ALLOCATE ( Lake_seep_elev(Numlakes) )
+        IF ( declparam(MODNAME, 'lake_seep_elev', 'numlakes', 'real', &
      &       '1.0', '-300.0', '10000.0', &
      &       'Elevation over which lakebed seepage to the GWR occurs', &
      &       'Elevation over which lakebed seepage to the GWR occurs for lake HRUs using broad-crested weir'// &
@@ -220,8 +220,8 @@
      &       'feet')/=0 ) CALL read_error(1, 'lake_seep_elev')
 
         IF ( Init_vars_from_file==0 ) THEN
-          ALLOCATE ( Elevlake_init(Nlake) )
-          IF ( declparam(MODNAME, 'elevlake_init', 'nlake', 'real', &
+          ALLOCATE ( Elevlake_init(Numlakes) )
+          IF ( declparam(MODNAME, 'elevlake_init', 'numlakes', 'real', &
      &         '1.0', '-300.0', '10000.0', &
      &         'Initial lake surface elevation', &
      &         'Initial lake surface elevation for each lake using broad-crested weir or gate opening routing', &

@@ -30,6 +30,9 @@
       ! for potet_pt, potet_pm and potet_pm_sta
       REAL, SAVE, ALLOCATABLE :: Tempc_dewpt(:), Vp_actual(:), Lwrad_net(:), Vp_slope(:)
       REAL, SAVE, ALLOCATABLE :: Vp_sat(:)
+!   Declared Variables - clouds
+      DOUBLE PRECISION, SAVE :: Basin_cloud_cover
+      REAL, SAVE, ALLOCATABLE :: Cloud_cover_hru(:)
 !   Declared Parameters and Variables - Solar Radiation
       INTEGER, SAVE :: Basin_solsta
       INTEGER, SAVE, ALLOCATABLE :: Hru_solsta(:), Hru_pansta(:)
@@ -119,7 +122,7 @@
       USE PRMS_MODULE, ONLY: Temp_flag, Precip_flag, Model, Nhru, Nssr, Nevap, &
      &    Nsegment, Strmflow_module, Temp_module, Ntemp, Stream_order_flag, &
      &    Precip_module, Solrad_module, Transp_module, Et_module, Init_vars_from_file, &
-     &    Soilzone_module, Srunoff_module, Nrain, Nsol, Call_cascade, Et_flag, Dprst_flag, Solrad_flag
+     &    Soilzone_module, Srunoff_module, Nrain, Nsol, Call_cascade, Et_flag, Dprst_flag, Solrad_flag, Stream_temp_flag
       IMPLICIT NONE
 ! Functions
       INTEGER, EXTERNAL :: declvar, declparam
@@ -129,7 +132,7 @@
 !***********************************************************************
       climateflow_decl = 0
 
-      Version_climateflow = 'climateflow.f90 2016-12-09 11:58:00Z'
+      Version_climateflow = 'climateflow.f90 2017-02-15 10:58:00Z'
       CALL print_module(Version_climateflow, 'Common States and Fluxes    ', 90)
       MODNAME = 'climateflow'
 
@@ -237,6 +240,18 @@
       IF ( declvar(Precip_module, 'hru_snow', 'nhru', Nhru, 'real', &
      &     'Snow distributed to each HRU', &
      &     'inches', Hru_snow)/=0 ) CALL read_error(3, 'hru_snow')
+
+! Cloud cover
+      IF ( Solrad_flag==2 .OR. Stream_temp_flag==1 ) THEN
+        ALLOCATE ( Cloud_cover_hru(Nhru) )
+        IF ( declvar(MODNAME, 'cloud_cover_hru', 'nhru', Nhru, 'real', &
+     &       'Cloud cover proportion of each HRU', &
+     &       'decimal fraction', Cloud_cover_hru)/=0 ) CALL read_error(3, 'cloud_cover_hru')
+
+        IF ( declvar(MODNAME, 'basin_cloud_cover', 'one', 1, 'double', &
+     &       'Basin area-weighted average cloud cover proportion', &
+     &       'decimal fraction', Basin_cloud_cover)/=0 ) CALL read_error(3, 'basin_cloud_cover')
+      ENDIF
 
 ! Solar Radiation variables
       ALLOCATE ( Swrad(Nhru) )
@@ -767,7 +782,7 @@
       USE PRMS_FLOWVARS
       USE PRMS_MODULE, ONLY: Temp_flag, Precip_flag, Nhru, Nssr, Temp_module, Precip_module, &
      &    Solrad_module, Soilzone_module, Srunoff_module, Stream_order_flag, Ntemp, Nrain, Nsol, &
-     &    Init_vars_from_file, Inputerror_flag, Dprst_flag, Solrad_flag, Et_flag
+     &    Init_vars_from_file, Inputerror_flag, Dprst_flag, Solrad_flag, Et_flag, Stream_temp_flag
       USE PRMS_BASIN, ONLY: Elev_units, FEET2METERS, METERS2FEET, Active_hrus, Hru_route_order
       IMPLICIT NONE
 ! Functions
@@ -967,6 +982,11 @@
       ENDIF
       Basin_orad = 0.0D0
       IF ( Solrad_flag==1 .OR. Solrad_flag==2 ) Orad_hru = 0.0
+! Cloud cover
+      IF ( Solrad_flag==2 .OR. Stream_temp_flag==1 ) THEN
+        Cloud_cover_hru = 0.0
+        Basin_cloud_cover = 0.0D0
+      ENDIF
 
 ! initialize scalers
       Basin_perv_et = 0.0D0
