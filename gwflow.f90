@@ -71,7 +71,7 @@
       INTEGER FUNCTION gwflowdecl()
       USE PRMS_GWFLOW
       USE PRMS_MODULE, ONLY: Nhru, Ngw, Model, Dprst_flag, &
-     &    Cascadegw_flag, Init_vars_from_file, Nlake, Lake_route_flag, Numlakes
+     &    Cascadegw_flag, Init_vars_from_file, Numlakes, Lake_route_flag
       IMPLICIT NONE
 ! Functions
       INTRINSIC INDEX
@@ -82,7 +82,7 @@
 !***********************************************************************
       gwflowdecl = 0
 
-      Version_gwflow = 'gwflow.f90 2017-02-15 10:46:00Z'
+      Version_gwflow = 'gwflow.f90 2017-02-22 14:09:00Z'
       CALL print_module(Version_gwflow, 'Groundwater                 ', 90)
       MODNAME = 'gwflow'
 
@@ -228,8 +228,8 @@
      &         'feet')/=0 ) CALL read_error(1, 'elevlake_init')
         ENDIF
 
-        ALLOCATE ( Gw_seep_coef(Nlake) )
-        IF ( declparam(MODNAME, 'gw_seep_coef', 'nlake', 'real', &
+        ALLOCATE ( Gw_seep_coef(Numlakes) )
+        IF ( declparam(MODNAME, 'gw_seep_coef', 'numlakes', 'real', &
      &       '0.015', '0.001', '0.05', &
      &       'Linear coefficient to compute seepage and groundwater'// &
      &       ' discharge to and from associated lake HRUs', &
@@ -266,7 +266,7 @@
       INTEGER FUNCTION gwflowinit()
       USE PRMS_GWFLOW
       USE PRMS_MODULE, ONLY: Ngw, Dprst_flag, Print_debug, Inputerror_flag, &
-     &                       Cascadegw_flag, Init_vars_from_file, Nlake, Gwr_swale_flag
+     &                       Cascadegw_flag, Init_vars_from_file, Numlakes, Gwr_swale_flag
       USE PRMS_BASIN, ONLY: Gwr_type, Hru_area, Basin_area_inv, Active_gwrs, Gwr_route_order, &
      &                      Lake_hru_id, Weir_gate_flag
       USE PRMS_FLOWVARS, ONLY: Gwres_stor, Pkwater_equiv
@@ -336,10 +336,10 @@
       IF ( Dprst_flag==1 ) Gwin_dprst = 0.0D0
 
       IF ( Weir_gate_flag==1 ) THEN
-        IF ( getparam(MODNAME, 'gw_seep_coef', Nlake, 'real', Gw_seep_coef)/=0 ) CALL read_error(2, 'gw_seep_coef')
-        IF ( getparam(MODNAME, 'lake_seep_elev', Nlake, 'real', Lake_seep_elev)/=0 ) CALL read_error(2, 'lake_seep_elev')
+        IF ( getparam(MODNAME, 'gw_seep_coef', Numlakes, 'real', Gw_seep_coef)/=0 ) CALL read_error(2, 'gw_seep_coef')
+        IF ( getparam(MODNAME, 'lake_seep_elev', Numlakes, 'real', Lake_seep_elev)/=0 ) CALL read_error(2, 'lake_seep_elev')
         IF ( Init_vars_from_file==0 ) THEN
-          IF ( getparam(MODNAME, 'elevlake_init', Nlake, 'real', Elevlake_init)/=0 ) CALL read_error(2, 'elevlake_init')
+          IF ( getparam(MODNAME, 'elevlake_init', Numlakes, 'real', Elevlake_init)/=0 ) CALL read_error(2, 'elevlake_init')
           Elevlake = Elevlake_init
           Lake_seepage_gwr = 0.0D0
           Lake_seepage = 0.0D0

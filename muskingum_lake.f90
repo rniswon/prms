@@ -197,7 +197,7 @@
 !***********************************************************************
       INTEGER FUNCTION muskingum_lake_decl()
       USE PRMS_MUSKINGUM_LAKE
-      USE PRMS_MODULE, ONLY: Model, Nsegment, Init_vars_from_file, Nlake, Nratetbl, Cascade_flag, Numlakes
+      USE PRMS_MODULE, ONLY: Model, Nsegment, Init_vars_from_file, Numlakes, Nratetbl, Cascade_flag
       IMPLICIT NONE
 ! Functions
       INTEGER, EXTERNAL :: declparam, declvar, getdim
@@ -207,7 +207,7 @@
 !***********************************************************************
       muskingum_lake_decl = 0
 
-      Version_muskingum_lake = 'muskingum_lake.f90 2017-02-15 12:18:00Z'
+      Version_muskingum_lake = 'muskingum_lake.f90 2017-02-22 14:15:00Z'
       CALL print_module(Version_muskingum_lake, 'Streamflow Routing          ', 90)
       MODNAME = 'muskingum_lake'
 
@@ -355,13 +355,13 @@
      &     'cfs', Lake_evap)/=0 ) CALL read_error(3, 'lake_evap')
 
 ! Declared Variables for broad-crested weir or gate opening routing
-      ALLOCATE ( Lake_2gw(Nlake) )
-      IF ( declvar(MODNAME, 'lake_2gw', 'nlake', Nlake, 'double', &
+      ALLOCATE ( Lake_2gw(Numlakes) )
+      IF ( declvar(MODNAME, 'lake_2gw', 'numlakes', Numlakes, 'double', &
      &     'Total seepage from each lake using broad-crested weir or gate opening routing', &
      &     'cfs', Lake_2gw)/=0 ) CALL read_error(3, 'lake_2gw')
 
       ALLOCATE ( Lake_seep_in(Numlakes) )
-      IF ( declvar(MODNAME, 'lake_seep_in', 'numlakes', Nlake, 'double', &
+      IF ( declvar(MODNAME, 'lake_seep_in', 'numlakes', Numlakes, 'double', &
      &     'Total seepage into each lake using broad-crested weir or gate opening routing', &
      &     'cfs', Lake_seep_in)/=0 ) CALL read_error(3, 'lake_seep_in')
 
@@ -908,7 +908,7 @@
 !***********************************************************************
       INTEGER FUNCTION muskingum_lake_run()
       USE PRMS_MUSKINGUM_LAKE
-      USE PRMS_MODULE, ONLY: Nsegment, Nlake, Cascade_flag, Numlakes
+      USE PRMS_MODULE, ONLY: Nsegment, Numlakes, Cascade_flag
       USE PRMS_BASIN, ONLY: CFS2CMS_CONV, Basin_area_inv, &
      &    Lake_area, Lake_type, Hru_area_dble, Lake_hru_id, Hru_type, Weir_gate_flag, &
      &    Hru_route_order, Active_hrus
@@ -964,7 +964,7 @@
       Inflow_ts = 0.0D0
       Currinsum = 0.0D0
 
-      IF ( Nlake>0 ) THEN
+      IF ( Numlakes>0 ) THEN
         IF ( Secondoutflow_flag==1 ) THEN
           Basin_2ndstflow = 0.0D0
           Lake_outq2 = 0.0D0
