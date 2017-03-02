@@ -109,7 +109,7 @@
 !***********************************************************************
       srunoffdecl = 0
 
-      Version_srunoff = 'srunoff.f90 2016-07-22 17:14:00Z'
+      Version_srunoff = 'srunoff.f90 2017-03-02 11:31:00Z'
       IF ( Sroff_flag==1 ) THEN
         MODNAME = 'srunoff_smidx'
       ELSE
@@ -1037,9 +1037,8 @@
 
 ! reset Sroff as it accumulates flow to streams
       Runoff = Runoff - Hru_sroff_down
-!      IF ( ABS(Runoff)<CLOSEZERO ) Runoff = 0.0
       IF ( Runoff<0.0 ) THEN
-        IF ( Runoff<-NEARZERO ) PRINT *, 'runoff < NEARZERO', Runoff
+!        IF ( Runoff<-NEARZERO ) PRINT *, 'runoff < NEARZERO', Runoff
         IF ( Hru_sroff_down>ABS(Runoff) ) THEN
           Hru_sroff_down = Hru_sroff_down - Runoff
         ELSE
