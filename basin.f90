@@ -75,7 +75,7 @@
 !***********************************************************************
       basdecl = 0
 
-      Version_basin = 'basin.f90 2017-02-15 10:21:00Z'
+      Version_basin = 'basin.f90 2017-02-28 09:52:00Z'
       CALL print_module(Version_basin, 'Basin Definition            ', 90)
       MODNAME = 'basin'
 
@@ -385,7 +385,9 @@
           Inputerror_flag = 1
         ENDIF
         DO i = 1, Numlakes
-          IF ( Lake_route_flag==1 .AND. (Lake_type(i)==4.OR.Lake_type(i)==5) ) Weir_gate_flag = 1
+          IF ( Lake_route_flag==1 ) THEN
+            IF ( Lake_type(i)==4 .OR. Lake_type(i)==5 ) Weir_gate_flag = 1
+          ENDIF
           IF ( Lake_area(i)<DNEARZERO ) THEN
             PRINT *, 'ERROR, Lake:', i, ' has 0 area, thus no value of lake_hru_id is associated with the lake'
             Inputerror_flag = 1
