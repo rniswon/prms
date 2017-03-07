@@ -132,7 +132,7 @@
 !***********************************************************************
       climateflow_decl = 0
 
-      Version_climateflow = 'climateflow.f90 2017-02-15 10:58:00Z'
+      Version_climateflow = 'climateflow.f90 2017-03-07 10:38:00Z'
       CALL print_module(Version_climateflow, 'Common States and Fluxes    ', 90)
       MODNAME = 'climateflow'
 
@@ -242,7 +242,7 @@
      &     'inches', Hru_snow)/=0 ) CALL read_error(3, 'hru_snow')
 
 ! Cloud cover
-      IF ( Solrad_flag==2 .OR. Stream_temp_flag==1 ) THEN
+      IF ( Solrad_flag==2 .OR. Stream_temp_flag==1 .OR. Model==99 ) THEN
         ALLOCATE ( Cloud_cover_hru(Nhru) )
         IF ( declvar(MODNAME, 'cloud_cover_hru', 'nhru', Nhru, 'real', &
      &       'Cloud cover proportion of each HRU', &
