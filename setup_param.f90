@@ -53,10 +53,10 @@
      &     'National Hydrologic Model HRU ID', 'National Hydrologic Model HRU ID', &
      &     'none') /= 0 ) CALL read_error(1, 'nhm_id')
 
-      IF ( declparam(MODNAME, 'poi_gage_id', 'npoigages', 'string', &
-     &     '0', '0', '9999999', &
-     &     'POI Gage ID', 'USGS stream gage for each POI gage', &
-     &     'none')/=0 ) CALL read_error(1, 'poi_gage_id')
+!      IF ( declparam(MODNAME, 'poi_gage_id', 'npoigages', 'string', &
+!     &     '0', '0', '9999999', &
+!     &     'POI Gage ID', 'USGS stream gage for each POI gage', &
+!     &     'none')/=0 ) CALL read_error(1, 'poi_gage_id')
 
       IF ( declparam(MODNAME, 'poi_gage_segment', 'npoigages', 'integer', &
      &     '0', 'bounded', 'nsegment', &
@@ -69,10 +69,10 @@
      &     'Type code for each POI gage', 'Type code for each POI gage', &
      &     'none')/=0 ) CALL read_error(1, 'poi_type')
 
-      IF ( declparam(MODNAME, 'parent_poigages', 'npoigages','integer', &
-     &     '0', '0', '9999999', &
-     &     'Lumen index in parent model for each POI gage','Lumen index in parent model for each POI gage', &
-     &     'none')/=0 ) CALL read_error(1, 'parent_poigages')
+!      IF ( declparam(MODNAME, 'parent_poigages', 'npoigages','integer', &
+!     &     '0', '0', '9999999', &
+!     &     'Lumen index in parent model for each POI gage','Lumen index in parent model for each POI gage', &
+!     &     'none')/=0 ) CALL read_error(1, 'parent_poigages')
 
       IF ( declparam(MODNAME, 'parent_gw', 'ngw', 'integer', &
      &     '1', '1', '9999999', &

@@ -101,7 +101,7 @@
       USE PRMS_MODULE, ONLY: Nhru, Inputerror_flag , MAXFILE_LENGTH, Start_year, End_year, NhruOutON_OFF
       IMPLICIT NONE
       INTRINSIC ABS
-      INTEGER, EXTERNAL :: getvartype, numchars, getvarsize, getparam
+      INTEGER, EXTERNAL :: getvartype, numchars, getparam !, getvarsize
       EXTERNAL read_error, PRMS_open_output_file
 ! Local Variables
       INTEGER :: ios, ierr, size, dim, jj, j
@@ -130,12 +130,12 @@
           PRINT *, '       only real or double variables allowed'
           ierr = 1
         ENDIF
-        size = getvarsize(NhruOutVar_names(jj)(:Nc_vars(jj)), dim )
-        IF ( size/=Nhru ) THEN
-          PRINT *, 'ERROR, invalid nhru_summary variable:', NhruOutVar_names(jj)(:Nc_vars(jj))
-          PRINT *, '       only variables dimensioned by nhru, nssr, or ngw allowed'
-          ierr = 1
-        ENDIF
+!        size = getvarsize(NhruOutVar_names(jj)(:Nc_vars(jj)), dim )
+!        IF ( size/=Nhru ) THEN
+!          PRINT *, 'ERROR, invalid nhru_summary variable:', NhruOutVar_names(jj)(:Nc_vars(jj))
+!          PRINT *, '       only variables dimensioned by nhru, nssr, or ngw allowed'
+!          ierr = 1
+!        ENDIF
       ENDDO
       IF ( ierr==1 ) STOP
       IF ( Double_vars==1 ) THEN
