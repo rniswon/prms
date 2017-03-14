@@ -18,7 +18,7 @@
 ! Paramters
       INTEGER, SAVE, ALLOCATABLE :: Nhm_id(:)
 ! Control Parameters
-      INTEGER, SAVE :: NhruOutVars, NhruOut_freq, Prms_warmup
+      INTEGER, SAVE :: NhruOutVars, NhruOut_freq
       CHARACTER(LEN=36), SAVE, ALLOCATABLE :: NhruOutVar_names(:)
       CHARACTER(LEN=MAXFILE_LENGTH), SAVE :: NhruOutBaseFileName
       END MODULE PRMS_NHRU_SUMMARY
@@ -57,14 +57,13 @@
       INTEGER :: i
       CHARACTER(LEN=80), SAVE :: Version_nhru_summary
 !***********************************************************************
-      Version_nhru_summary = 'nhru_summary.f90 2017-01-23 15:37:00Z'
+      Version_nhru_summary = 'nhru_summary.f90 2017-03-14 16:13:00Z'
       CALL print_module(Version_nhru_summary, 'Nhru Output Summary         ', 90)
       MODNAME = 'nhru_summary'
 
       IF ( control_integer(NhruOutVars, 'nhruOutVars')/=0 ) NhruOutVars = 0
       ! 1 = daily, 2 = monthly, 3 = both, 4 = mean monthly, 5 = mean yearly, 6 = yearly total
       IF ( control_integer(NhruOut_freq, 'nhruOut_freq')/=0 ) NhruOut_freq = 0
-      IF ( control_integer(Prms_warmup, 'prms_warmup')/=0 ) prms_warmup = 0
 
       IF ( NhruOutVars==0 ) THEN
         IF ( Model/=99 ) THEN
@@ -98,7 +97,7 @@
 !***********************************************************************
       SUBROUTINE nhru_summaryinit()
       USE PRMS_NHRU_SUMMARY
-      USE PRMS_MODULE, ONLY: Nhru, Inputerror_flag , MAXFILE_LENGTH, Start_year, End_year, NhruOutON_OFF
+      USE PRMS_MODULE, ONLY: Nhru, Inputerror_flag , MAXFILE_LENGTH, Start_year, End_year, NhruOutON_OFF, Prms_warmup
       IMPLICIT NONE
       INTRINSIC ABS
       INTEGER, EXTERNAL :: getvartype, numchars, getparam !, getvarsize

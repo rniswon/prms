@@ -19,7 +19,7 @@
 !   Declared Parameters
       INTEGER, SAVE, ALLOCATABLE :: Hru_subbasin(:)
 ! Control Parameters
-      INTEGER, SAVE :: NsubOutVars, NsubOut_freq, Prms_warmup
+      INTEGER, SAVE :: NsubOutVars, NsubOut_freq
       CHARACTER(LEN=36), SAVE, ALLOCATABLE :: NsubOutVar_names(:)
       CHARACTER(LEN=MAXFILE_LENGTH), SAVE :: NsubOutBaseFileName
       END MODULE PRMS_NSUB_SUMMARY
@@ -58,14 +58,13 @@
       INTEGER :: i
       CHARACTER(LEN=80), SAVE :: Version_nsub_summary
 !***********************************************************************
-      Version_nsub_summary = 'nsub_summary.f90 2017-01-27 09:40:00Z'
+      Version_nsub_summary = 'nsub_summary.f90 2017-03-14 16:14:00Z'
       CALL print_module(Version_nsub_summary, 'Subbasin Output Summary     ', 90)
       MODNAME = 'nsub_summary'
 
       IF ( control_integer(NsubOutVars, 'nsubOutVars')/=0 ) NsubOutVars = 0
       ! 1 = daily, 2 = monthly, 3 = both, 4 = mean monthly, 5 = mean yearly, 6 = yearly total
       IF ( control_integer(NsubOut_freq, 'nsubOut_freq')/=0 ) NsubOut_freq = 0
-      IF ( control_integer(Prms_warmup, 'prms_warmup')/=0 ) prms_warmup = 0
 
       IF ( NsubOutVars==0 ) THEN
         IF ( Model/=99 ) THEN
@@ -98,7 +97,7 @@
 !***********************************************************************
       SUBROUTINE nsub_summaryinit()
       USE PRMS_NSUB_SUMMARY
-      USE PRMS_MODULE, ONLY: Nhru, Nsub, Inputerror_flag, MAXFILE_LENGTH, Start_year, End_year
+      USE PRMS_MODULE, ONLY: Nhru, Nsub, Inputerror_flag, MAXFILE_LENGTH, Start_year, End_year, Prms_warmup
 	  USE PRMS_BASIN, ONLY: Hru_area_dble, DNEARZERO, Active_hrus, Hru_route_order
       IMPLICIT NONE
       INTRINSIC ABS

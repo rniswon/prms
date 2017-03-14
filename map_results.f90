@@ -23,7 +23,7 @@
       CHARACTER(LEN=15), SAVE :: Mapfmt
       CHARACTER(LEN=11), SAVE :: MODNAME
 ! Declared Parameters
-      INTEGER, SAVE :: Ncol, Prms_warmup, Mapvars_freq, Mapvars_units
+      INTEGER, SAVE :: Ncol, Mapvars_freq, Mapvars_units
       INTEGER, SAVE, ALLOCATABLE :: Gvr_map_id(:), Gvr_hru_id(:)
       REAL, SAVE, ALLOCATABLE :: Gvr_map_frac(:)
 ! Control Parameters
@@ -72,7 +72,7 @@
 !***********************************************************************
       map_resultsdecl = 0
 
-      Version_map_results = 'map_results.f90 2017-01-23 15:12:00Z'
+      Version_map_results = 'map_results.f90 2017-03-14 16:13:00Z'
       CALL print_module(Version_map_results, 'Output Summary              ', 90)
       MODNAME = 'map_results'
 
@@ -128,12 +128,6 @@
      &     ' 1=inches to feet; 2=inches to centimeters; 3=inches to meters; as states or fluxes)', &
      &     'none')/=0 ) CALL read_error(1, 'mapvars_units')
 
-      IF ( declparam(MODNAME, 'prms_warmup', 'one', 'integer', &
-     &     '1', '0', '12', &
-     &     'Number of years to simulate before writing mapped results', &
-     &     'Number of years to simulate before writing mapped results', &
-     &     'years')/=0 ) CALL read_error(1, 'prms_warmup')
-
       IF ( declparam(MODNAME, 'ncol', 'one', 'integer', &
      &     '1', '1', '50000', &
      &     'Number of columns for each row of the mapped results', &
@@ -170,7 +164,7 @@
       INTEGER FUNCTION map_resultsinit()
       USE PRMS_MAP_RESULTS
       USE PRMS_MODULE, ONLY: Nhru, Print_debug, Nhrucell, Ngwcell, Inputerror_flag, MapOutON_OFF, &
-     &                       Start_year, Start_month, Start_day, End_year, Parameter_check_flag
+     &                       Start_year, Start_month, Start_day, End_year, Parameter_check_flag, Prms_warmup
       IMPLICIT NONE
       INTRINSIC ABS, DBLE
       INTEGER, EXTERNAL :: getparam, getvartype, numchars !, getvarsize
@@ -191,7 +185,6 @@
         RETURN
       ENDIF
       IF ( getparam(MODNAME, 'ncol', 1, 'integer', Ncol)/=0 ) CALL read_error(2, 'ncol')
-      IF ( getparam(MODNAME, 'prms_warmup', 1, 'integer', Prms_warmup)/=0 ) CALL read_error(2, 'prms_warmup')
       IF ( getparam(MODNAME, 'mapvars_units', 1, 'integer', Mapvars_units)/=0 ) CALL read_error(2, 'Mapvars_units')
       IF ( Prms_warmup>0 ) Begin_results = 0
       Begyr = Begyr + Prms_warmup
