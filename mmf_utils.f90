@@ -1,28 +1,27 @@
 !***********************************************************************
-! LIS API
 ! DONE:
 !  getdim, declfix, declmodule, decldim
 !  control_string, control_integer, control_string_array
 !  declpri - removed
 !  read Control File
-!  read Paramter File dimension section
+!  read Parameter File dimension section
 !
 ! Place holders:
-!  getstep - need LIS function (current time step, initially 0, restart last)
-!  deltim - need LIS function (need time step increment in hours, hard-coded to 24)
-!  declparam - need LIS parameter data structure
-!  declvar - need LIS variable data structure, need cast type
-!  getparam - need LIS parameter data structure, need cast type
-!  getparamstring - need LIS parameter data structure
-!  dattim - need LIS function, or just compute the current date and time
-!  Read Parameter File - put parameters in LIS data structure
+!  getstep - need (current time step, initially 0, restart last)
+!  deltim - need (need time step increment in hours, hard-coded to 24)
+!  declparam - need parameter data structure
+!  declvar - need variable data structure, need cast type
+!  getparam - need parameter data structure, need cast type
+!  getparamstring - need parameter data structure
+!  dattim - need function, or just compute the current date and time
+!  Read Parameter File - put parameters in data structure
 !
 ! TO DO:
 ! need to read Data File, check dimensions, verify, start and end time
 ! getvartype
 ! get rid of getvar
 !***********************************************************************
-      MODULE PRMS_LISAPI
+      MODULE PRMS_MMFAPI
         IMPLICIT NONE
         INTEGER, SAVE :: Num_variables, Total_parameters
         TYPE PRMS_variable
@@ -33,14 +32,14 @@
              DOUBLE PRECISION, POINTER :: values_dble(:)
         END TYPE PRMS_variable
         TYPE ( PRMS_variable ), SAVE, ALLOCATABLE :: Variable_data(:)
-      END MODULE PRMS_LISAPI
+      END MODULE PRMS_MMFAPI
 
 !***********************************************************************
 ! declparam - set up memory for parameters
 !***********************************************************************
       INTEGER FUNCTION declparam(Modname, Paramname, Dimenname, Data_type, &
      &                           Defvalue, Minvalue, Maxvalue, Descshort, Desclong, Units)
-      USE PRMS_LISAPI
+      USE PRMS_MMFAPI
       USE PRMS_READ_PARAM_FILE
       USE PRMS_MODULE, ONLY: EQULS
       IMPLICIT NONE
@@ -81,6 +80,8 @@
           IF ( Parameter_data(i)%data_flag/=type_flag ) CALL read_error(16, Paramname// &
      &         ' data type does not match type in Parameter File')
           READ ( Defvalue, * ) Parameter_data(i)%default_value
+          READ ( Maxvalue, * ) Parameter_data(i)%maxval
+          READ ( Minvalue, * ) Parameter_data(i)%minval
           found = 1
         ENDIF
       ENDDO
@@ -124,10 +125,10 @@
         ENDIF
         Parameter_data(numpar)%numvals = number
         IF ( Print_debug>-1 ) THEN
-          PRINT *, 'Parameter: ', Paramname, ' not specified in Paramter File, set to default'
+          PRINT *, 'Parameter: ', Paramname, ' not specified in Parameter File, set to default'
           PRINT *, EQULS
         ENDIF
-        CALL write_outfile('Parameter: '//Paramname//' not specified in Paramter File, set to default')
+        CALL write_outfile('Parameter: '//Paramname//' not specified in Parameter File, set to default')
         CALL write_outfile(EQULS)
         READ ( Defvalue, * ) Parameter_data(numpar)%default_value
         ALLOCATE ( Parameter_data(numpar)%values(number) )
@@ -212,8 +213,6 @@
       ALLOCATE ( Variable_data(Num_variables)%values_dble(Numvalues) )
       Variable_data(Num_variables)%values_dble => Values(:Numvalues)
 
-      !need LIS data structure
-
       declvar = 0
       END FUNCTION declvar
 
@@ -233,7 +232,7 @@
       INTEGER, EXTERNAL :: find_variable
       ! LIS function
       ! Local Variables
-      INTEGER :: var_id, i
+      INTEGER :: var_id
       REAL :: temp(Numvalues)
 !***********************************************************************
       !need LIS data structure
@@ -749,34 +748,7 @@
       control_string = 0
       END FUNCTION control_string
 
-!***********************************************************************
-! control_integer
-! control parameters are read in PRMS with MMF.
-! For a LIS executable control parameters are read and verified this
-! function checks to be sure a required parameter has a value (read or default)
-!***********************************************************************
-      INTEGER FUNCTION control_integer(Parmval, Paramname)
-      USE PRMS_MODULE, ONLY: MAXFILE_LENGTH
-      IMPLICIT NONE
-      ! Arguments
-      CHARACTER(LEN=*), INTENT(IN) :: Paramname
-      INTEGER, INTENT(OUT) :: Parmval
-      ! Functions
-      EXTERNAL set_control_parameter, read_error
-      ! Local Variables
-      INTEGER :: iflag, int_parameter_values(1)
-      CHARACTER(LEN=MAXFILE_LENGTH) :: parameter_values(1)
-      REAL :: real_parameter_values(1)
-!***********************************************************************
-      parameter_values = ' '
-      int_parameter_values = 0
-      real_parameter_values = 0.0
-      iflag = 1 ! check parameter name and return the value
-      CALL set_control_parameter(Paramname, 1, 1, int_parameter_values, parameter_values, real_parameter_values, iflag)
-      IF ( iflag==-1 ) CALL read_error(15, 'parameter: '//Paramname)
-      Parmval = int_parameter_values(1)
-      control_integer = 0
-      END FUNCTION control_integer
+
 
 !***********************************************************************
 ! control_string_array

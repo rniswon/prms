@@ -98,6 +98,7 @@
 !***********************************************************************
       snodecl = 0
 
+      Version_snowcomp = 'snowcomp.f90 2016-06-16 13:25:00Z'
       CALL print_module(Version_snowcomp, 'Snow Dynamics               ', 90)
       MODNAME = 'snowcomp'
 
