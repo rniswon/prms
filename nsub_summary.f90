@@ -58,7 +58,7 @@
       INTEGER :: i
       CHARACTER(LEN=80), SAVE :: Version_nsub_summary
 !***********************************************************************
-      Version_nsub_summary = 'nsub_summary.f90 2017-03-14 16:14:00Z'
+      Version_nsub_summary = 'nsub_summary.f90 2017-03-16 16:51:00Z'
       CALL print_module(Version_nsub_summary, 'Subbasin Output Summary     ', 90)
       MODNAME = 'nsub_summary'
 
@@ -75,7 +75,8 @@
           RETURN
         ENDIF
       ELSE
-        ALLOCATE ( NsubOutVar_names(NsubOutVars), Nsub_var_type(NsubOutVars), Nc_vars(NsubOutVars) )
+        ! ALLOCATE ( NsubOutVar_names(NsubOutVars) ) ! allocated in read_control
+        ALLOCATE ( Nsub_var_type(NsubOutVars), Nc_vars(NsubOutVars) )
         NsubOutVar_names = ' '
         DO i = 1, NsubOutVars
           IF ( control_string_array(NsubOutVar_names(i), 'nsubOutVar_names', i)/=0 ) CALL read_error(5, 'nsubOutVar_names')
@@ -104,7 +105,7 @@
       INTEGER, EXTERNAL :: getvartype, numchars, getparam !, getvarsize
       EXTERNAL read_error, PRMS_open_output_file
 ! Local Variables
-      INTEGER :: ios, ierr, size, dim, jj, j, i, k
+      INTEGER :: ios, ierr, jj, j, i, k !, size, dim
       CHARACTER(LEN=MAXFILE_LENGTH) :: fileName
 !***********************************************************************
       Begin_results = 1

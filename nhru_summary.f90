@@ -57,7 +57,7 @@
       INTEGER :: i
       CHARACTER(LEN=80), SAVE :: Version_nhru_summary
 !***********************************************************************
-      Version_nhru_summary = 'nhru_summary.f90 2017-03-14 16:13:00Z'
+      Version_nhru_summary = 'nhru_summary.f90 2017-03-15 16:50:00Z'
       CALL print_module(Version_nhru_summary, 'Nhru Output Summary         ', 90)
       MODNAME = 'nhru_summary'
 
@@ -74,7 +74,8 @@
           RETURN
         ENDIF
       ELSE
-        ALLOCATE ( NhruOutVar_names(NhruOutVars), Nhru_var_type(NhruOutVars), Nc_vars(NhruOutVars) )
+        ! ALLOCATE ( NhruOutVar_names(NhruOutVars) ) ! allocated in read_control
+        ALLOCATE ( Nhru_var_type(NhruOutVars), Nc_vars(NhruOutVars) )
         NhruOutVar_names = ' '
         DO i = 1, NhruOutVars
           IF ( control_string_array(NhruOutVar_names(i), 'nhruOutVar_names', i)/=0 ) CALL read_error(5, 'nhruOutVar_names')
@@ -103,7 +104,7 @@
       INTEGER, EXTERNAL :: getvartype, numchars, getparam !, getvarsize
       EXTERNAL read_error, PRMS_open_output_file
 ! Local Variables
-      INTEGER :: ios, ierr, size, dim, jj, j
+      INTEGER :: ios, ierr, jj, j !, size, dim
       CHARACTER(LEN=MAXFILE_LENGTH) :: fileName
 !***********************************************************************
       Begin_results = 1

@@ -72,7 +72,7 @@
 !***********************************************************************
       map_resultsdecl = 0
 
-      Version_map_results = 'map_results.f90 2017-03-14 16:13:00Z'
+      Version_map_results = 'map_results.f90 2017-03-15 16:49:00Z'
       CALL print_module(Version_map_results, 'Output Summary              ', 90)
       MODNAME = 'map_results'
 
@@ -85,7 +85,8 @@
           RETURN
         ENDIF
       ELSE
-        ALLOCATE ( MapOutVar_names(NmapOutVars), Map_var_type(NmapOutVars), Nc_vars(NmapOutVars) )
+        ! ALLOCATE ( MapOutVar_names(NmapOutVars) ) ! allocated in read_control
+        ALLOCATE ( Map_var_type(NmapOutVars), Nc_vars(NmapOutVars) )
         ALLOCATE ( Map_var(Nhru, NmapOutVars), Map_var_dble(Nhru, NmapOutVars) )
         MapOutVar_names = ' '
         DO i = 1, NmapOutVars
@@ -170,7 +171,7 @@
       INTEGER, EXTERNAL :: getparam, getvartype, numchars !, getvarsize
       EXTERNAL read_error, PRMS_open_output_file
 ! Local Variables
-      INTEGER :: i, jj, is, ios, ierr, size, dim
+      INTEGER :: i, jj, is, ios, ierr !, size, dim
       REAL, ALLOCATABLE, DIMENSION(:) :: map_frac
 !***********************************************************************
       map_resultsinit = 0
