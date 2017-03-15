@@ -5,6 +5,7 @@
 ! period. Associated states with each parameter are adjusted.
 !***********************************************************************
       MODULE PRMS_DYNAMIC_PARAM_READ
+        USE PRMS_MODULE, ONLY: MAXFILE_LENGTH
         IMPLICIT NONE
         ! Local Variables
         !CHARACTER(LEN=18), SAVE :: MODNAME
@@ -34,6 +35,13 @@
         INTEGER, SAVE :: Snarea_thresh_unit, Snarea_thresh_next_yr, Snarea_thresh_next_mo, Snarea_thresh_next_day
         INTEGER, SAVE, ALLOCATABLE :: Itemp(:), Updated_hrus(:)
         REAL, SAVE, ALLOCATABLE :: Temp(:), Temp3(:), Potet_coef(:, :)
+! Control Parameters
+        CHARACTER(LEN=MAXFILE_LENGTH) :: imperv_frac_dynamic, imperv_stor_dynamic, dprst_depth_dynamic, dprst_frac_dynamic
+        CHARACTER(LEN=MAXFILE_LENGTH) :: wrain_intcp_dynamic, srain_intcp_dynamic, snow_intcp_dynamic, covtype_dynamic
+        CHARACTER(LEN=MAXFILE_LENGTH) :: potetcoef_dynamic, transpbeg_dynamic, transpend_dynamic
+        CHARACTER(LEN=MAXFILE_LENGTH) :: soilmoist_dynamic, soilrechr_dynamic, radtrncf_dynamic
+        CHARACTER(LEN=MAXFILE_LENGTH) :: fallfrost_dynamic, springfrost_dynamic, transp_on_dynamic, snareathresh_dynamic
+        CHARACTER(LEN=MAXFILE_LENGTH) :: covden_sum_dynamic, covden_win_dynamic, sro2dprst_perv_dyn, sro2dprst_imperv_dyn
       END MODULE PRMS_DYNAMIC_PARAM_READ
 
 !***********************************************************************
@@ -54,7 +62,7 @@
       IF ( Process(:3)=='run' ) THEN
         dynamic_param_read = dynparamrun()
       ELSEIF ( Process(:4)=='decl' ) THEN
-        Version_dynamic_param_read = 'dynamic_param_read.f90 2016-11-16 10:42:00Z'
+        Version_dynamic_param_read = 'dynamic_param_read.f90 2017-03-15 16:48:00Z'
         CALL print_module(Version_dynamic_param_read, 'Time Series Data            ', 90)
         !MODNAME = 'dynamic_param_read'
       ELSEIF ( Process(:4)=='init' ) THEN
@@ -78,13 +86,6 @@
       INTRINSIC ABS
 ! Local Variables
       INTEGER :: year, month, day, istop, ierr
-! Control Parameters
-      CHARACTER(LEN=MAXFILE_LENGTH) :: imperv_frac_dynamic, imperv_stor_dynamic, dprst_depth_dynamic, dprst_frac_dynamic
-      CHARACTER(LEN=MAXFILE_LENGTH) :: wrain_intcp_dynamic, srain_intcp_dynamic, snow_intcp_dynamic, covtype_dynamic
-      CHARACTER(LEN=MAXFILE_LENGTH) :: potetcoef_dynamic, transpbeg_dynamic, transpend_dynamic
-      CHARACTER(LEN=MAXFILE_LENGTH) :: soilmoist_dynamic, soilrechr_dynamic, radtrncf_dynamic
-      CHARACTER(LEN=MAXFILE_LENGTH) :: fallfrost_dynamic, springfrost_dynamic, transp_on_dynamic, snareathresh_dynamic
-      CHARACTER(LEN=MAXFILE_LENGTH) :: covden_sum_dynamic, covden_win_dynamic, sro2dprst_perv_dyn, sro2dprst_imperv_dyn
 !***********************************************************************
       dynparaminit = 0
 
