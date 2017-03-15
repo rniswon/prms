@@ -1,7 +1,6 @@
-      MODULE PRMS_READ_PARAM_FILE
+    MODULE PRMS_READ_PARAM_FILE
         USE PRMS_MODULE, ONLY: Print_debug, MAXFILE_LENGTH, EQULS
         INTEGER, SAVE :: Num_parameters, Num_dimensions, Param_unit, Read_parameters
-        CHARACTER(LEN=80) :: Version_read_parameter_file
         TYPE PRMS_parameter
              CHARACTER(LEN=32) :: param_name
              CHARACTER(LEN=312) :: short_description, long_description
@@ -10,6 +9,7 @@
              CHARACTER(LEN=12) :: max_value, min_value, def_value, data_type
              CHARACTER(LEN=12) :: dimen_names, module_name, units
              DOUBLE PRECISION, POINTER :: values(:)
+             REAL :: maxval, minval
         END TYPE PRMS_parameter
         TYPE ( PRMS_parameter ), SAVE, ALLOCATABLE :: Parameter_data(:)
         TYPE PRMS_dimension
@@ -24,22 +24,20 @@
 !***********************************************************************
       SUBROUTINE read_parameter_file_dimens
       USE PRMS_READ_PARAM_FILE
+      USE PRMS_MODULE, ONLY: Version_read_parameter_file, Param_file 
       IMPLICIT NONE
       ! Functions
       INTRINSIC TRIM
       EXTERNAL read_error, PRMS_open_input_file, write_outfile, set_dimension, print_module
-      INTEGER, EXTERNAL :: control_string, numchars
+      INTEGER, EXTERNAL :: numchars
       ! Local Variables
-      CHARACTER(LEN=MAXFILE_LENGTH) :: param_file
       CHARACTER(LEN=16) :: string, dimname
       CHARACTER(LEN=80) :: line
       CHARACTER(LEN=24) :: dimstring
       INTEGER nchars, ios, dimen_value
 !***********************************************************************
-      Version_read_parameter_file = 'read_parameter_file.f90 2012-12-18 19:47:26Z'
-      CALL print_module(Version_read_parameter_file, 'Read Parameter File       ', 90)
+      Version_read_parameter_file = 'read_parameter_file.f90 2017-03-11 12:12:00Z'
 
-      IF ( control_string(param_file, 'param_file')/=0 ) CALL read_error(5, 'param_file')
       CALL PRMS_open_input_file(Param_unit, param_file, 'param_file', 0, ios)
       IF ( ios/=0 ) STOP
       CALL write_outfile(EQULS)
@@ -120,7 +118,7 @@
         IF ( ios==-1 ) CALL read_error(11, 'end of file found before parameter section') ! found end of Parameter File
         IF ( string(:16)=='** Parameters **' ) EXIT ! stop reading if end of dimensions section
       ENDDO
-! Real all parameters and verify
+! Read all parameters and verify
       Read_parameters = 0
       DO
         READ ( Param_unit, '(A)', IOSTAT=ios ) string
@@ -156,13 +154,15 @@
         DEALLOCATE ( dmy )
         Read_parameters = Read_parameters + 1
       ENDDO
-      Num_parameters = Read_parameters + 25 ! allow for 25 extra parameters not declared, must check in declare
-      ALLOCATE ( Parameter_data(Num_parameters) )
-      DO i = 1, Num_parameters
+      Num_parameters = Read_parameters ! allow for 25 extra parameters not declared, must check in declare
+      ALLOCATE ( Parameter_data(Num_parameters+25) )
+      DO i = 1, Num_parameters + 25
         Parameter_data(i)%id_num = 0
         Parameter_data(i)%read_flag = 0
         Parameter_data(i)%decl_flag = 0
-        Parameter_data(i)%id_num = 0
+        Parameter_data(i)%numvals = 0
+        Parameter_data(i)%data_flag = 0
+        Parameter_data(i)%param_name_nchars = 0
       ENDDO
       
 ! allocate and store parameter data
@@ -205,7 +205,7 @@
 !***********************************************************************
       SUBROUTINE set_dimension(Dimname, Number)
       USE PRMS_MODULE, ONLY: Nhru, Nssr, Ngw, Nsub, Npoigages, Ndepl, Nlake, Ncascade, Ncascdgw, &
-     &    Nsegment, Nlake, Ndepl, Nratetbl, Numlakes, Nobs, Nevap, &
+     &    Nsegment, Nlake, Ndepl, Nratetbl, Numlakes, Nobs, Nevap, Nwateruse, Nexternal, Nconsumed, &
      &    One, Nmonths, Ndays, Nlapse, Npoigages, Ndeplval, Nhrucell, Ntemp, Nrain, Nsol, Ngwcell
       USE PRMS_OBS, ONLY: Nsnow, Nlakeelev, Nwind, Nhumid
       USE PRMS_MUSKINGUM_LAKE, ONLY: Ngate, Ngate2, Ngate3, Ngate4, Nstage, Nstage2, Nstage3, Nstage4, Mxnsos
@@ -514,6 +514,27 @@
             Number = Npoigages
           ELSE
             Npoigages = Number
+          ENDIF
+        ELSEIF ( Dimname(:9)=='nwateruse' ) THEN ! number of water use transfers
+          found = 1
+          IF ( return_value==1 ) THEN
+            Number = Nwateruse
+          ELSE
+            Nwateruse = Number
+          ENDIF
+        ELSEIF ( Dimname(:9)=='nconsumed' ) THEN ! number of water use consumption locations
+          found = 1
+          IF ( return_value==1 ) THEN
+            Number = Nconsumed
+          ELSE
+            Nconsumed = Number
+          ENDIF
+        ELSEIF ( Dimname(:9)=='nexternal' ) THEN ! number of water use external locations
+          found = 1
+          IF ( return_value==1 ) THEN
+            Number = Nexternal
+          ELSE
+            Nexternal = Number
           ENDIF
         ENDIF
       ENDIF

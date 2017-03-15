@@ -7,12 +7,11 @@
         INTEGER, ALLOCATABLE, SAVE :: Data_varnum(:)
         REAL, ALLOCATABLE, SAVE :: Data_line_values(:)
         CHARACTER(LEN=1), ALLOCATABLE :: data_transfer(:)
-        CHARACTER(LEN=80) :: Version_read_data_file
       END MODULE PRMS_DATA_FILE
 
       SUBROUTINE read_prms_data_file
       USE PRMS_DATA_FILE
-      USE PRMS_MODULE, ONLY: PRMS_output_unit, MAXFILE_LENGTH, EQULS, Print_debug, Starttime, Endtime
+      USE PRMS_MODULE, ONLY: PRMS_output_unit, MAXFILE_LENGTH, EQULS, Print_debug, Starttime, Endtime, Version_read_data_file
       IMPLICIT NONE
       ! Functions
       INTRINSIC LEN_TRIM, TRIM
@@ -26,8 +25,7 @@
       INTEGER endyr, endmo, enddy, endhr, endmn, endsec, num_vars
       REAL, ALLOCATABLE :: var(:)
 !***********************************************************************
-      Version_read_data_file = 'read_data_file.f90 2012-12-18 19:47:26Z'
-      CALL print_module(Version_read_data_file, 'Read Data File            ', 90)
+      Version_read_data_file = 'read_data_file.f90 2017-03-11 12:38:00Z'
 
       IF ( control_string(data_filename, 'data_file')/=0 ) CALL read_error(5, 'data_file')
       CALL PRMS_open_input_file(Datafile_unit, data_filename, 'data_file', 0, ios)
@@ -149,7 +147,7 @@
 !***********************************************************************
       SUBROUTINE read_data_line()
       USE PRMS_DATA_FILE
-      USE PRMS_LISAPI
+      USE PRMS_MMFAPI
       USE PRMS_SET_TIME, ONLY: Nowtime
       IMPLICIT NONE
       ! Functions
