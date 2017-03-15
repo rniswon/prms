@@ -109,7 +109,7 @@
 !***********************************************************************
       srunoffdecl = 0
 
-      Version_srunoff = 'srunoff.f90 2017-03-02 11:31:00Z'
+      Version_srunoff = 'srunoff.f90 2017-03-15 16:52:00Z'
       IF ( Sroff_flag==1 ) THEN
         MODNAME = 'srunoff_smidx'
       ELSE
@@ -403,13 +403,13 @@
      &       'decimal fraction')/=0 ) CALL read_error(1, 'op_flow_thres')
 
         ALLOCATE ( Sro_to_dprst_perv(Nhru) )
-        IF ( declparam(MODNAME, 'sro_to_dprst', 'nhru', 'real', &
+        IF ( declparam(MODNAME, 'sro_to_dprst_perv', 'nhru', 'real', &
      &       '0.2', '0.0', '1.0', &
      &       'Fraction of pervious surface runoff that flows into surface-depression storage', &
      &       'Fraction of pervious surface runoff that'// &
      &       ' flows into surface-depression storage; the remainder'// &
      &       ' flows to a stream network for each HRU', &
-     &       'decimal fraction')/=0 ) CALL read_error(1, 'sro_to_dprst')
+     &       'decimal fraction')/=0 ) CALL read_error(1, 'sro_to_dprst_perv')
 
         ALLOCATE ( Sro_to_dprst_imperv(Nhru) )
         IF ( declparam(MODNAME, 'sro_to_dprst_imperv', 'nhru', 'real', &
@@ -1107,7 +1107,7 @@
       IF ( getparam(MODNAME, 'dprst_seep_rate_open', Nhru, 'real', Dprst_seep_rate_open)/=0 )  &
      &     CALL read_error(2, 'dprst_seep_rate_open')
       IF ( getparam(MODNAME, 'va_open_exp', Nhru, 'real', Va_open_exp)/=0 ) CALL read_error(2, 'va_open_exp')
-      IF ( getparam(MODNAME, 'sro_to_dprst', Nhru, 'real', Sro_to_dprst_perv)/=0 ) CALL read_error(2, 'sro_to_dprst')
+      IF ( getparam(MODNAME, 'sro_to_dprst_perv', Nhru, 'real', Sro_to_dprst_perv)/=0 ) CALL read_error(2, 'sro_to_dprst_perv')
       IF ( getparam(MODNAME, 'sro_to_dprst_imperv', Nhru, 'real', Sro_to_dprst_imperv)/=0 ) &
      &     CALL read_error(2, 'sro_to_dprst_imperv')
       IF ( getparam(MODNAME, 'dprst_depth_avg', Nhru, 'real', Dprst_depth_avg)/=0 ) CALL read_error(2, 'dprst_depth_avg')
