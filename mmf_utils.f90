@@ -52,7 +52,7 @@
       INTEGER, EXTERNAL :: numchars
       ! LIS function
       ! Local Variables
-      INTEGER type_flag, found, i, j, num, inum, number, start
+      INTEGER type_flag, found, i, j, num, inum, number, start, iset, id
       INTEGER, SAVE :: numpar
       CHARACTER(LEN=12) :: dim_string(3)
       DATA numpar/0/
@@ -60,6 +60,12 @@
       IF ( numpar==0 ) THEN
         numpar = Read_parameters
         Total_parameters = Read_parameters
+      ENDIF
+
+      iset = 0
+      num = LEN(Minvalue)
+      IF ( num>6 ) THEN
+        IF ( Minvalue(:3)/='bounded' ) iset = 1
       ENDIF
 
       found = 0
@@ -79,10 +85,8 @@
           IF ( type_flag<1 .OR. type_flag>3 ) CALL read_error(16, Paramname//' data type not implemented: '//Data_type)
           IF ( Parameter_data(i)%data_flag/=type_flag ) CALL read_error(16, Paramname// &
      &         ' data type does not match type in Parameter File')
-          READ ( Defvalue, * ) Parameter_data(i)%default_value
-          READ ( Maxvalue, * ) Parameter_data(i)%maxval
-          READ ( Minvalue, * ) Parameter_data(i)%minval
           found = 1
+          id = i
         ENDIF
       ENDDO
 
@@ -136,7 +140,18 @@
           Parameter_data(numpar)%values(j) = Parameter_data(numpar)%default_value
         ENDDO
         Total_parameters = numpar
+        id = numpar
       ENDIF
+
+      READ ( Defvalue, * ) Parameter_data(id)%default_value
+      IF ( iset==0 ) THEN
+        READ ( Maxvalue, * ) Parameter_data(id)%maxval
+        READ ( Minvalue, * ) Parameter_data(id)%minval
+      ELSE
+        Parameter_data(id)%maxval = 99999999
+        Parameter_data(id)%minval = 0
+      ENDIF
+
       !print *, 'total_parameters', Total_parameters, ' num_parameters', Num_parameters
       declparam = 0
       END FUNCTION declparam
@@ -165,7 +180,7 @@
 ! declvar - set up memory for variables
 !***********************************************************************
       INTEGER FUNCTION declvar(Modname, Varname, Dimenname, Numvalues, Data_type, Desc, Units, Values)
-      USE PRMS_LISAPI
+      USE PRMS_MMFAPI
       IMPLICIT NONE
       ! Arguments
       CHARACTER(LEN=*), INTENT(IN) :: Modname, Varname, Dimenname, Data_type, Desc, Units
@@ -220,7 +235,7 @@
 ! getvar - get variable values
 !***********************************************************************
       INTEGER FUNCTION getvar(Modname, Varname, Numvalues, Data_type, Values)
-      USE PRMS_LISAPI
+      USE PRMS_MMFAPI
       IMPLICIT NONE
       ! Arguments
       CHARACTER(LEN=*), INTENT(IN) :: Modname, Varname, Data_type
@@ -261,7 +276,7 @@
 ! getvar_int - get variable values
 !***********************************************************************
       INTEGER FUNCTION getvar_int(Modname, Varname, Numvalues, Data_type, Values)
-      USE PRMS_LISAPI
+      USE PRMS_MMFAPI
       IMPLICIT NONE
       ! Arguments
       CHARACTER(LEN=*), INTENT(IN) :: Modname, Varname, Data_type
@@ -287,7 +302,7 @@
 ! getvar_dble - get variable values
 !***********************************************************************
       INTEGER FUNCTION getvar_dble(Modname, Varname, Numvalues, Data_type, Values)
-      USE PRMS_LISAPI
+      USE PRMS_MMFAPI
       IMPLICIT NONE
       ! Arguments
       CHARACTER(LEN=*), INTENT(IN) :: Modname, Varname, Data_type
@@ -313,7 +328,7 @@
 ! find_variable - find variable in data structure
 !***********************************************************************
       INTEGER FUNCTION find_variable(Modname, Varname, Numvalues, Data_type)
-      USE PRMS_LISAPI
+      USE PRMS_MMFAPI
       IMPLICIT NONE
       ! Arguments
       CHARACTER(LEN=*), INTENT(IN) :: Modname, Varname, Data_type
@@ -356,7 +371,7 @@
 ! getvar_id - get variable index
 !***********************************************************************
       INTEGER FUNCTION getvar_id(Varname)
-      USE PRMS_LISAPI
+      USE PRMS_MMFAPI
       IMPLICIT NONE
       ! Arguments
       CHARACTER(LEN=*), INTENT(IN) :: Varname
@@ -382,7 +397,7 @@
 ! getvartype - get variable type needed to be compatible with MMF function
 !***********************************************************************
       INTEGER FUNCTION getvartype(Varname, Var_type)
-      USE PRMS_LISAPI
+      USE PRMS_MMFAPI
       IMPLICIT NONE
       ! Arguments
       CHARACTER(LEN=*), INTENT(IN) :: Varname
@@ -410,7 +425,7 @@
 ! getvar_type - get variable type
 !***********************************************************************
       INTEGER FUNCTION getvar_type(Varname)
-      USE PRMS_LISAPI
+      USE PRMS_MMFAPI
       IMPLICIT NONE
       ! Arguments
       CHARACTER(LEN=*), INTENT(IN) :: Varname
@@ -436,7 +451,7 @@
 ! getvarnvals - get variable number of values
 !***********************************************************************
       INTEGER FUNCTION getvarnvals(Varname)
-      USE PRMS_LISAPI
+      USE PRMS_MMFAPI
       IMPLICIT NONE
       ! Arguments
       CHARACTER(LEN=*), INTENT(IN) :: Varname
@@ -462,8 +477,9 @@
 ! getparam - get parameter values
 !***********************************************************************
       INTEGER FUNCTION getparam(Modname, Paramname, Numvalues, Data_type, Values)
-      USE PRMS_LISAPI, ONLY: Total_parameters
+      USE PRMS_MMFAPI, ONLY: Total_parameters
       USE PRMS_READ_PARAM_FILE
+      USE PRMS_MODULE, ONLY: Parameter_check_flag
       IMPLICIT NONE
       ! Arguments
       CHARACTER(LEN=*), INTENT(IN) :: Modname, Paramname, Data_type
@@ -508,6 +524,18 @@
       IF ( type_flag==3 ) THEN
         CALL getvalues_dbl(param_id, Numvalues, Values)
       ELSEIF ( type_flag==2 ) THEN
+        IF ( Parameter_check_flag==1 ) THEN
+          DO i = 1, Numvalues
+            IF ( Parameter_data(param_id)%values(i) > Parameter_data(param_id)%maxval ) THEN
+              PRINT *, 'WARNING, value > maximum value for parameter: ', Paramname, '; index:', param_id
+              PRINT *, '         value:', Parameter_data(param_id)%values(i), '; maximum value:', Parameter_data(param_id)%maxval
+            ENDIF
+            IF ( Parameter_data(param_id)%values(i) < Parameter_data(param_id)%minval ) THEN
+              PRINT *, 'WARNING, value < minimum value for parameter: ', Paramname, '; index:', param_id
+              PRINT *, '         value:', Parameter_data(param_id)%values(i), '; minimum value:', Parameter_data(param_id)%maxval
+            ENDIF
+          ENDDO
+        ENDIF
         Values = Parameter_data(param_id)%values
       ELSEIF ( type_flag==1 ) THEN
         CALL getvalues_int(param_id, Numvalues, Values)
@@ -523,7 +551,7 @@
 ! getvar_values_int - get values from variable data structure
 !***********************************************************************
 !      SUBROUTINE getvar_values_int(param_id, Numvalues, Values)
-!      USE PRMS_LISAPI
+!      USE PRMS_MMFAPI
 !      IMPLICIT NONE
 !      ! Arguments
 !      INTEGER, INTENT(IN) :: param_id, Numvalues
@@ -536,7 +564,7 @@
 ! getvar_values_real - get values from variable data structure
 !***********************************************************************
 !      SUBROUTINE getvar_values_real(param_id, Numvalues, Values)
-!      USE PRMS_LISAPI
+!      USE PRMS_MMFAPI
 !      IMPLICIT NONE
 !      ! Arguments
 !      INTEGER, INTENT(IN) :: param_id, Numvalues
@@ -720,35 +748,79 @@
       END FUNCTION declfix
 
 !***********************************************************************
+! control_integer
+! control parameters are read this sets integer values stored in the
+! data base and checks to be sure a required parameter has a value (read or default)
+!***********************************************************************
+      INTEGER FUNCTION control_integer(Parmval, Paramname)
+      USE PRMS_CONTROL_FILE, ONLY: Num_control_parameters, Control_parameter_data
+      IMPLICIT NONE
+      ! Arguments
+      CHARACTER(LEN=*), INTENT(IN) :: Paramname
+      INTEGER, INTENT(OUT) :: Parmval
+      ! Functions
+      INTRINSIC :: TRIM
+      ! Local Variables
+      INTEGER :: i, found
+!***********************************************************************
+      found = 0
+      DO i = 1, Num_control_parameters
+        IF ( TRIM(Paramname)==TRIM(Control_parameter_data(i)%name) ) THEN
+          Parmval = Control_parameter_data(i)%values_int(1)
+          found = i
+          EXIT
+        ENDIF
+      ENDDO
+      IF ( found==0 ) THEN
+        Num_control_parameters = Num_control_parameters + 1
+        PRINT *, 'WARNING, control parameter not in Control File: ', TRIM(Paramname), ', set to 0'
+        Control_parameter_data(Num_control_parameters)%read_flag = 2 ! set to default
+        Control_parameter_data(Num_control_parameters)%data_type = 1
+        Control_parameter_data(Num_control_parameters)%numvals = 1
+        Control_parameter_data(Num_control_parameters)%name = paramname
+        Control_parameter_data(Num_control_parameters)%values_int(1) = 0 !???
+      ENDIF
+
+      control_integer = 0
+      END FUNCTION control_integer
+
+!***********************************************************************
 ! control_string
 ! control parameters are read in PRMS with MMF.
 ! For a LIS executable control parameters are read and verified this
 ! function checks to be sure a required parameter has a value (read or default)
 !***********************************************************************
       INTEGER FUNCTION control_string(Parmval, Paramname)
-      USE PRMS_MODULE, ONLY: MAXFILE_LENGTH
+      USE PRMS_CONTROL_FILE, ONLY: Num_control_parameters, Control_parameter_data
       IMPLICIT NONE
       ! Functions
-      EXTERNAL set_control_parameter, read_error
+      INTRINSIC :: TRIM
       ! Arguments
       CHARACTER(LEN=*), INTENT(IN) :: Paramname
       CHARACTER(LEN=*), INTENT(OUT) :: Parmval
       ! Local Variables
-      INTEGER :: iflag, int_parameter_values(1)
-      CHARACTER(LEN=MAXFILE_LENGTH) :: parameter_values(1)
-      REAL :: real_parameter_values(1)
+      INTEGER :: found, i
 !***********************************************************************
-      parameter_values = ' '
-      int_parameter_values = 0
-      real_parameter_values = 0.0
-      iflag = 1 ! check parameter name 
-      CALL set_control_parameter(Paramname, 1, 4, int_parameter_values, parameter_values, real_parameter_values, iflag)
-      IF ( iflag==-1 ) CALL read_error(15, 'parameter: '//Paramname)
-      Parmval = parameter_values(1)
+      found = 0
+      DO i = 1, Num_control_parameters
+        IF ( TRIM(Paramname)==TRIM(Control_parameter_data(i)%name) ) THEN
+          Parmval = Control_parameter_data(i)%values_character(1)
+          found = i
+          EXIT
+        ENDIF
+      ENDDO
+      IF ( found==0 ) THEN
+        Num_control_parameters = Num_control_parameters + 1
+        PRINT *, 'WARNING, control parameter not in Control File: ', TRIM(Paramname), ', set to blank'
+        Control_parameter_data(Num_control_parameters)%read_flag = 2 ! set to default
+        Control_parameter_data(Num_control_parameters)%data_type = 4
+        Control_parameter_data(Num_control_parameters)%numvals = 1
+        Control_parameter_data(Num_control_parameters)%name = paramname
+        Control_parameter_data(Num_control_parameters)%values_int(1) = ' '
+      ENDIF
+
       control_string = 0
       END FUNCTION control_string
-
-
 
 !***********************************************************************
 ! control_string_array
