@@ -32,7 +32,7 @@
       USE PRMS_TEMP_1STA_LAPS
       USE PRMS_MODULE, ONLY: Process, Nhru, Ntemp, &
      &    Inputerror_flag, Temp_flag, Model, Start_month, Print_debug
-      USE PRMS_BASIN, ONLY: Hru_elev, Hru_area, &
+      USE PRMS_BASIN, ONLY: Hru_elev, Hru_area, MAXTEMP, MINTEMP, &
      &    Active_hrus, Hru_route_order, Basin_area_inv, NEARZERO
       USE PRMS_CLIMATEVARS, ONLY: Tmax_aspect_adjust, Tmin_aspect_adjust, Tsta_elev, &
      &    Hru_tsta, Solrad_tmax, Solrad_tmin, Basin_temp, Basin_tmax, &
@@ -56,7 +56,7 @@
         kkk = 0
         DO i = 1, Ntemp
           IF ( Nuse_tsta(i)>0 ) THEN
-            IF ( Tmax(i)<-99.0 .OR. Tmax(i)>150.0 ) THEN
+            IF ( Tmax(i)<MINTEMP .OR. Tmax(i)>MAXTEMP ) THEN
               Tmax_cnt(i) = Tmax_cnt(i) + 1
               IF ( Tmax_cnt(i)<Max_missing ) THEN
                 IF ( Print_debug>-1 ) THEN
@@ -74,7 +74,7 @@
               Tmax_prev(i) = Tmax(i)
               Tmax_cnt(i) = 0
             ENDIF
-            IF ( Tmin(i)<-99.0 .OR. Tmin(i)>150.0 ) THEN
+            IF ( Tmin(i)<MINTEMP .OR. Tmin(i)>MAXTEMP ) THEN
               Tmin_cnt(i) = Tmin_cnt(i) + 1
               IF ( Tmin_cnt(i)<Max_missing ) THEN
                 IF ( Print_debug>-1 ) THEN
@@ -130,7 +130,7 @@
         Basin_temp = Basin_temp*Basin_area_inv
         Solrad_tmax = Tmax(Basin_tsta)
         Solrad_tmin = Tmin(Basin_tsta)
-        IF ( Solrad_tmax<-99.0 .OR. Solrad_tmax>150.0 ) THEN
+        IF ( Solrad_tmax<MINTEMP .OR. Solrad_tmax>MAXTEMP ) THEN
           IF ( Print_debug>-1 ) THEN
             PRINT *, 'Bad temperature data to set solrad_tmax:', Solrad_tmax, ' using last valid value:', Solrad_tmax_good
             CALL print_date(0)
@@ -139,7 +139,7 @@
         ELSE
           Solrad_tmax_good = Solrad_tmax
         ENDIF
-        IF ( Solrad_tmin<-99.0 .OR. Solrad_tmin>150.0 ) THEN
+        IF ( Solrad_tmin<MINTEMP .OR. Solrad_tmin>MAXTEMP ) THEN
           IF ( Print_debug>-1 ) THEN
             PRINT *, 'Bad temperature data to set solrad_tmin:', Solrad_tmin, ' using last valid value:', Solrad_tmin_good
             CALL print_date(0)
@@ -150,7 +150,7 @@
         ENDIF
 
       ELSEIF ( Process(:4)=='decl' ) THEN
-        Version_temp = 'temp_1sta_laps.f90 2017-03-07 10:39:00Z'
+        Version_temp = 'temp_1sta_laps.f90 2017-03-20 15:36:00Z'
         IF ( Temp_flag==1 ) THEN
           MODNAME = 'temp_1sta'
         ELSE

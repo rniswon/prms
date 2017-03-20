@@ -106,7 +106,7 @@
       IMPLICIT NONE
 ! Functions
       INTRINSIC INDEX
-      INTEGER, EXTERNAL :: declmodule, declparam, declvar, getdim, control_integer
+      INTEGER, EXTERNAL :: declparam, declvar, getdim, control_integer
       EXTERNAL :: read_error, print_module
 ! Local Variables
       CHARACTER(LEN=80), SAVE :: Version_stream_temp

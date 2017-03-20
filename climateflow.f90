@@ -132,7 +132,7 @@
 !***********************************************************************
       climateflow_decl = 0
 
-      Version_climateflow = 'climateflow.f90 2017-03-07 10:38:00Z'
+      Version_climateflow = 'climateflow.f90 2017-03-20 15:33:00Z'
       CALL print_module(Version_climateflow, 'Common States and Fluxes    ', 90)
       MODNAME = 'climateflow'
 
@@ -1040,6 +1040,7 @@
       SUBROUTINE temp_set(Ihru, Tmax, Tmin, Tmaxf, Tminf, Tavgf, Tmaxc, Tminc, Tavgc, Hru_area)
       USE PRMS_CLIMATEVARS, ONLY: Basin_temp, Basin_tmax, Basin_tmin, Temp_units, Tmax_hru, Tmin_hru
       USE PRMS_SET_TIME, ONLY: Nowyear, Nowmonth, Nowday
+      USE PRMS_BASIN, ONLY: MINTEMP, MAXTEMP
       IMPLICIT NONE
 ! Arguments
       INTEGER, INTENT(IN) :: Ihru
@@ -1069,7 +1070,7 @@
         Basin_temp = Basin_temp + DBLE( Tavgc*Hru_area )
       ENDIF
 
-      IF ( Tminf<-99.0 .OR. Tmaxf>150.0 ) THEN
+      IF ( Tminf<MINTEMP .OR. Tmaxf>MAXTEMP ) THEN
         PRINT *, 'ERROR, invalid temperature value for HRU:', Ihru, Tminf, Tmaxf, ' Date:', Nowyear, Nowmonth, Nowday
         STOP
       ENDIF
@@ -1156,7 +1157,8 @@
 !     Write or read restart file
 !***********************************************************************
       SUBROUTINE climateflow_restart(In_out)
-      USE PRMS_MODULE, ONLY: Restart_outunit, Restart_inunit, Stream_order_flag, Dprst_flag, Solrad_flag, Et_flag
+      USE PRMS_MODULE, ONLY: Restart_outunit, Restart_inunit, Stream_order_flag, &
+     &    Dprst_flag, Solrad_flag, Et_flag, Stream_temp_flag
       USE PRMS_CLIMATEVARS
       USE PRMS_FLOWVARS
       IMPLICIT NONE
@@ -1225,6 +1227,11 @@
           WRITE ( Restart_outunit ) Vp_slope
           IF ( Et_flag==11.OR. Et_flag==6 ) WRITE ( Restart_outunit ) Vp_sat
         ENDIF
+        IF ( Solrad_flag==2 .OR. Stream_temp_flag==1 ) THEN
+          WRITE ( Restart_outunit ) Basin_cloud_cover
+          WRITE ( Restart_outunit ) Cloud_cover_hru
+        ENDIF
+      ENDIF
       ELSE
         READ ( Restart_inunit ) module_name
         CALL check_restart(MODNAME, module_name)
@@ -1284,6 +1291,10 @@
           READ ( Restart_inunit ) Lwrad_net
           READ ( Restart_inunit ) Vp_slope
           IF ( Et_flag==11 .OR. Et_flag==6 ) READ ( Restart_inunit ) Vp_sat
+        ENDIF
+        IF ( Solrad_flag==2 .OR. Stream_temp_flag==1 ) THEN
+          READ ( Restart_inunit ) Basin_cloud_cover
+          READ ( Restart_inunit ) Cloud_cover_hru
         ENDIF
       ENDIF
       END SUBROUTINE climateflow_restart

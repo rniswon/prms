@@ -2,7 +2,7 @@
 ! Routes water between segments in the system as inflow equals outflow
 !***********************************************************************
       INTEGER FUNCTION strmflow_in_out()
-      USE PRMS_MODULE, ONLY: Process, Nsegment
+      USE PRMS_MODULE, ONLY: Process, Nsegment, Print_debug
       USE PRMS_SET_TIME, ONLY: Cfs_conv
       USE PRMS_BASIN, ONLY: Active_area, CFS2CMS_CONV
       USE PRMS_GWFLOW, ONLY: Basin_gwflow
@@ -51,6 +51,14 @@
           ELSE
             Seg_outflow(iorder) = Seg_inflow(iorder)
           ENDIF
+
+          IF ( Seg_outflow(iorder) < 0.0 ) THEN
+            IF ( Print_debug>-1 ) THEN
+              PRINT *, 'WARNING, negative flow from segment:', iorder, ' flow:', Seg_outflow(iorder)
+              PRINT *, '         likely a water-use specification or replacement flow issue'
+            ENDIF
+          ENDIF
+
           segout = Seg_outflow(iorder)
 ! Flow_out is the total flow out of the basin, which allows for multiple outlets
 ! includes closed basins (tosegment=0)
@@ -93,7 +101,7 @@
         Basin_ssflow_cfs = Basin_ssflow*area_fac
         Basin_gwflow_cfs = Basin_gwflow*area_fac
       ELSEIF ( Process(:4)=='decl' ) THEN
-        Version_strmflow = 'strmflow_in_out.f90 2017-02-14 16:15:00Z'
+        Version_strmflow = 'strmflow_in_out.f90 2017-03-20 16:41:00Z'
         CALL print_module(Version_strmflow, 'Streamflow Routing          ', 90)
       ENDIF
 

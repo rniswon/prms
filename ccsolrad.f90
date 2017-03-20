@@ -24,8 +24,7 @@
       INTEGER FUNCTION ccsolrad()
       USE PRMS_CCSOLRAD
       USE PRMS_MODULE, ONLY: Process, Print_debug, Nhru, Nsol
-      USE PRMS_BASIN, ONLY: Active_hrus, Hru_route_order, Hru_area, &
-     &    Basin_area_inv
+      USE PRMS_BASIN, ONLY: Active_hrus, Hru_route_order, Hru_area, Basin_area_inv
       USE PRMS_CLIMATEVARS, ONLY: Swrad, Basin_orad, Orad_hru, &
      &    Rad_conv, Hru_solsta, Basin_horad, Basin_potsw, Basin_swrad, Basin_solsta, Orad, Hru_ppt, &
      &    Tmax_hru, Tmin_hru, Solsta_flag, Radj_sppt, Radj_wppt, Ppt_rad_adj, Radmax, &
