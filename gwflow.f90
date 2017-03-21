@@ -82,7 +82,7 @@
 !***********************************************************************
       gwflowdecl = 0
 
-      Version_gwflow = 'gwflow.f90 2017-02-22 14:09:00Z'
+      Version_gwflow = 'gwflow.f90 2017-03-21 10:25:00Z'
       CALL print_module(Version_gwflow, 'Groundwater                 ', 90)
       MODNAME = 'gwflow'
 
@@ -397,6 +397,7 @@
       USE PRMS_SRUNOFF, ONLY: Dprst_seep_hru, Hru_impervstor, Dprst_stor_hru
       USE PRMS_INTCP, ONLY: Hru_intcpstor
       USE PRMS_SOILZONE, ONLY: Soil_moist_tot
+      USE PRMS_WATER_USE, ONLY: Gwr_transfers_on, Gwr_transfer, Gwr_gain
       IMPLICIT NONE
 ! Functions
       EXTERNAL rungw_cascade, print_date
@@ -472,6 +473,7 @@
           Gwin_dprst(i) = Dprst_seep_hru(i)*gwarea
           gwin = gwin + Gwin_dprst(i)
         ENDIF
+        IF ( Gwr_transfers_on==1 ) gwin = gwin + (Gwr_gain(i)-Gwr_transfer(i))/Cfs_conv/gwarea
         gwstor = gwstor + gwin
         Basin_gwin = Basin_gwin + gwin
         IF ( Gwminarea_flag==1 ) THEN

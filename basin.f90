@@ -9,7 +9,7 @@
       REAL, PARAMETER :: CLOSEZERO = EPSILON(0.0)
       DOUBLE PRECISION, PARAMETER :: DNEARZERO = EPSILON(0.0D0), FT2_PER_ACRE = 43560.0D0
       DOUBLE PRECISION, PARAMETER :: CFS2CMS_CONV = 0.028316847D0
-      REAL, PARAMETER :: INCH2MM = 25.4, INCH2M = 0.0254
+      REAL, PARAMETER :: INCH2MM = 25.4, INCH2M = 0.0254, MAXTEMP = 200.0, MINTEMP = -150.0
       REAL, PARAMETER :: MM2INCH = 1.0/INCH2MM
       REAL, PARAMETER :: FEET2METERS = 0.3048
       REAL, PARAMETER :: METERS2FEET = 1.0/FEET2METERS
@@ -66,8 +66,8 @@
 !***********************************************************************
       INTEGER FUNCTION basdecl()
       USE PRMS_BASIN
-      USE PRMS_MODULE, ONLY: Model, Nhru, Nlake, Dprst_flag, Lake_route_flag, Numlakes, &
-     &    Et_flag, Precip_flag, Cascadegw_flag
+      USE PRMS_MODULE, ONLY: Model, Nhru, Nlake, Dprst_flag, Lake_route_flag, &
+     &    Et_flag, Precip_flag, Cascadegw_flag , Numlakes
       IMPLICIT NONE
 ! Functions
       INTEGER, EXTERNAL :: declparam, declvar
@@ -75,7 +75,7 @@
 !***********************************************************************
       basdecl = 0
 
-      Version_basin = 'basin.f90 2017-02-28 09:52:00Z'
+      Version_basin = 'basin.f90 2017-03-20 15:35:00Z'
       CALL print_module(Version_basin, 'Basin Definition            ', 90)
       MODNAME = 'basin'
 
@@ -225,7 +225,7 @@
       USE PRMS_BASIN
       USE PRMS_MODULE, ONLY: Nhru, Nlake, Dprst_flag, &
      &    Print_debug, Inputerror_flag, Model, PRMS_VERSION, Starttime, Endtime, &
-     &    Lake_route_flag, Numlakes, Et_flag, Precip_flag, Cascadegw_flag
+     &    Lake_route_flag, Et_flag, Precip_flag, Cascadegw_flag , Numlakes
       IMPLICIT NONE
 ! Functions
       INTEGER, EXTERNAL :: getparam
