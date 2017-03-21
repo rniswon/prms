@@ -36,9 +36,9 @@
       USE PRMS_MODULE, ONLY: Process, Nhru, Nsegment, Segment_transferON_OFF, Gwr_transferON_OFF, Lake_transferON_OFF, &
      &    External_transferON_OFF, Dprst_transferON_OFF, Dprst_flag, Nwateruse, Strmflow_flag, &
      &    Model, Starttime, Endtime, Nexternal, Nconsumed, Inputerror_flag, MAXFILE_LENGTH
-      USE PRMS_BASIN, ONLY: Hru_area_dble, Hru_perv
+      USE PRMS_BASIN, ONLY: Hru_perv !, Hru_area_dble
       USE PRMS_SET_TIME, ONLY: Nowyear, Nowday, Nowmonth, Cfs_conv
-      USE PRMS_FLOWVARS, ONLY: Soil_moist, Soil_rechr, Soil_rechr_max, Gwres_stor, Dprst_vol_open
+      USE PRMS_FLOWVARS, ONLY: Soil_moist, Soil_rechr, Soil_rechr_max, Dprst_vol_open !, Gwres_stor
       IMPLICIT NONE
 ! Functions
       INTRINSIC SNGL, DBLE
@@ -55,7 +55,7 @@
       INTEGER, SAVE :: gwr_next_year, gwr_next_month, gwr_next_day
       INTEGER, SAVE :: segment_next_year, segment_next_month, segment_next_day
       INTEGER, SAVE :: lake_next_year, lake_next_month, lake_next_day
-      DOUBLE PRECISION :: factor, cfs_value, diversion_inches, transfer_rate_dble
+      DOUBLE PRECISION :: cfs_value, diversion_inches, transfer_rate_dble !, factor
       CHARACTER(LEN=80), SAVE :: Version_water_use_read
 !***********************************************************************
       ! Types
@@ -136,22 +136,24 @@
 
           IF ( Gwr_transfers_on==1 ) THEN
             IF ( Source_type(i)==2 ) THEN
-              factor = Cfs_conv*Hru_area_dble(id_src)
-              cfs_value = Gwres_stor(id_src)*factor
-              IF ( cfs_value<transfer_rate_dble ) THEN
-                PRINT *, 'ERROR, not enough storage for transfer in GWR:', id_src, ' Date:', Nowyear, Nowmonth, Nowday
-                STOP
-              ENDIF
               Gwr_transfer(id_src) = Gwr_transfer(id_src) + Transfer_rate(i)
               Gwr_transfer_tot(id_src) = Gwr_transfer_tot(id_src) + Transfer_rate(i)
               Total_gwr_transfer = Total_gwr_transfer + transfer_rate_dble
-              Gwres_stor(id_src) = Gwres_stor(id_src) - transfer_rate_dble/factor
+              !!!!!! remove transfer in gwflow so that recharge and gwstor_min are applied 3/20/2017
+!              factor = Cfs_conv*Hru_area_dble(id_src)
+!              cfs_value = Gwres_stor(id_src)*factor
+!              IF ( cfs_value<transfer_rate_dble ) THEN
+!                PRINT *, 'ERROR, not enough storage for transfer in GWR:', id_src, ' Date:', Nowyear, Nowmonth, Nowday
+!                STOP
+!              ENDIF
+!              Gwres_stor(id_src) = Gwres_stor(id_src) - transfer_rate_dble/factor
             ENDIF
             IF ( Destination_type(i)==2 ) THEN
               Gwr_gain(id_dest) = Gwr_gain(id_dest) + Transfer_rate(i)
               Gwr_gain_tot(id_dest) = Gwr_gain_tot(id_dest) + Transfer_rate(i)
               Total_gwr_gain = Total_gwr_gain + transfer_rate_dble
-              Gwres_stor(id_dest) = Gwres_stor(id_dest) + transfer_rate_dble/Cfs_conv/Hru_area_dble(id_dest)
+              !!!!!! remove transfer in gwflow so that recharge and gwstor_min are applied 3/20/2017
+!              Gwres_stor(id_dest) = Gwres_stor(id_dest) + transfer_rate_dble/Cfs_conv/Hru_area_dble(id_dest)
             ENDIF
           ENDIF
 
@@ -250,7 +252,7 @@
         ENDDO
 
       ELSEIF ( Process(:4)=='decl' ) THEN
-        Version_water_use_read = 'water_use_read.f90 2016-06-15 16:57:00Z'
+        Version_water_use_read = 'water_use_read.f90 2017-03-21 10:26:00Z'
         CALL print_module(Version_water_use_read, 'Time Series Data            ', 90)
         MODNAME = 'water_use_read'
 
