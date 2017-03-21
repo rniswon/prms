@@ -1231,7 +1231,6 @@
           WRITE ( Restart_outunit ) Basin_cloud_cover
           WRITE ( Restart_outunit ) Cloud_cover_hru
         ENDIF
-      ENDIF
       ELSE
         READ ( Restart_inunit ) module_name
         CALL check_restart(MODNAME, module_name)
