@@ -26,11 +26,16 @@
         IF ( getparam(MODNAME, 'sat_threshold', Nhru, 'real', Sat_threshold)/=0 ) CALL read_error(2, 'sat_threshold')
         IF ( getparam(MODNAME, 'soil_moist_max', Nhru, 'real', Soil_moist_max)/=0 ) CALL read_error(2, 'soil_moist_max')
         IF ( Model_mode(:8)=='CONVERT4' ) THEN
-          IF ( getparam(MODNAME, 'tmax_allrain_offset', Nhru*12, 'real', Tmax_allrain_offset)/=0 ) CALL read_error(2, 'tmax_allrain_offset')
-          IF ( getparam(MODNAME, 'ssstor_init_frac', Nhru, 'real', Ssstor_init_frac)/=0 ) CALL read_error(2, 'ssstor_init_frac')
-          IF ( getparam(MODNAME, 'soil_moist_init_frac', Nhru, 'real', Soil_moist_init_frac)/=0 ) CALL read_error(2, 'soil_moist_init_frac')
-          IF ( getparam(MODNAME, 'soil_rechr_init_frac', Nhru, 'real', Soil_rechr_init_frac)/=0 ) CALL read_error(2, 'soil_rechr_init_frac')
-          IF ( getparam(MODNAME, 'soil_rechr_max_frac', Nhru, 'real', Soil_rechr_max_frac)/=0 ) CALL read_error(2, 'soil_rechr_max_frac')
+          IF ( getparam(MODNAME, 'tmax_allrain_offset', Nhru*12, 'real', Tmax_allrain_offset)/=0 ) &
+     &         CALL read_error(2, 'tmax_allrain_offset')
+          IF ( getparam(MODNAME, 'ssstor_init_frac', Nhru, 'real', Ssstor_init_frac)/=0 ) &
+     &         CALL read_error(2, 'ssstor_init_frac')
+          IF ( getparam(MODNAME, 'soil_moist_init_frac', Nhru, 'real', Soil_moist_init_frac)/=0 ) &
+     &         CALL read_error(2, 'soil_moist_init_frac')
+          IF ( getparam(MODNAME, 'soil_rechr_init_frac', Nhru, 'real', Soil_rechr_init_frac)/=0 ) &
+     &         CALL read_error(2, 'soil_rechr_init_frac')
+          IF ( getparam(MODNAME, 'soil_rechr_max_frac', Nhru, 'real', Soil_rechr_max_frac)/=0 ) &
+     &         CALL read_error(2, 'soil_rechr_max_frac')
           PRINT *, 'New parameters written to PRMS_4.params'
           CALL PRMS_open_module_file(ounit, 'PRMS_4.params')
           Soil_rechr_init = Soil_rechr_init_frac*Soil_rechr_max
@@ -154,7 +159,7 @@
  200    FORMAT ('####', /, A, /, '2', /, 'nhru', /, 'nmonths', /, I7, /, '2')
 
       ELSEIF ( Process(:4)=='decl' ) THEN
-        Version_convert_params = 'convert_params.f90 2017-02-21 17:47:00Z'
+        Version_convert_params = 'convert_params.f90 2017-03-22 14:08:00Z'
         CALL print_module(Version_convert_params, 'Convert PRMS parameters     ', 90)
         MODNAME = 'convert_params'
 

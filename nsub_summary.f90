@@ -19,7 +19,7 @@
 !   Declared Parameters
       INTEGER, SAVE, ALLOCATABLE :: Hru_subbasin(:)
 ! Control Parameters
-      INTEGER, SAVE :: NsubOutVars, NsubOut_freq
+      INTEGER, SAVE :: NsubOutVars, NsubOut_freq, Prms_warmup
       CHARACTER(LEN=36), SAVE, ALLOCATABLE :: NsubOutVar_names(:)
       CHARACTER(LEN=MAXFILE_LENGTH), SAVE :: NsubOutBaseFileName
       END MODULE PRMS_NSUB_SUMMARY
@@ -58,13 +58,14 @@
       INTEGER :: i
       CHARACTER(LEN=80), SAVE :: Version_nsub_summary
 !***********************************************************************
-      Version_nsub_summary = 'nsub_summary.f90 2017-03-16 16:51:00Z'
+      Version_nsub_summary = 'nsub_summary.f90 2017-01-27 09:40:00Z'
       CALL print_module(Version_nsub_summary, 'Subbasin Output Summary     ', 90)
       MODNAME = 'nsub_summary'
 
       IF ( control_integer(NsubOutVars, 'nsubOutVars')/=0 ) NsubOutVars = 0
       ! 1 = daily, 2 = monthly, 3 = both, 4 = mean monthly, 5 = mean yearly, 6 = yearly total
       IF ( control_integer(NsubOut_freq, 'nsubOut_freq')/=0 ) NsubOut_freq = 0
+      IF ( control_integer(Prms_warmup, 'prms_warmup')/=0 ) prms_warmup = 0
 
       IF ( NsubOutVars==0 ) THEN
         IF ( Model/=99 ) THEN
@@ -75,8 +76,7 @@
           RETURN
         ENDIF
       ELSE
-        ! ALLOCATE ( NsubOutVar_names(NsubOutVars) ) ! allocated in read_control
-        ALLOCATE ( Nsub_var_type(NsubOutVars), Nc_vars(NsubOutVars) )
+        ALLOCATE ( NsubOutVar_names(NsubOutVars), Nsub_var_type(NsubOutVars), Nc_vars(NsubOutVars) )
         NsubOutVar_names = ' '
         DO i = 1, NsubOutVars
           IF ( control_string_array(NsubOutVar_names(i), 'nsubOutVar_names', i)/=0 ) CALL read_error(5, 'nsubOutVar_names')
@@ -98,14 +98,14 @@
 !***********************************************************************
       SUBROUTINE nsub_summaryinit()
       USE PRMS_NSUB_SUMMARY
-      USE PRMS_MODULE, ONLY: Nhru, Nsub, Inputerror_flag, MAXFILE_LENGTH, Start_year, End_year, Prms_warmup
+      USE PRMS_MODULE, ONLY: Nhru, Nsub, Inputerror_flag, MAXFILE_LENGTH, Start_year, End_year
 	  USE PRMS_BASIN, ONLY: Hru_area_dble, DNEARZERO, Active_hrus, Hru_route_order
       IMPLICIT NONE
       INTRINSIC ABS
       INTEGER, EXTERNAL :: getvartype, numchars, getparam !, getvarsize
       EXTERNAL read_error, PRMS_open_output_file
 ! Local Variables
-      INTEGER :: ios, ierr, jj, j, i, k !, size, dim
+      INTEGER :: ios, ierr, size, dim, jj, j, i, k
       CHARACTER(LEN=MAXFILE_LENGTH) :: fileName
 !***********************************************************************
       Begin_results = 1
@@ -210,13 +210,13 @@
         j = Hru_route_order(i)
         k = Hru_subbasin(j)
         IF ( k>0 ) Sub_area(k) = Sub_area(k) + Hru_area_dble(j)
-	  ENDDO
+      ENDDO
       DO i = 1, Nsub
         IF ( Sub_area(i)<DNEARZERO ) THEN
           PRINT *, 'ERROR, subbasin:', i, ' does not include any HRUs'
           Inputerror_flag = 1
-		ENDIF
-	  ENDDO
+        ENDIF
+      ENDDO
 
  9001 FORMAT ('(I4, 2(''-'',I2.2),',I6,'('',''ES10.3))')
  9002 FORMAT ('("Date"',I6,'('',''I4))')
@@ -270,9 +270,9 @@
             DO jj = 1, NsubOutVars
               DO k = 1, Nsub
                 IF ( NsubOut_freq==5 ) Nsub_var_yearly(k, jj) = Nsub_var_yearly(k, jj)/Yeardays
-  			    Nsub_var_yearly(k, jj) = Nsub_var_yearly(k, jj)/Sub_area(k)
+                Nsub_var_yearly(k, jj) = Nsub_var_yearly(k, jj)/Sub_area(k)
               ENDDO
-			ENDDO
+            ENDDO
             WRITE ( Yearlyunit(jj), Output_fmt3) Lastyear, (Nsub_var_yearly(j,jj), j=1,Nsub)
             Nsub_var_yearly = 0.0D0
             Yeardays = 0
@@ -321,11 +321,11 @@
             k = Hru_subbasin(j)
             IF ( k>0 ) Nsub_var_monthly(k, jj) = Nsub_var_monthly(k, jj) + DBLE( Nhru_var_daily(i, jj) )*Hru_area_dble(i)
           ENDDO
-		  DO k = 1, Nsub
-  		    IF ( write_month==1 ) THEN
-		      IF ( NsubOut_freq==4 ) Nsub_var_monthly(k, jj) = Nsub_var_monthly(k, jj)/Monthdays/Sub_area(k)
+          DO k = 1, Nsub
+            IF ( write_month==1 ) THEN
+              IF ( NsubOut_freq==4 ) Nsub_var_monthly(k, jj) = Nsub_var_monthly(k, jj)/Monthdays/Sub_area(k)
             ENDIF
-		  ENDDO
+          ENDDO
         ENDDO
       ENDIF
 

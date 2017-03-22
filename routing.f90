@@ -65,7 +65,7 @@
 !***********************************************************************
       routingdecl = 0
 
-      Version_routing = 'routing.f90 2017-02-14 16:47:00Z'
+      Version_routing = 'routing.f90 2017-03-22 14:08:00Z'
       CALL print_module(Version_routing, 'Routing Initialization      ', 90)
       MODNAME = 'routing'
 
@@ -634,7 +634,8 @@
         WRITE ( Restart_outunit ) Basin_segment_storage
         WRITE ( Restart_outunit ) Segment_delta_flow
         WRITE ( Restart_outunit ) Flow_to_ocean, Flow_to_great_lakes, Flow_out_region, Flow_out_NHM, Flow_terminus
-        WRITE ( Restart_outunit ) Flow_to_lakes, Flow_in_nation, Flow_in_region, Flow_headwater, Flow_in_great_lakes, Flow_replacement
+        WRITE ( Restart_outunit ) Flow_to_lakes, Flow_in_nation, Flow_in_region, Flow_headwater
+        WRITE ( Restart_outunit ) Flow_in_great_lakes, Flow_replacement
       ELSE
         READ ( Restart_inunit ) module_name
         CALL check_restart(MODNAME, module_name)
@@ -648,6 +649,7 @@
         READ ( Restart_inunit ) Basin_segment_storage
         READ ( Restart_inunit ) Segment_delta_flow
         READ ( Restart_inunit ) Flow_to_ocean, Flow_to_great_lakes, Flow_out_region, Flow_out_NHM, Flow_terminus
-        READ ( Restart_inunit ) Flow_to_lakes, Flow_in_nation, Flow_in_region, Flow_headwater, Flow_in_great_lakes, Flow_replacement
+        READ ( Restart_inunit ) Flow_to_lakes, Flow_in_nation, Flow_in_region, Flow_headwater
+        READ ( Restart_inunit ) Flow_in_great_lakes, Flow_replacement
       ENDIF
       END SUBROUTINE routing_restart
