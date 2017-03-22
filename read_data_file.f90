@@ -11,7 +11,7 @@
 
       SUBROUTINE read_prms_data_file
       USE PRMS_DATA_FILE
-      USE PRMS_MODULE, ONLY: PRMS_output_unit, MAXFILE_LENGTH, EQULS, Print_debug, Starttime, Endtime, Version_read_data_file
+      USE PRMS_MODULE, ONLY: PRMS_output_unit, MAXFILE_LENGTH, EQULS, Print_debug, Starttime, Endtime
       IMPLICIT NONE
       ! Functions
       INTRINSIC LEN_TRIM, TRIM
@@ -24,8 +24,10 @@
       INTEGER startyr, startmo, startdy, starthr, startmn, startsec
       INTEGER endyr, endmo, enddy, endhr, endmn, endsec, num_vars
       REAL, ALLOCATABLE :: var(:)
+      CHARACTER(LEN=80), SAVE :: Version_read_data_file
 !***********************************************************************
       Version_read_data_file = 'read_data_file.f90 2017-03-11 12:38:00Z'
+      CALL print_module(Version_read_data_file, 'Read Data File              ', 90)
 
       IF ( control_string(data_filename, 'data_file')/=0 ) CALL read_error(5, 'data_file')
       CALL PRMS_open_input_file(Datafile_unit, data_filename, 'data_file', 0, ios)

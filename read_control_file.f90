@@ -37,6 +37,7 @@
         REAL, SAVE :: Initial_deltat
         CHARACTER(LEN=MAXCONTROL_LENGTH), ALLOCATABLE, SAVE :: statVar_element(:), statVar_names(:)
         CHARACTER(LEN=MAXCONTROL_LENGTH), ALLOCATABLE, SAVE :: dispVar_element(:), dispVar_names(:)
+        ! read_flag: 0 = not set, 1 = set from control file, 2 = set to default, 3 = means variably dimension, 4 = variably dimension set from Control File
         TYPE PRMS_control_parameter
              CHARACTER(LEN=MAXCONTROL_LENGTH) :: name
              INTEGER :: numvals, read_flag, data_type, index
@@ -49,16 +50,16 @@
 
       SUBROUTINE read_control_file
       USE PRMS_CONTROL_FILE
-      USE PRMS_MODULE, ONLY: Version_read_control_file
+      USE PRMS_MODULE, ONLY: Version_read_control_file, Print_debug, Model, PRMS_output_unit, Model_output_file
       IMPLICIT NONE
       ! Functions
       INTRINSIC TRIM
-      INTEGER, EXTERNAL :: numchars
-      EXTERNAL read_error, set_control_parameter, PRMS_open_input_file, write_outfile !, print_module
+      INTEGER, EXTERNAL :: numchars, control_string
+      EXTERNAL read_error, set_control_parameter, PRMS_open_input_file, write_outfile, PRMS_open_output_file !, print_module
       ! Local Variables
       CHARACTER(LEN=MAXCONTROL_LENGTH) :: paramname
       CHARACTER(LEN=4) :: string
-      INTEGER nchars, ios, numvalues, param_type, control_unit, j
+      INTEGER nchars, ios, numvalues, param_type, control_unit, j, iret
       INTEGER, ALLOCATABLE :: int_parameter_values(:)
       CHARACTER(LEN=MAXFILE_LENGTH), ALLOCATABLE :: parameter_values(:)
       CHARACTER(LEN=MAXCONTROL_LENGTH) :: paramstring
@@ -105,8 +106,17 @@
         CALL set_control_parameter(paramname, numvalues, int_parameter_values, real_parameter_values, parameter_values)
         DEALLOCATE ( int_parameter_values, real_parameter_values, parameter_values )
       ENDDO
-
+      IF ( Print_debug>-1 ) PRINT *, EQULS
       CLOSE ( control_unit )
+
+      ! Open PRMS module output file
+      IF ( control_string(Model_output_file, 'model_output_file')/=0 ) CALL read_error(5, 'prms.out')
+      IF ( Print_debug>-2 ) THEN
+        IF ( Model/=2 .OR. Model/=3 .OR. Model/=5 .OR. Model/=6 ) THEN
+          CALL PRMS_open_output_file(PRMS_output_unit, Model_output_file, 'model_output_file', 0, iret)
+          IF ( iret/=0 ) STOP
+        ENDIF
+      ENDIF
 
       END SUBROUTINE read_control_file
 
@@ -123,9 +133,18 @@
       ! allocate and store parameter data
       ALLOCATE ( Control_parameter_data(Num_control_parameters+20) ) ! allow for extra parameters being expected
       DO i = 1, Num_control_parameters
-        Control_parameter_data(i)%read_flag = 0
-        Control_parameter_data(i)%data_type = 1
+        Control_parameter_data(i)%read_flag = 2 ! set to default
+        Control_parameter_data(i)%data_type = 1 ! 1 = integer, 2 = real, 4 = string
         Control_parameter_data(i)%numvals = 1
+        Control_parameter_data(i)%name = ' '
+        ! WARNING, parameter index is set based on order defaults defined
+        Control_parameter_data(i)%index = i
+      ENDDO
+
+      DO i = Num_control_parameters+1, Num_control_parameters+20
+        Control_parameter_data(i)%read_flag = 0 ! 0 means not set
+        Control_parameter_data(i)%data_type = 0 ! 1 = integer, 2 = real, 4 = string
+        Control_parameter_data(i)%numvals = 0
         Control_parameter_data(i)%name = ' '
         ! WARNING, parameter index is set based on order defaults defined
         Control_parameter_data(i)%index = i
@@ -989,360 +1008,53 @@
       ! Functions
       INTRINSIC :: TRIM
       ! Local Variables
-      INTEGER :: i, j, found, ivalue, dtype
-      REAL :: rvalue
-      CHARACTER(LEN=MAXFILE_LENGTH) :: cvalue
+      INTEGER :: i, j, found, dtype
 !***********************************************************************
       found = 0
       DO i = 1, Num_control_parameters
         IF ( TRIM(Paramname)==TRIM(Control_parameter_data(i)%name) ) THEN
+          found = i
           dtype = Control_parameter_data(i)%data_type
-          IF ( Control_parameter_data(i)%read_flag == 3 ) THEN ! one of variably sized parameters
+          IF ( Control_parameter_data(i)%read_flag > 2 ) THEN ! one of variably sized parameters
+            IF ( Control_parameter_data(i)%read_flag == 4 ) THEN
+              PRINT *, 'ERROR, allocatable control parameter in Control File multiple times'
+              PRINT *, '*** ', TRIM(Paramname), ' ***'
+              STOP
+            ENDIF
+!!!!! DANGER, if control parameter in twice, this is a problem as could try to allocate again
             IF ( dtype==1 ) THEN
               ALLOCATE ( Control_parameter_data(i)%values_int(Numvalues) )
+              Control_parameter_data(i)%read_flag = 4
             ELSEIF ( dtype==4 ) THEN
               ALLOCATE ( Control_parameter_data(i)%values_character(Numvalues) )
+              Control_parameter_data(i)%read_flag = 4
             ELSE
               STOP 'ERROR, allocatable control parameter that is real'
             ENDIF
           ELSE
             Control_parameter_data(i)%read_flag = 1
           ENDIF
+          Control_parameter_data(i)%numvals = Numvalues
           IF ( dtype==1 ) THEN
-            ivalue = Paramval_int(1)
-            found = i
             DO j = 1, Numvalues
               Control_parameter_data(i)%values_int(j) = Paramval_int(j)
             ENDDO
           ELSEIF ( dtype==4 ) THEN
-            cvalue = Paramval_char(1)
             DO j = 1, Numvalues
               Control_parameter_data(i)%values_character(j) = Paramval_char(j)
-              found = i
             ENDDO
           ELSE !IF ( dtype==2 ) THEN
-            rvalue = Paramval_real(1) ! add loop
-            found = i
+            DO j = 1, Numvalues
+              Control_parameter_data(i)%values_real(j) = Paramval_real(j)
+            ENDDO
           ENDIF
           EXIT
         ENDIF
       ENDDO
 
       IF ( found==0 ) THEN
-!        Num_control_parameters = Num_control_parameters + 1
-        PRINT *, 'WARNING, control parameter not valid: ', TRIM(Paramname), ', ignored'
-!        Control_parameter_data(Num_control_parameters)%read_flag = 2 ! set to default
-!        Control_parameter_data(Num_control_parameters)%data_type = 1
-!        Control_parameter_data(Num_control_parameters)%numvals = 1
-!        Control_parameter_data(Num_control_parameters)%name = paramname
-!        Control_parameter_data(Num_control_parameters)%values_int(1) = 0 !???
+        PRINT *, 'WARNING, control parameter not used: ', TRIM(Paramname), ', ignored'
         RETURN
-      ENDIF
-
-      IF ( dtype==1 .AND. Numvalues==1 .AND. Control_parameter_data(found)%read_flag /= 3 ) THEN
-        IF ( TRIM(Paramname)=='print_debug' ) THEN
-          Print_debug = ivalue
-        ELSEIF ( TRIM(Paramname)=='parameter_check_flag' ) THEN
-          Parameter_check_flag = ivalue
-        ELSEIF ( TRIM(Paramname)=='dprst_flag' ) THEN
-          Dprst_flag = ivalue
-        ELSEIF ( TRIM(Paramname)=='cascade_flag' ) THEN
-          Cascade_flag = ivalue
-        ELSEIF ( TRIM(Paramname)=='cascadegw_flag' ) THEN
-          Cascadegw_flag = ivalue
-        ELSEIF ( TRIM(Paramname)=='save_vars_to_file' ) THEN
-          Save_vars_to_file = ivalue
-        ELSEIF ( TRIM(Paramname)=='init_vars_from_file' ) THEN
-          Init_vars_from_file = ivalue
-        ELSEIF ( TRIM(Paramname)=='frozen_flag' ) THEN
-          Frozen_flag = ivalue
-        ELSEIF ( TRIM(Paramname)=='glacier_flag' ) THEN
-          Glacier_flag = ivalue
-        ELSEIF ( TRIM(Paramname)=='stream_temp_flag' ) THEN
-          Stream_temp_flag = ivalue
-        ELSEIF ( TRIM(Paramname)=='stream_temp_shade_flag' ) THEN
-          Stream_temp_shade_flag = ivalue
-        ELSEIF ( TRIM(Paramname)=='orad_flag' ) THEN
-          Orad_flag = ivalue
-        ELSEIF ( TRIM(Paramname)=='subbasin_flag' ) THEN
-          Subbasin_flag = ivalue
-        ELSEIF ( TRIM(Paramname)=='cbh_check_flag' ) THEN
-          Cbh_check_flag = ivalue
-        ELSEIF ( TRIM(Paramname)=='cbh_binary_flag' ) THEN
-          Cbh_binary_flag = ivalue
-        ELSEIF ( TRIM(Paramname)=='gwr_swale_flag' ) THEN
-          Gwr_swale_flag = ivalue
-        ELSEIF ( TRIM(Paramname)=='snow_cbh_flag' ) THEN
-          Snow_cbh_flag = ivalue
-        ELSEIF ( TRIM(Paramname)=='gwflow_cbh_flag' ) THEN
-          Gwflow_cbh_flag = ivalue
-        ELSEIF ( TRIM(Paramname)=='humidity_cbh_flag' ) THEN
-          Humidity_cbh_flag = ivalue
-        ELSEIF ( TRIM(Paramname)=='windspeed_cbh_flag' ) THEN
-          Windspeed_cbh_flag = ivalue
-        ELSEIF ( TRIM(Paramname)=='nhruOutON_OFF' ) THEN
-          NhruOutON_OFF = ivalue
-        ELSEIF ( TRIM(Paramname)=='nhruOut_freq' ) THEN
-          NhruOut_freq = ivalue
-        ELSEIF ( TRIM(Paramname)=='nhruOutVars' ) THEN
-          NhruOutVars = ivalue
-        ELSEIF ( TRIM(Paramname)=='nsubOutON_OFF' ) THEN
-          NsubOutON_OFF = ivalue
-        ELSEIF ( TRIM(Paramname)=='nsubOutVars' ) THEN
-          NsubOutVars = ivalue
-        ELSEIF ( TRIM(Paramname)=='statsON_OFF' ) THEN
-          StatsON_OFF = ivalue
-        ELSEIF ( TRIM(Paramname)=='csvON_OFF' ) THEN
-          CsvON_OFF = ivalue
-        ELSEIF ( TRIM(Paramname)=='aniOutON_OFF' ) THEN
-          AniOutON_OFF = ivalue
-        ELSEIF ( TRIM(Paramname)=='mapOutON_OFF' ) THEN
-          MapOutON_OFF = ivalue
-        ELSEIF ( TRIM(Paramname)=='nstatVars' ) THEN
-          NstatVars = ivalue
-        ELSEIF ( TRIM(Paramname)=='nmapOutVars' ) THEN
-          NmapOutVars = ivalue
-        ELSEIF ( TRIM(Paramname)=='naniOutVars' ) THEN
-          NaniOutVars = ivalue
-        ELSEIF ( TRIM(Paramname)=='ndispGraphs' ) THEN
-          NdispGraphs = ivalue
-        ELSEIF ( TRIM(Paramname)=='nsubOutVars' ) THEN
-          NsubOutVars = ivalue
-        ELSEIF ( TRIM(Paramname)=='nsubOut_freq' ) THEN
-          NsubOut_freq = ivalue
-        ELSEIF ( TRIM(Paramname)=='prms_warmup' ) THEN
-          Prms_warmup = ivalue
-        ELSEIF ( TRIM(Paramname)=='dyn_imperv_flag' ) THEN
-          Dyn_imperv_flag = ivalue
-        ELSEIF ( TRIM(Paramname)=='dyn_intcp_flag' ) THEN
-          Dyn_intcp_flag = ivalue
-        ELSEIF ( TRIM(Paramname)=='dyn_covden_flag' ) THEN
-          Dyn_covden_flag = ivalue
-        ELSEIF ( TRIM(Paramname)=='dyn_sro2dprst_perv_flag' ) THEN
-          Dyn_sro2dprst_perv_flag = ivalue
-        ELSEIF ( TRIM(Paramname)=='dyn_sro2dprst_imperv_flag' ) THEN
-          Dyn_sro2dprst_imperv_flag = ivalue
-        ELSEIF ( TRIM(Paramname)=='dyn_covtype_flag' ) THEN
-          Dyn_covtype_flag = ivalue
-        ELSEIF ( TRIM(Paramname)=='dispGraphsBuffSize' ) THEN
-          DispGraphsBuffSize = ivalue
-        ELSEIF ( TRIM(Paramname)=='dyn_transp_flag' ) THEN
-          Dyn_transp_flag = ivalue
-        ELSEIF ( TRIM(Paramname)=='dyn_transp_on_flag' ) THEN
-          Dyn_transp_on_flag = ivalue
-        ELSEIF ( TRIM(Paramname)=='dyn_fallfrost_flag' ) THEN
-          Dyn_fallfrost_flag = ivalue
-        ELSEIF ( TRIM(Paramname)=='dyn_springfrost_flag' ) THEN
-          Dyn_springfrost_flag = ivalue
-        ELSEIF ( TRIM(Paramname)=='dyn_potet_flag' ) THEN
-          Dyn_potet_flag = ivalue
-        ELSEIF ( TRIM(Paramname)=='dyn_soil_flag' ) THEN
-          Dyn_soil_flag = ivalue
-        ELSEIF ( TRIM(Paramname)=='dyn_radtrncf_flag' ) THEN
-          Dyn_radtrncf_flag = ivalue
-        ELSEIF ( TRIM(Paramname)=='dyn_snareathresh_flag' ) THEN
-          Dyn_snareathresh_flag = ivalue
-!        ELSEIF ( TRIM(Paramname)=='dyn_sro_to_dprst_flag' ) THEN
-!          Dyn_sro_to_dprst_flag = ivalue
-!        ELSEIF ( TRIM(Paramname)=='dyn_sro_to_imperv_flag' ) THEN
-!          Dyn_sro_to_imperv_flag = ivalue
-        ELSEIF ( TRIM(Paramname)=='dyn_dprst_flag' ) THEN
-          Dyn_dprst_flag = ivalue
-        ELSEIF ( TRIM(Paramname)=='segment_transferON_OFF' ) THEN
-          Segment_transferON_OFF = ivalue
-        ELSEIF ( TRIM(Paramname)=='gwr_transferON_OFF' ) THEN
-          Gwr_transferON_OFF = ivalue
-        ELSEIF ( TRIM(Paramname)=='external_transferON_OFF' ) THEN
-          External_transferON_OFF = ivalue
-!        ELSEIF ( TRIM(Paramname)=='consumed_transferON_OFF' ) THEN
-!          Consumed_transferON_OFF = ivalue
-        ELSEIF ( TRIM(Paramname)=='lake_transferON_OFF' ) THEN
-          Lake_transferON_OFF = ivalue
-        ELSEIF ( TRIM(Paramname)=='dprst_transferON_OFF' ) THEN
-          Dprst_transferON_OFF = ivalue
-!        ELSEIF ( TRIM(Paramname)=='soilzone_transferON_OFF' ) THEN
-!          Soilzone_transferON_OFF = ivalue
-!        ELSEIF ( TRIM(Paramname)=='canopy_transferON_OFF' ) THEN
-!          Canopy_transferON_OFF = ivalue
-
-       ELSEIF ( TRIM(Paramname)=='gsf_rpt' ) THEN
-          Gsf_rpt = ivalue
-        ELSEIF ( TRIM(Paramname)=='rpt_days' ) THEN
-          Rpt_days = ivalue
-        ELSE
-          PRINT *, '?? not found: ', TRIM(Paramname)
-        ENDIF
-      ELSEIF ( dtype==4 .AND. Numvalues==1 .AND. Control_parameter_data(found)%read_flag /= 3 ) THEN
-        IF ( TRIM(Paramname)=='model_mode' ) THEN
-          Model_mode = cvalue
-        ELSEIF ( TRIM(Paramname)=='executable_desc' ) THEN
-          Executable_desc = cvalue
-        ELSEIF ( TRIM(Paramname)=='executable_model' ) THEN
-          Executable_model = cvalue
-        ELSEIF ( TRIM(Paramname)=='precip_module' ) THEN
-          Precip_module = cvalue
-        ELSEIF ( TRIM(Paramname)=='temp_module' ) THEN
-          Temp_module = cvalue
-        ELSEIF ( TRIM(Paramname)=='solrad_module' ) THEN
-          Solrad_module = cvalue
-        ELSEIF ( TRIM(Paramname)=='et_module' ) THEN
-          Et_module = cvalue
-        ELSEIF ( TRIM(Paramname)=='srunoff_module' ) THEN
-          Srunoff_module = cvalue
-        ELSEIF ( TRIM(Paramname)=='strmflow_module' ) THEN
-          Strmflow_module = cvalue
-        ELSEIF ( TRIM(Paramname)=='transp_module' ) THEN
-          Transp_module = cvalue
-        ELSEIF ( TRIM(Paramname)=='data_file' ) THEN
-          Data_file = cvalue
-        ELSEIF ( TRIM(Paramname)=='param_file' ) THEN
-          Param_file = cvalue
-        ELSEIF ( TRIM(Paramname)=='model_output_file' ) THEN
-          Model_output_file = cvalue
-        ELSEIF ( TRIM(Paramname)=='csv_output_file' ) THEN
-          Csv_output_file = cvalue
-        ELSEIF ( TRIM(Paramname)=='var_save_file' ) THEN
-          Var_save_file = cvalue
-        ELSEIF ( TRIM(Paramname)=='var_init_file' ) THEN
-          Var_init_file = cvalue
-        ELSEIF ( TRIM(Paramname)=='stat_var_file' ) THEN
-          Stat_var_file = cvalue
-        ELSEIF ( TRIM(Paramname)=='ani_output_file' ) THEN
-          Ani_output_file = cvalue
-        ELSEIF ( TRIM(Paramname)=='nhruOutBaseFileName' ) THEN
-          NhruOutBaseFileName = cvalue
-        ELSEIF ( TRIM(Paramname)=='nsubOutBaseFileName' ) THEN
-          NsubOutBaseFileName = cvalue
-        ELSEIF ( TRIM(Paramname)=='tmax_day' ) THEN
-          Tmax_day = cvalue
-        ELSEIF ( TRIM(Paramname)=='tmin_day' ) THEN
-          Tmin_day = cvalue
-        ELSEIF ( TRIM(Paramname)=='precip_day' ) THEN
-          Precip_day = cvalue
-        ELSEIF ( TRIM(Paramname)=='swrad_day' ) THEN
-          Swrad_day = cvalue
-        ELSEIF ( TRIM(Paramname)=='potet_day' ) THEN
-          Potet_day = cvalue
-        ELSEIF ( TRIM(Paramname)=='transp_day' ) THEN
-          Transp_day = cvalue
-        ELSEIF ( TRIM(Paramname)=='windspeed_day' ) THEN
-          Windspeed_day = cvalue
-        ELSEIF ( TRIM(Paramname)=='humidity_day' ) THEN
-          Humidity_day = cvalue
-        ELSEIF ( TRIM(Paramname)=='modflow_name' ) THEN
-          Modflow_name = cvalue
-        ELSEIF ( TRIM(Paramname)=='gsflow_output_file' ) THEN
-          Gsflow_output_file = cvalue   
-        ELSEIF ( TRIM(Paramname)=='dprst_depth_dynamic' ) THEN
-          Dprst_depth_dynamic = cvalue
-        ELSEIF ( TRIM(Paramname)=='dprst_frac_dynamic' ) THEN
-          Dprst_frac_dynamic = cvalue
-        ELSEIF ( TRIM(Paramname)=='snow_intcp_dynamic' ) THEN
-          Snow_intcp_dynamic = cvalue
-        ELSEIF ( TRIM(Paramname)=='srain_intcp_dynamic' ) THEN
-          Srain_intcp_dynamic = cvalue
-        ELSEIF ( TRIM(Paramname)=='wrain_intcp_dynamic' ) THEN
-          Wrain_intcp_dynamic = cvalue
-        ELSEIF ( TRIM(Paramname)=='imperv_frac_dynamic' ) THEN
-          Imperv_frac_dynamic = cvalue
-        ELSEIF ( TRIM(Paramname)=='imperv_stor_dynamic' ) THEN
-          Imperv_stor_dynamic = cvalue
-        ELSEIF ( TRIM(Paramname)=='covtype_dynamic' ) THEN
-          Covtype_dynamic = cvalue
-        ELSEIF ( TRIM(Paramname)=='covden_sum_dynamic' ) THEN
-          Covden_sum_dynamic = cvalue
-        ELSEIF ( TRIM(Paramname)=='covden_win_dynamic' ) THEN
-          Covden_win_dynamic = cvalue
-        ELSEIF ( TRIM(Paramname)=='potetcoef_dynamic' ) THEN
-          Potetcoef_dynamic = cvalue
-        ELSEIF ( TRIM(Paramname)=='transpbeg_dynamic' ) THEN
-          Transpbeg_dynamic = cvalue
-        ELSEIF ( TRIM(Paramname)=='transpend_dynamic' ) THEN
-          Transpend_dynamic = cvalue
-        ELSEIF ( TRIM(Paramname)=='fallfrost_dynamic' ) THEN
-          Fallfrost_dynamic = cvalue
-        ELSEIF ( TRIM(Paramname)=='springfrost_dynamic' ) THEN
-          Springfrost_dynamic = cvalue
-        ELSEIF ( TRIM(Paramname)=='soilrechr_dynamic' ) THEN
-          Soilrechr_dynamic = cvalue
-        ELSEIF ( TRIM(Paramname)=='soilmoist_dynamic' ) THEN
-          Soilmoist_dynamic = cvalue
-        ELSEIF ( TRIM(Paramname)=='radtrncf_dynamic' ) THEN
-          Radtrncf_dynamic = cvalue
-        ELSEIF ( TRIM(Paramname)=='sro2dprst_perv_dynamic' ) THEN
-          Sro2dprst_perv_dyn = cvalue
-        ELSEIF ( TRIM(Paramname)=='sro2dprst_imperv_dynamic' ) THEN
-          Sro2dprst_imperv_dyn = cvalue
-        ELSEIF ( TRIM(Paramname)=='transp_on_dynamic' ) THEN
-          Transp_on_dynamic = cvalue
-!        ELSEIF ( TRIM(Paramname)=='stats_output_file' ) THEN
-!          Stats_output_file = cvalue
-!        ELSEIF ( TRIM(Paramname)=='pkwater_equiv_day' ) THEN
-!          Pkwater_equiv_day = cvalue
-!        ELSEIF ( TRIM(Paramname)=='pk_depth_day' ) THEN
-!          Pk_depth_day = cvalue
-!        ELSEIF ( TRIM(Paramname)=='snow_evap_day' ) THEN
-!          Snow_evap_day = cvalue
-!        ELSEIF ( TRIM(Paramname)=='snowcov_area_day' ) THEN
-!          Snowcov_area_day = cvalue
-!        ELSEIF ( TRIM(Paramname)=='snowmelt_day' ) THEN
-!          Snowmelt_day = cvalue
-!        ELSEIF ( TRIM(Paramname)=='gwres_flow_day' ) THEN
-!          Gwres_flow_day = cvalue
-        ELSE
-          PRINT *, '?? not found: ', TRIM(Paramname)
-        ENDIF
-      ELSEIF ( dtype==1 .AND. Numvalues==6 ) THEN
-        IF ( TRIM(Paramname)=='start_time' ) THEN
-          Starttime = Control_parameter_data(found)%values_int ! set to correct values
-        ELSEIF ( TRIM(Paramname)=='end_time' ) THEN
-          Endtime = Control_parameter_data(found)%values_int
-        ELSEIF ( TRIM(Paramname)=='modflow_time_zero' ) THEN
-          Modflow_time_zero = Control_parameter_data(found)%values_int
-        ELSE
-          PRINT *, '?? not found: ', TRIM(Paramname)
-        ENDIF
-      ELSEIF ( dtype==2 .AND. Numvalues==1 ) THEN
-        IF ( TRIM(Paramname)=='initial_deltat' ) THEN
-          Initial_deltat = rvalue
-        ELSE
-          PRINT *, '?? not found: ', TRIM(Paramname)
-        ENDIF
-      ELSEIF ( dtype==4 .AND. Control_parameter_data(found)%read_flag == 3 ) THEN
-   ! DANGER - parameters that get allocated if in Control File
-        Control_parameter_data(found)%numvals = Numvalues
-        IF ( TRIM(Paramname)=='mapOutVar_names' ) THEN
-          ALLOCATE ( MapOutVar_names(Numvalues) )
-          MapOutVar_names = Paramval_char
-        ELSEIF ( TRIM(Paramname)=='statVar_element' ) THEN
-          ALLOCATE ( StatVar_element(Numvalues) )
-          StatVar_element = Paramval_char
-        ELSEIF ( TRIM(Paramname)=='statVar_names' ) THEN
-          ALLOCATE ( StatVar_names(Numvalues) )
-          StatVar_names = Paramval_char
-!        ELSEIF ( TRIM(Paramname)=='aniOutVar_names' ) THEN
-!          ALLOCATE ( AniOutVar_names(Numvalues) )
-!          AniOutVar_names = Paramval_char
-        ELSEIF ( TRIM(Paramname)=='dispVar_names' ) THEN
-          ALLOCATE ( DispVar_names(Numvalues) )
-          DispVar_names = Paramval_char
-!        ELSEIF ( TRIM(Paramname)=='dispVar_plot' ) THEN
-!          ALLOCATE ( DispVar_plot(Numvalues) )
-!          DispVar_plot = Paramval_char
-        ELSEIF ( TRIM(Paramname)=='dispVar_element' ) THEN
-          ALLOCATE ( DispVar_element(Numvalues) )
-          DispVar_element = Paramval_char
-        ELSEIF ( TRIM(Paramname)=='nsubOutVar_names' ) THEN
-          ALLOCATE ( NsubOutVar_names(Numvalues) )
-          NsubOutVar_names = Paramval_char
-        ELSEIF ( TRIM(Paramname)=='nhruOutVar_names' ) THEN
-          ALLOCATE ( NhruOutVar_names(Numvalues) )
-          NhruOutVar_names = Paramval_char
-        ELSE
-          PRINT *, '?? not found: ', TRIM(Paramname)
-        ENDIF
-      ELSE
-        PRINT *, '?? not found: ', TRIM(Paramname)
       ENDIF
 
       END SUBROUTINE set_control_parameter

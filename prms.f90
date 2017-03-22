@@ -5,19 +5,19 @@
 ! PRMS main that controls time loop
 !***********************************************************************
       USE PRMS_CONTROL_FILE, ONLY: Julian_day_absolute
-      USE PRMS_MODULE, ONLY: Endtime, Starttime, Model, Logunt, Print_debug, PRMS_output_unit, Model_output_file
+      USE PRMS_MODULE, ONLY: Endtime, Starttime, Model, Logunt, Model, PRMS_output_unit
       USE PRMS_SET_TIME, ONLY: Nowtime
       USE PRMS_MMFAPI
       USE PRMS_DATA_FILE
       IMPLICIT NONE
 ! Functions
       INTRINSIC TRANSFER
-      EXTERNAL read_control_file, read_parameter_file_dimens, read_prms_data_file, read_data_line
-      EXTERNAL read_parameter_file_params, check_parameters_declared, read_error, dattim, gsflow_prms
+      EXTERNAL read_control_file, read_parameter_file_dimens, read_data_line, setup_dimens
+      EXTERNAL read_parameter_file_params, read_error, dattim, gsflow_prms, setup_params, read_prms_data_file
       INTEGER, EXTERNAL :: setdims, compute_julday
 ! Declared Parameters
 ! Local Variables
-      INTEGER :: i, dmy, startday, endday, num_ts, iret
+      INTEGER :: i, dmy, startday, endday, num_ts
       LOGICAL :: AFR
 !***********************************************************************
       CALL PRMS_open_module_file(Logunt, 'gsflow.log')
@@ -30,25 +30,28 @@
      &        '    An integration of the Precipitation-Runoff Modeling System (PRMS)', /, &
      &        '    and the Modular Groundwater Model (MODFLOW-NWT and MODFLOW-2005)', /)
 
-      CALL read_control_file
-      ! Open PRMS module output file
-      IF ( Print_debug>-2 ) THEN
-        CALL PRMS_open_output_file(PRMS_output_unit, Model_output_file, 'model_output_file', 0, iret)
-        IF ( iret/=0 ) STOP
-      ENDIF
+      CALL read_control_file()
+
+      CALL setup_dimens()
 
       dmy = setdims()
+
       ! over write start time with MODSIM start time, check to make sure it's valid with data
       ! start date and modflow_time_zero
       !CALL read_var_name_file
-      CALL read_parameter_file_dimens
-      CALL read_prms_data_file
-      CALL read_parameter_file_params
+      IF ( Model<2 ) THEN ! add conditions for PRMS-MODSIM and GSFLOW-MODSIM
+        WRITE ( PRMS_output_unit, 3 )
+        CALL setup_params()
+        CALL read_parameter_file_dimens()
+      ENDIF
 
       CALL gsflow_prms('decl')
-      CALL check_parameters_declared()
+
+      IF ( Model<2) CALL read_parameter_file_params() ! add conditions for PRMS-MODSIM and GSFLOW-MODSIM
+
       !print *, 'after check'
       CALL gsflow_prms('init')
+      IF ( Model<2) CALL read_prms_data_file() ! add conditions for PRMS-MODSIM and GSFLOW-MODSIM
       !print *, 'after init'
       startday = compute_julday(Starttime(1), Starttime(2), Starttime(3))
       Julian_day_absolute = startday

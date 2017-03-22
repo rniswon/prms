@@ -18,7 +18,7 @@
 ! Paramters
       INTEGER, SAVE, ALLOCATABLE :: Nhm_id(:)
 ! Control Parameters
-      INTEGER, SAVE :: NhruOutVars, NhruOut_freq
+      INTEGER, SAVE :: NhruOutVars, NhruOut_freq, Prms_warmup
       CHARACTER(LEN=36), SAVE, ALLOCATABLE :: NhruOutVar_names(:)
       CHARACTER(LEN=MAXFILE_LENGTH), SAVE :: NhruOutBaseFileName
       END MODULE PRMS_NHRU_SUMMARY
@@ -57,13 +57,14 @@
       INTEGER :: i
       CHARACTER(LEN=80), SAVE :: Version_nhru_summary
 !***********************************************************************
-      Version_nhru_summary = 'nhru_summary.f90 2017-03-15 16:50:00Z'
+      Version_nhru_summary = 'nhru_summary.f90 2017-01-23 15:37:00Z'
       CALL print_module(Version_nhru_summary, 'Nhru Output Summary         ', 90)
       MODNAME = 'nhru_summary'
 
       IF ( control_integer(NhruOutVars, 'nhruOutVars')/=0 ) NhruOutVars = 0
       ! 1 = daily, 2 = monthly, 3 = both, 4 = mean monthly, 5 = mean yearly, 6 = yearly total
       IF ( control_integer(NhruOut_freq, 'nhruOut_freq')/=0 ) NhruOut_freq = 0
+      IF ( control_integer(Prms_warmup, 'prms_warmup')/=0 ) prms_warmup = 0
 
       IF ( NhruOutVars==0 ) THEN
         IF ( Model/=99 ) THEN
@@ -74,8 +75,7 @@
           RETURN
         ENDIF
       ELSE
-        ! ALLOCATE ( NhruOutVar_names(NhruOutVars) ) ! allocated in read_control
-        ALLOCATE ( Nhru_var_type(NhruOutVars), Nc_vars(NhruOutVars) )
+        ALLOCATE ( NhruOutVar_names(NhruOutVars), Nhru_var_type(NhruOutVars), Nc_vars(NhruOutVars) )
         NhruOutVar_names = ' '
         DO i = 1, NhruOutVars
           IF ( control_string_array(NhruOutVar_names(i), 'nhruOutVar_names', i)/=0 ) CALL read_error(5, 'nhruOutVar_names')
@@ -98,13 +98,13 @@
 !***********************************************************************
       SUBROUTINE nhru_summaryinit()
       USE PRMS_NHRU_SUMMARY
-      USE PRMS_MODULE, ONLY: Nhru, Inputerror_flag , MAXFILE_LENGTH, Start_year, End_year, NhruOutON_OFF, Prms_warmup
+      USE PRMS_MODULE, ONLY: Nhru, Inputerror_flag , MAXFILE_LENGTH, Start_year, End_year, NhruOutON_OFF
       IMPLICIT NONE
       INTRINSIC ABS
       INTEGER, EXTERNAL :: getvartype, numchars, getparam !, getvarsize
       EXTERNAL read_error, PRMS_open_output_file
 ! Local Variables
-      INTEGER :: ios, ierr, jj, j !, size, dim
+      INTEGER :: ios, ierr, size, dim, jj, j
       CHARACTER(LEN=MAXFILE_LENGTH) :: fileName
 !***********************************************************************
       Begin_results = 1

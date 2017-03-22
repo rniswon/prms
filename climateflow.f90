@@ -604,7 +604,7 @@
 
       ALLOCATE ( Adjmix_rain(Nhru,12) )
       IF ( declparam(Precip_module, 'adjmix_rain', 'nhru,nmonths', 'real', &
-     &     '1.0', '0.6', '1.4', &
+     &     '1.0', '0.0', '3.0', &
      &     'Adjustment factor for rain in a rain/snow mix', &
      &     'Monthly (January to December) factor to adjust rain proportion in a mixed rain/snow event', &
      &     'decimal fraction')/=0 ) CALL read_error(1, 'adjmix_rain')

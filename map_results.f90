@@ -27,7 +27,7 @@
       INTEGER, SAVE, ALLOCATABLE :: Gvr_map_id(:), Gvr_hru_id(:)
       REAL, SAVE, ALLOCATABLE :: Gvr_map_frac(:)
 ! Control Parameters
-      INTEGER, SAVE :: NmapOutVars
+      INTEGER, SAVE :: NmapOutVars, Prms_warmup
       CHARACTER(LEN=36), SAVE, ALLOCATABLE :: MapOutVar_names(:)
       END MODULE PRMS_MAP_RESULTS
 
@@ -76,6 +76,7 @@
       CALL print_module(Version_map_results, 'Output Summary              ', 90)
       MODNAME = 'map_results'
 
+      IF ( control_integer(Prms_warmup, 'prms_warmup')/=0 ) prms_warmup = 0
       IF ( control_integer(NmapOutVars, 'nmapOutVars')/=0 ) NmapOutVars = 0
       IF ( NmapOutVars==0 ) THEN
         IF ( Model/=99 ) THEN
@@ -85,8 +86,7 @@
           RETURN
         ENDIF
       ELSE
-        ! ALLOCATE ( MapOutVar_names(NmapOutVars) ) ! allocated in read_control
-        ALLOCATE ( Map_var_type(NmapOutVars), Nc_vars(NmapOutVars) )
+        ALLOCATE ( MapOutVar_names(NmapOutVars), Map_var_type(NmapOutVars), Nc_vars(NmapOutVars) )
         ALLOCATE ( Map_var(Nhru, NmapOutVars), Map_var_dble(Nhru, NmapOutVars) )
         MapOutVar_names = ' '
         DO i = 1, NmapOutVars
@@ -165,13 +165,13 @@
       INTEGER FUNCTION map_resultsinit()
       USE PRMS_MAP_RESULTS
       USE PRMS_MODULE, ONLY: Nhru, Print_debug, Nhrucell, Ngwcell, Inputerror_flag, MapOutON_OFF, &
-     &                       Start_year, Start_month, Start_day, End_year, Parameter_check_flag, Prms_warmup
+     &                       Start_year, Start_month, Start_day, End_year, Parameter_check_flag
       IMPLICIT NONE
       INTRINSIC ABS, DBLE
       INTEGER, EXTERNAL :: getparam, getvartype, numchars !, getvarsize
       EXTERNAL read_error, PRMS_open_output_file
 ! Local Variables
-      INTEGER :: i, jj, is, ios, ierr !, size, dim
+      INTEGER :: i, jj, is, ios, ierr, size, dim
       REAL, ALLOCATABLE, DIMENSION(:) :: map_frac
 !***********************************************************************
       map_resultsinit = 0
