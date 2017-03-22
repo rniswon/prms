@@ -1,4 +1,4 @@
-      ! utils_prms.f90 2016-11-03 17:58:00Z
+      ! utils_prms.f90 2017-03-22 11:44:00Z
 !***********************************************************************
 !     Read CBH File to current time
 !***********************************************************************
@@ -816,7 +816,7 @@
 ! print module version information to user's screen
 !***********************************************************************
       SUBROUTINE print_module(Versn, Description, Ftntype)
-      USE PRMS_MODULE, ONLY: PRMS_output_unit, Model, Print_debug, Logunt
+      USE PRMS_MODULE, ONLY: PRMS_output_unit, Model, Print_debug !, Logunt
       IMPLICIT NONE
       ! Arguments
       CHARACTER(LEN=*), INTENT(IN) :: Description, Versn
@@ -834,7 +834,7 @@
         n = INDEX( Versn, '.f' ) + 1
       ENDIF
       PRINT '(A)', Description//' '//Versn(:n)//', version: '//Versn(n+2:nc-10)
-      WRITE ( Logunt, '(A)' ) Description//' '//Versn(:n)//', version: '//Versn(n+2:nc)
+      !WRITE ( Logunt, '(A)' ) Description//' '//Versn(:n)//', version: '//Versn(n+2:nc)
       IF ( Model/=2 ) WRITE ( PRMS_output_unit, '(A)' ) Description//' '//Versn(:n)//', version: '//Versn(n+2:nc)
       END SUBROUTINE print_module
 
@@ -948,8 +948,8 @@
 ! and compute some basin variables
 !***********************************************************************
       SUBROUTINE check_nhru_params()
-      USE PRMS_MODULE, ONLY: Temp_flag, Ntemp, Nevap, Print_debug, Inputerror_flag
-      USE PRMS_BASIN, ONLY: Hru_type, Active_hrus, Hru_route_order, Cov_type
+      USE PRMS_MODULE, ONLY: Temp_flag, Ntemp, Nevap, Inputerror_flag
+      USE PRMS_BASIN, ONLY: Active_hrus, Hru_route_order
       USE PRMS_CLIMATEVARS, ONLY: Hru_tsta, Hru_pansta, Use_pandata
       IMPLICIT NONE
 ! Functions
@@ -963,18 +963,8 @@
       ! Sanity checks for parameters
       DO j = 1, Active_hrus
         i = Hru_route_order(j)
-
         IF ( check_tsta==1 ) CALL checkdim_param_limits(i, 'hru_tsta', 'ntemp', Hru_tsta(i), 1, Ntemp, Inputerror_flag)
-
         IF ( Use_pandata==1 ) CALL checkdim_param_limits(i, 'hru_pansta', 'nevap', Hru_pansta(i), 1, Nevap, Inputerror_flag)
-
-        IF ( Hru_type(i)==2 ) THEN
-          IF ( Cov_type(i)/=0 ) THEN
-            IF ( Print_debug>-1 ) PRINT *,  'WARNING, cov_type must be 0 for lakes, reset from:', Cov_type(i), ' to 0 for HRU:', i
-            Cov_type(i) = 0
-          ENDIF
-          CYCLE
-        ENDIF
       ENDDO
 
       END SUBROUTINE check_nhru_params

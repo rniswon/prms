@@ -75,7 +75,7 @@
 !***********************************************************************
       basdecl = 0
 
-      Version_basin = 'basin.f90 2017-03-20 15:35:00Z'
+      Version_basin = 'basin.f90 2017-03-22 11:40:00Z'
       CALL print_module(Version_basin, 'Basin Definition            ', 90)
       MODNAME = 'basin'
 
@@ -225,14 +225,14 @@
       USE PRMS_BASIN
       USE PRMS_MODULE, ONLY: Nhru, Nlake, Dprst_flag, &
      &    Print_debug, Inputerror_flag, Model, PRMS_VERSION, Starttime, Endtime, &
-     &    Lake_route_flag, Et_flag, Precip_flag, Cascadegw_flag , Numlakes
+     &    Lake_route_flag, Et_flag, Precip_flag, Cascadegw_flag, Numlakes, Prms_output_unit
       IMPLICIT NONE
 ! Functions
       INTEGER, EXTERNAL :: getparam
       EXTERNAL write_outfile
       INTRINSIC ABS, DBLE, SNGL, MOD
 ! Local Variables
-      CHARACTER(LEN=68) :: buffer
+      CHARACTER(LEN=69) :: buffer
       INTEGER :: i, j, lakeid
       REAL :: harea
       DOUBLE PRECISION :: basin_imperv, basin_perv, basin_dprst, harea_dble
@@ -294,6 +294,10 @@
           Hru_imperv(i) = 0.0
           Hru_perv(i) = harea
           IF ( Hru_type(i)==0 ) CYCLE
+          IF ( Cov_type(i)/=0 ) THEN
+            !IF ( Print_debug>-1 ) PRINT *,  'WARNING, cov_type reset from:', Cov_type(i), ' to 0 for lake HRU:', i
+            Cov_type(i) = 0
+          ENDIF
           Water_area = Water_area + harea_dble
           Numlake_hrus = Numlake_hrus + 1
           lakeid = Lake_hru_id(i)
@@ -413,40 +417,47 @@
 
       basin_perv = basin_perv*Basin_area_inv
       basin_imperv = basin_imperv*Basin_area_inv
-      IF ( Dprst_flag==1 ) basin_dprst = basin_dprst*Basin_area_inv
 
       IF ( Print_debug==2 ) THEN
         PRINT *, ' HRU     Area'
         PRINT ('(I7, F14.5)'), (i, Hru_area(i), i=1, Nhru)
-        PRINT *, 'Sum of HRU areas      = ', Totarea
+        PRINT *, 'Model domain area     = ', Totarea
         PRINT *, 'Active basin area     = ', Active_area
+        IF ( Water_area>0.0D0 ) PRINT *, 'Lake area             = ', Water_area
         PRINT *, 'Fraction impervious   = ', basin_imperv
         PRINT *, 'Fraction pervious     = ', basin_perv
-        IF ( Dprst_flag==1 ) PRINT *, 'Fraction depression storage =', basin_dprst
+        IF ( Water_area>0.0D0 ) PRINT *, 'Fraction lakes        = ', Water_area*Basin_area_inv
+        IF ( Dprst_flag==1 ) PRINT *, 'Depression storage area     =', basin_dprst
         PRINT *, ' '
       ENDIF
 
 !     print out start and end times
       IF ( Print_debug>-2 ) THEN
-        CALL write_outfile('  ')
         !CALL write_outfile(' Surface Water and Energy Budgets Simulated by '//PRMS_VERSION)
-        WRITE (buffer, 9002) ' Start time: ', Starttime
-        CALL write_outfile(buffer(:32))
-        WRITE (buffer, 9002) ' End time:   ', Endtime
-        CALL write_outfile(buffer(:32))
-        WRITE (buffer, 9003) ' Sum of HRU areas:', Totarea, '; Active basin area:', Active_area
-        CALL write_outfile(buffer(:62))
-        WRITE (buffer, 9004) ' Fraction impervious:', basin_imperv, '; Fraction pervious:   ', basin_perv
-        CALL write_outfile(buffer(:62))
+        WRITE ( Prms_output_unit, '(1X)' )
+        WRITE (buffer, 9002) 'Start time: ', Starttime
+        CALL write_outfile(buffer(:31))
+        WRITE (buffer, 9002) 'End time:   ', Endtime
+        CALL write_outfile(buffer(:31))
+        WRITE ( Prms_output_unit, '(1X)' )
+        WRITE (buffer, 9003) 'Model domain area:   ', Totarea, '    Active basin area:', Active_area
+        CALL write_outfile(buffer)
+        WRITE (buffer, 9004) 'Fraction impervious:  ', basin_imperv, '    Fraction pervious: ', basin_perv
+        CALL write_outfile(buffer)
+        IF ( Water_area>0.0D0 ) THEN
+          WRITE (buffer, 9004) 'Lake area:            ', Water_area, '    Fraction lakes:    ', Water_area*Basin_area_inv
+          CALL write_outfile(buffer)
+        ENDIF
         IF ( Dprst_flag==1 ) THEN
-          WRITE (buffer, 9004) ' Fraction depression storage:', basin_dprst
-          CALL write_outfile(buffer(:45))
+          WRITE (buffer, 9005) 'DPRST area:          ', basin_dprst, '    Fraction DPRST:   ', basin_dprst*Basin_area_inv
+          CALL write_outfile(buffer)
         ENDIF
         CALL write_outfile(' ')
       ENDIF
 
  9002 FORMAT (A, I4.2, 2('/', I2.2), I3.2, 2(':', I2.2))
- 9003 FORMAT (2(A,F12.2))
- 9004 FORMAT (2(A,F9.4))
+ 9003 FORMAT (2(A,F13.2))
+ 9004 FORMAT (2(A,F12.4))
+ 9005 FORMAT (A, F13.2, A, F13.4)
 
       END FUNCTION basinit
