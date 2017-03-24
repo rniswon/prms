@@ -165,13 +165,13 @@
      &       'Basin area-weighted average of lake-bed seepage to GWRs', &
      &       'acre-inches', Basin_lake_seep)/=0 ) CALL read_error(3, 'basin_lake_seep')
 
-        ALLOCATE ( Lake_seepage(Numlakes) )
-        IF ( declvar(MODNAME, 'lake_seepage', 'numlakes', Numlakes, 'double', &
+        ALLOCATE ( Lake_seepage(Ngw) )
+        IF ( declvar(MODNAME, 'lake_seepage', 'ngw', Ngw, 'double', &
      &       'Lake-bed seepage from each lake to associated GWRs', &
      &       'inches', Lake_seepage)/=0 ) CALL read_error(3, 'lake_seepage')
 
-        ALLOCATE ( Gw_seep_lakein(Numlakes) )
-        IF ( declvar(MODNAME, 'gw_seep_lakein', 'numlakes', Numlakes, 'double', &
+        ALLOCATE ( Gw_seep_lakein(Ngw) )
+        IF ( declvar(MODNAME, 'gw_seep_lakein', 'ngw', Ngw, 'double', &
      &       'Groundwater discharge to any associated lake for each GWR', &
      &       'inches', Gw_seep_lakein)/=0 ) CALL read_error(3, 'gw_seep_lakein')
 
@@ -228,8 +228,8 @@
      &         'feet')/=0 ) CALL read_error(1, 'elevlake_init')
         ENDIF
 
-        ALLOCATE ( Gw_seep_coef(Numlakes) )
-        IF ( declparam(MODNAME, 'gw_seep_coef', 'numlakes', 'real', &
+        ALLOCATE ( Gw_seep_coef(Ngw) )
+        IF ( declparam(MODNAME, 'gw_seep_coef', 'ngw', 'real', &
      &       '0.015', '0.001', '0.05', &
      &       'Linear coefficient to compute seepage and groundwater'// &
      &       ' discharge to and from associated lake HRUs', &
@@ -336,7 +336,7 @@
       IF ( Dprst_flag==1 ) Gwin_dprst = 0.0D0
 
       IF ( Weir_gate_flag==1 ) THEN
-        IF ( getparam(MODNAME, 'gw_seep_coef', Numlakes, 'real', Gw_seep_coef)/=0 ) CALL read_error(2, 'gw_seep_coef')
+        IF ( getparam(MODNAME, 'gw_seep_coef', Ngw, 'real', Gw_seep_coef)/=0 ) CALL read_error(2, 'gw_seep_coef')
         IF ( getparam(MODNAME, 'lake_seep_elev', Numlakes, 'real', Lake_seep_elev)/=0 ) CALL read_error(2, 'lake_seep_elev')
         IF ( Init_vars_from_file==0 ) THEN
           IF ( getparam(MODNAME, 'elevlake_init', Numlakes, 'real', Elevlake_init)/=0 ) CALL read_error(2, 'elevlake_init')
@@ -427,7 +427,7 @@
               ! seepage added to GWR
               jjj = Lake_hru_id(j) !! jjj must be > zero due to check above
               !rsr, need seepage variable for WB
-              seepage = DBLE( (Elevlake(jjj)-Lake_seep_elev(jjj))*12.0*Gw_seep_coef(jjj) )
+              seepage = DBLE( (Elevlake(jjj)-Lake_seep_elev(jjj))*12.0*Gw_seep_coef(j) )
               IF ( seepage<0.0D0 ) THEN
                 IF ( DABS(seepage)>Gwres_stor(j) ) THEN
                   PRINT *, 'WARNING, GWR storage insufficient for discharge to lake:', jjj, ' GWR:', j
@@ -438,9 +438,9 @@
                   PRINT *, 'Lake elevation, storage, and water balance not adjusted'
                   seepage = -Gwres_stor(j)
                 ENDIF
-                Gw_seep_lakein(jjj) = Gw_seep_lakein(jjj) - seepage
+                Gw_seep_lakein(j) = Gw_seep_lakein(j) - seepage
               ELSE
-                Lake_seepage(jjj) = Lake_seepage(jjj) + seepage
+                Lake_seepage(j) = Lake_seepage(j) + seepage
               ENDIF
               Basin_lake_seep = Basin_lake_seep + seepage*Hru_area_dble(j)
               Gwres_stor(j) = Gwres_stor(j) + seepage
@@ -473,7 +473,7 @@
           Gwin_dprst(i) = Dprst_seep_hru(i)*gwarea
           gwin = gwin + Gwin_dprst(i)
         ENDIF
-        IF ( Gwr_transfers_on==1 ) gwin = gwin + (Gwr_gain(i)-Gwr_transfer(i))/Cfs_conv/gwarea
+        IF ( Gwr_transfers_on==1 ) gwin = gwin + (Gwr_gain(i)-Gwr_transfer(i))/Cfs_conv
         gwstor = gwstor + gwin
         Basin_gwin = Basin_gwin + gwin
         IF ( Gwminarea_flag==1 ) THEN

@@ -81,10 +81,17 @@
           IF ( getparam(MODNAME, 'soil_rechr_max', Nhru, 'real', Soil_rechr_max)/=0 ) CALL read_error(2, 'soil_rechr_max')
           PRINT *, 'New parameters written to PRMS_5.params'
           CALL PRMS_open_module_file(ounit, 'PRMS_5.params')
-          Soil_rechr_init_frac = Soil_rechr_init/Soil_rechr_max
-          Soil_rechr_max_frac = Soil_rechr_max/Soil_moist_max
-          Soil_moist_init_frac = Soil_moist_init/Soil_moist_max
-          Ssstor_init_frac = Ssstor_init/Sat_threshold
+          Soil_rechr_init_frac = 0.0
+          Soil_rechr_max_frac = 0.0
+          Ssstor_init_frac = 0.0
+          DO i = 1, Nhru
+            IF ( Soil_rechr_max(i)>0.0 ) Soil_rechr_init_frac(i) = Soil_rechr_init(i)/Soil_rechr_max(i)
+            IF ( Soil_moist_max(i)>0.0 ) THEN
+              Soil_rechr_max_frac(i) = Soil_rechr_max(i)/Soil_moist_max(i)
+              Soil_moist_init_frac(i) = Soil_moist_init(i)/Soil_moist_max(i)
+            ENDIF
+            IF ( Sat_threshold(i)>0.0 ) Ssstor_init_frac(i) = Ssstor_init(i)/Sat_threshold(i)
+          ENDDO
           Tmax_allrain_offset = Tmax_allrain - Tmax_allsnow
           IF ( Dprst_flag==1 ) THEN
             IF ( getparam(MODNAME, 'hru_area', Nhru, 'real', Hru_area)/=0 ) CALL read_error(2, 'hru_area')

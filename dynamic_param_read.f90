@@ -62,7 +62,7 @@
       IF ( Process(:3)=='run' ) THEN
         dynamic_param_read = dynparamrun()
       ELSEIF ( Process(:4)=='decl' ) THEN
-        Version_dynamic_param_read = 'dynamic_param_read.f90 2017-03-15 16:48:00Z'
+        Version_dynamic_param_read = 'dynamic_param_read.f90 2017-03-24 10:01:00Z'
         CALL print_module(Version_dynamic_param_read, 'Time Series Data            ', 90)
         !MODNAME = 'dynamic_param_read'
       ELSEIF ( Process(:4)=='init' ) THEN
@@ -398,7 +398,7 @@
      &    Dyn_sro2dprst_perv_flag, Dyn_sro2dprst_imperv_flag, Et_flag, Dyn_potet_flag
       USE PRMS_SET_TIME, ONLY: Nowyear, Nowmonth, Nowday
       USE PRMS_BASIN, ONLY: Active_hrus, Hru_route_order, Hru_type, Hru_area, Dprst_clos_flag, &
-     &    Hru_percent_imperv, Hru_frac_perv, Hru_imperv, Hru_perv, Dprst_frac, &
+     &    Hru_percent_imperv, Hru_frac_perv, Hru_imperv, Hru_perv, Dprst_frac, Dprst_open_flag, &
      &    Dprst_area_max, Dprst_area_open_max, Dprst_area_clos_max, Dprst_frac_open, &
      &    Cov_type, Basin_area_inv, NEARZERO, Dprst_frac, Covden_win, Covden_sum, DNEARZERO
       USE PRMS_CLIMATEVARS, ONLY: Transp_on, Epan_coef
@@ -451,6 +451,7 @@
         IF ( Dprst_frac_flag==1 ) THEN
           Check_dprst_frac = 0
           Dprst_clos_flag = 0
+          Dprst_open_flag = 0
           IF ( Dprst_frac_next_mo/=0 ) THEN
             IF ( Dprst_frac_next_yr==Nowyear .AND. Dprst_frac_next_mo==Nowmonth .AND. Dprst_frac_next_day==Nowday ) THEN
               ! Temp3 has new values, Dprst_frac has old values
@@ -523,6 +524,7 @@
             Dprst_area_clos_max(i) = dprst_areamax - Dprst_area_open_max(i)
             Dprst_area_max(i) = Dprst_area_open_max(i) + Dprst_area_clos_max(i)
             IF ( Dprst_area_clos_max(i)>0.0 ) Dprst_clos_flag = 0
+            IF ( Dprst_area_open_max(i)>0.0 ) Dprst_open_flag = 0
             Dprst_frac(i) = Dprst_area_max(i)/harea
             Dprst_vol_clos_max(i) = DBLE( Dprst_area_clos_max(i)*Dprst_depth_avg(i) )
             Dprst_vol_open_max(i) = DBLE( Dprst_area_open_max(i)*Dprst_depth_avg(i) )

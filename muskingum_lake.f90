@@ -207,7 +207,7 @@
 !***********************************************************************
       muskingum_lake_decl = 0
 
-      Version_muskingum_lake = 'muskingum_lake.f90 2017-02-22 14:15:00Z'
+      Version_muskingum_lake = 'muskingum_lake.f90 2017-03-24 09:18:00Z'
       CALL print_module(Version_muskingum_lake, 'Streamflow Routing          ', 90)
       MODNAME = 'muskingum_lake'
 
@@ -305,12 +305,12 @@
 
       ALLOCATE ( Lake_outcfs(Numlakes) )
       IF ( declvar(MODNAME, 'lake_outcfs', 'numlakes', Numlakes, 'double', &
-     &     'Streamflow leaving each lake, includes in second outlet flow', &
+     &     'Streamflow leaving each lake, includes any second outlet flow', &
      &     'cfs', Lake_outcfs)/=0 ) CALL read_error(3, 'lake_outcfs')
 
       ALLOCATE ( Lake_outcms(Numlakes) )
       IF ( declvar(MODNAME, 'lake_outcms', 'numlakes', Numlakes, 'double', &
-     &     'Streamflow leaving each lake, includes in second outlet flow', &
+     &     'Streamflow leaving each lake, includes any second outlet flow', &
      &     'cms', Lake_outcms)/=0 ) CALL read_error(3, 'lake_outcms')
 
 ! Declared Variables for Puls or linear routing
@@ -992,6 +992,10 @@
           tocfs = Hru_area_dble(k)*Cfs_conv
           lakeid = Lake_hru_id(k)
           Lake_precip(lakeid) = Lake_precip(lakeid) + tocfs*DBLE(Hru_ppt(k))
+          IF ( Weir_gate_flag==1 ) THEN
+            Lake_seep_in(lakeid) = Lake_seep_in(lakeid) + tocfs*Gw_seep_lakein(k)
+            Lake_2gw(lakeid) = Lake_2gw(lakeid) + tocfs*Lake_seepage(k)
+          ENDIF
           IF ( Cascade_flag==1 ) THEN
             Lake_sroff(lakeid) = Lake_sroff(lakeid) + tocfs*(Hortonian_lakes(k)+Upslope_dunnianflow(k))
             Lake_interflow(lakeid) = Lake_interflow(lakeid) + tocfs*Upslope_interflow(k)
@@ -999,10 +1003,6 @@
           Lake_evap(lakeid) = Lake_evap(lakeid) + tocfs*Hru_actet(k)
         ENDDO
         DO lakeid = 1, Numlakes
-          IF ( Weir_gate_flag==1 ) THEN
-            Lake_seep_in(lakeid) = tocfs*Gw_seep_lakein(lakeid)
-            Lake_2gw(lakeid) = tocfs*Lake_seepage(lakeid)
-          ENDIF
           Lake_inflow(lakeid) = Lake_precip(lakeid)
           IF ( Cascade_flag==1 ) THEN
             Lake_lateral_inflow(lakeid) = Lake_sroff(lakeid) + Lake_interflow(lakeid)
@@ -1143,10 +1143,10 @@
         ELSEIF ( segtype==11 ) THEN
           Flow_to_great_lakes = Flow_to_great_lakes + segout
         ENDIF
-        IF ( toseg==0 ) THEN
+        IF ( Tosegment(iorder)==0 ) THEN
           Flow_out = Flow_out + segout
         ELSE
-          Seg_upstream_inflow(toseg) = Seg_upstream_inflow(toseg) + segout
+          Seg_upstream_inflow(Tosegment(iorder)) = Seg_upstream_inflow(Tosegment(iorder)) + segout
         ENDIF
         Segment_delta_flow(i) = Segment_delta_flow(i) + Seg_inflow(i) - segout
 !        IF ( Segment_delta_flow(i) < 0.0D0 ) PRINT *, 'negative delta flow', Segment_delta_flow(i)

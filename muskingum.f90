@@ -133,7 +133,7 @@
 !***********************************************************************
       muskingum_decl = 0
 
-      Version_muskingum = 'muskingum.f90 2017-02-14 16:22:00Z'
+      Version_muskingum = 'muskingum.f90 2017-03-24 09:22:00Z'
       CALL print_module(Version_muskingum, 'Streamflow Routing          ', 90)
       MODNAME = 'muskingum'
 
@@ -362,10 +362,10 @@
         ELSEIF ( segtype==11 ) THEN
           Flow_to_great_lakes = Flow_to_great_lakes + segout
         ENDIF
-        IF ( toseg==0 ) THEN
+        IF ( Tosegment(i)==0 ) THEN
           Flow_out = Flow_out + segout
         ELSE
-          Seg_upstream_inflow(toseg) = Seg_upstream_inflow(toseg) + segout
+          Seg_upstream_inflow(Tosegment(i)) = Seg_upstream_inflow(Tosegment(i)) + segout
         ENDIF
         Segment_delta_flow(i) = Segment_delta_flow(i) + Seg_inflow(i) - segout
 !        IF ( Segment_delta_flow(i) < 0.0D0 ) PRINT *, 'negative delta flow', Segment_delta_flow(i)

@@ -15,7 +15,7 @@
       REAL, PARAMETER :: METERS2FEET = 1.0/FEET2METERS
       CHARACTER(LEN=5), SAVE :: MODNAME
       INTEGER, SAVE :: Numlake_hrus, Active_hrus, Active_gwrs, Numlakes_check
-      INTEGER, SAVE :: Hemisphere, Dprst_clos_flag
+      INTEGER, SAVE :: Hemisphere, Dprst_clos_flag, Dprst_open_flag
       DOUBLE PRECISION, SAVE :: Land_area, Water_area
       DOUBLE PRECISION, SAVE :: Basin_area_inv, Basin_lat, Totarea, Active_area
       REAL, SAVE, ALLOCATABLE :: Hru_elev_feet(:), Hru_elev_meters(:)
@@ -75,7 +75,7 @@
 !***********************************************************************
       basdecl = 0
 
-      Version_basin = 'basin.f90 2017-03-22 11:40:00Z'
+      Version_basin = 'basin.f90 2017-03-24 09:08:00Z'
       CALL print_module(Version_basin, 'Basin Definition            ', 90)
       MODNAME = 'basin'
 
@@ -269,6 +269,7 @@
         Dprst_area_max = 0.0
       ENDIF
       Dprst_clos_flag = 0
+      Dprst_open_flag = 0
       basin_perv = 0.0D0
       basin_imperv = 0.0D0
       basin_dprst = 0.0D0
@@ -349,7 +350,6 @@
               PRINT *, '       value:', Hru_percent_imperv(i) + Dprst_frac(i)
               Inputerror_flag = 1
             ENDIF
-            IF ( Dprst_area_open_max(i)>0.0 ) Dprst_frac_open(i) = Dprst_area_max(i)/Dprst_area_open_max(i)
             Hru_perv(i) = harea - Hru_imperv(i) - Dprst_area_max(i)
           ENDIF
         ENDIF
@@ -360,6 +360,7 @@
         IF ( Dprst_flag==1 ) THEN
           basin_dprst = basin_dprst + DBLE( Dprst_area_max(i) )
           IF ( Dprst_area_clos_max(i)>0.0 ) Dprst_clos_flag = 1
+          IF ( Dprst_area_open_max(i)>0.0 ) Dprst_open_flag = 1
         ENDIF
       ENDDO
 

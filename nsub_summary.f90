@@ -99,7 +99,7 @@
       SUBROUTINE nsub_summaryinit()
       USE PRMS_NSUB_SUMMARY
       USE PRMS_MODULE, ONLY: Nhru, Nsub, Inputerror_flag, MAXFILE_LENGTH, Start_year, End_year
-	  USE PRMS_BASIN, ONLY: Hru_area_dble, DNEARZERO, Active_hrus, Hru_route_order
+      USE PRMS_BASIN, ONLY: Hru_area_dble, DNEARZERO, Active_hrus, Hru_route_order
       IMPLICIT NONE
       INTRINSIC ABS
       INTEGER, EXTERNAL :: getvartype, numchars, getparam !, getvarsize
