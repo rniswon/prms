@@ -32,10 +32,10 @@
         CHARACTER(LEN=MAXFILE_LENGTH), SAVE :: Executable_desc, Executable_model, Var_save_file
         CHARACTER(LEN=MAXFILE_LENGTH) :: Control_file, Ani_output_file, Control_description
         INTEGER, SAVE :: PlotsON_OFF, Num_control_parameters, Glacier_flag, Stream_temp_shade_flag
-        INTEGER, SAVE :: NstatVars, AniOutON_OFF, NaniOutVars, NdispGraphs, DispGraphsBuffSize
+        INTEGER, SAVE :: NstatVars, AniOutON_OFF, NaniOutVars, NdispGraphs, DispGraphsBuffSize, Param_file_control_parameter_id
         INTEGER, SAVE :: Num_statvar_elements, Num_statvar_names, NumdispVar_names, NumdispVar_elements
         REAL, SAVE :: Initial_deltat
-        CHARACTER(LEN=MAXCONTROL_LENGTH), ALLOCATABLE, SAVE :: statVar_element(:), statVar_names(:)
+        CHARACTER(LEN=MAXCONTROL_LENGTH), ALLOCATABLE, SAVE :: statVar_element(:), statVar_names(:), param_file_names(:)
         CHARACTER(LEN=MAXCONTROL_LENGTH), ALLOCATABLE, SAVE :: dispVar_element(:), dispVar_names(:)
         ! read_flag: 0 = not set, 1 = set from control file, 2 = set to default, 3 = means variably dimension, 4 = variably dimension set from Control File
         TYPE PRMS_control_parameter
@@ -65,7 +65,7 @@
       CHARACTER(LEN=MAXCONTROL_LENGTH) :: paramstring
       REAL, ALLOCATABLE :: real_parameter_values(:)
 !***********************************************************************
-      Version_read_control_file = 'read_control_file.f90 2017-03-15 12:33:00Z'
+      Version_read_control_file = 'read_control_file.f90 2017-03-27 13:28:00Z'
 
       ! control filename cannot include blanks
       CALL get_control_filename(Control_file, nchars)
@@ -592,10 +592,10 @@
       Control_parameter_data(i)%data_type = 4
       i = i + 1
       Control_parameter_data(i)%name = 'param_file'         !!!! make multiple
-      ALLOCATE ( Control_parameter_data(i)%values_character(numvalues) )
       Param_file = 'prms.params'
-      Control_parameter_data(i)%values_character(numvalues) = Param_file
       Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%read_flag = 3 ! need to allocate
+      Param_file_control_parameter_id = i
       i = i + 1
       Control_parameter_data(i)%name = 'model_output_file'
       ALLOCATE ( Control_parameter_data(i)%values_character(numvalues) )

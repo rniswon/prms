@@ -89,6 +89,7 @@
 !***********************************************************************
       SUBROUTINE read_parameter_file_params
       USE PRMS_READ_PARAM_FILE
+      USE PRMS_CONTROL_FILE, ONLY: Control_parameter_data, Param_file_control_parameter_id
       IMPLICIT NONE
       ! Functions
       EXTERNAL read_error, PRMS_open_input_file, setparam
@@ -97,11 +98,11 @@
       CHARACTER(LEN=16) :: string
       CHARACTER(LEN=32) :: paramstring
       CHARACTER(LEN=12) :: dim_string(2)
-      INTEGER nchars, ios, num_dims, num_param_values, i, j, param_type, num, inum
+      INTEGER nchars, ios, num_dims, num_param_values, i, j, k, param_type, num, inum, numfiles
       INTEGER, ALLOCATABLE :: idmy(:)
       REAL, ALLOCATABLE :: dmy(:)
       !***********************************************************************
-      Version_read_parameter_file = 'read_parameter_file.f90 2017-03-27 12:50:00Z'
+      Version_read_parameter_file = 'read_parameter_file.f90 2017-03-27 15:28:00Z'
       CALL print_module(Version_read_parameter_file, 'Read Parameter File         ', 90)
 ! Find parameter section
       REWIND ( Param_unit )
@@ -112,10 +113,17 @@
       ENDDO
 
 ! Read all parameters and verify
+      numfiles = Control_parameter_data(Param_file_control_parameter_id)%numvals
       Read_parameters = 0
+      DO k = 1, numfiles
+        IF ( k>1 ) THEN
+          CLOSE ( Param_unit )
+          CALL PRMS_open_input_file(Param_unit, Control_parameter_data(Param_file_control_parameter_id)%values_character(k), &
+     &                              'param_file', 0, ios)
+        ENDIF
       DO
         READ ( Param_unit, '(A)', IOSTAT=ios ) string
-        IF ( ios==-1 ) EXIT ! found end of Parameter File
+        IF ( ios==-1 ) EXIT ! found end of a Parameter File
         IF ( ios/=0 ) CALL read_error(11, 'missing parameter #### delimiter')
         IF ( string(:4)=='    ' ) CYCLE ! skip blank lines
         IF ( string(:2)=='//' ) CYCLE ! skip comment lines
@@ -153,6 +161,7 @@
         CALL setparam(paramstring(:nchars), num_param_values, param_type, num_dims, dim_string, dmy, idmy)
         Read_parameters = Read_parameters + 1
         DEALLOCATE ( dmy, idmy )
+      ENDDO
       ENDDO
       
       CLOSE ( param_unit )
