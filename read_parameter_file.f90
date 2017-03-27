@@ -1,6 +1,7 @@
       MODULE PRMS_READ_PARAM_FILE
-        USE PRMS_MODULE, ONLY: Print_debug, EQULS, Version_read_parameter_file, Param_file
+        USE PRMS_MODULE, ONLY: Print_debug, EQULS, Param_file
         INTEGER, SAVE :: Param_unit, Read_parameters
+        CHARACTER(LEN=80), SAVE :: Version_read_parameter_file
       END MODULE PRMS_READ_PARAM_FILE
 
 !***********************************************************************
@@ -19,7 +20,6 @@
       CHARACTER(LEN=24) :: dimstring
       INTEGER nchars, ios, dimen_value
 !***********************************************************************
-      Version_read_parameter_file = 'read_parameter_file.f90 2017-03-11 12:12:00Z'
 
       CALL PRMS_open_input_file(Param_unit, Param_file, 'param_file', 0, ios)
       IF ( ios/=0 ) STOP
@@ -89,11 +89,9 @@
 !***********************************************************************
       SUBROUTINE read_parameter_file_params
       USE PRMS_READ_PARAM_FILE
-      USE PRMS_MODULE, ONLY: Version_read_parameter_file
-      USE PRMS_MMFAPI, ONLY: Num_parameters
       IMPLICIT NONE
       ! Functions
-      EXTERNAL read_error, PRMS_open_input_file, print_module, setparam
+      EXTERNAL read_error, PRMS_open_input_file, setparam
       INTEGER, EXTERNAL :: control_string, numchars, getdim
       ! Local Variables
       CHARACTER(LEN=16) :: string
@@ -103,6 +101,7 @@
       INTEGER, ALLOCATABLE :: idmy(:)
       REAL, ALLOCATABLE :: dmy(:)
       !***********************************************************************
+      Version_read_parameter_file = 'read_parameter_file.f90 2017-03-27 12:50:00Z'
       CALL print_module(Version_read_parameter_file, 'Read Parameter File         ', 90)
 ! Find parameter section
       REWIND ( Param_unit )

@@ -741,9 +741,8 @@
 ! dattim - get start, end, or current date and time
 !***********************************************************************
       SUBROUTINE dattim(String, Datetime)
-      USE PRMS_CONTROL_FILE, ONLY: Julian_day_absolute
       USE PRMS_MODULE, ONLY: Timestep, Endtime, Starttime
-      USE PRMS_SET_TIME, ONLY: Nowyear, Nowmonth, Nowday
+      USE PRMS_SET_TIME, ONLY: Nowyear, Nowmonth, Nowday, Julian_day_absolute
       IMPLICIT NONE
       ! Arguments
       CHARACTER(LEN=*), INTENT(IN) :: String
@@ -1068,7 +1067,7 @@
       ! Functions
       INTRINSIC TRIM, INDEX
       ! Local Variables
-      INTEGER :: type_flag, found, param_id, i, ii, j, k, ierr, iflg, comma, nvals
+      INTEGER :: found, i, ii, j, k, ierr, iflg, comma, nvals
       CHARACTER(LEN=MAXCONTROL_LENGTH) dimen1
 !***********************************************************************
       ierr = 0

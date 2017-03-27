@@ -31,7 +31,7 @@
         CHARACTER(LEN=MAXFILE_LENGTH), SAVE :: Data_file, Var_init_file, Stat_var_file, Ani_out_file
         CHARACTER(LEN=MAXFILE_LENGTH), SAVE :: Executable_desc, Executable_model, Var_save_file
         CHARACTER(LEN=MAXFILE_LENGTH) :: Control_file, Ani_output_file, Control_description
-        INTEGER, SAVE :: Julian_day_absolute, PlotsON_OFF, Num_control_parameters, Glacier_flag, Stream_temp_shade_flag
+        INTEGER, SAVE :: PlotsON_OFF, Num_control_parameters, Glacier_flag, Stream_temp_shade_flag
         INTEGER, SAVE :: NstatVars, AniOutON_OFF, NaniOutVars, NdispGraphs, DispGraphsBuffSize
         INTEGER, SAVE :: Num_statvar_elements, Num_statvar_names, NumdispVar_names, NumdispVar_elements
         REAL, SAVE :: Initial_deltat

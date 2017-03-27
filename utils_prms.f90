@@ -816,7 +816,7 @@
 ! print module version information to user's screen
 !***********************************************************************
       SUBROUTINE print_module(Versn, Description, Ftntype)
-      USE PRMS_MODULE, ONLY: PRMS_output_unit, Model, Print_debug !, Logunt
+      USE PRMS_MODULE, ONLY: PRMS_output_unit, Model, Print_debug, Logunt
       IMPLICIT NONE
       ! Arguments
       CHARACTER(LEN=*), INTENT(IN) :: Description, Versn
@@ -834,7 +834,7 @@
         n = INDEX( Versn, '.f' ) + 1
       ENDIF
       PRINT '(A)', Description//' '//Versn(:n)//', version: '//Versn(n+2:nc-10)
-      !WRITE ( Logunt, '(A)' ) Description//' '//Versn(:n)//', version: '//Versn(n+2:nc)
+      WRITE ( Logunt, '(A)' ) Description//' '//Versn(:n)//', version: '//Versn(n+2:nc)
       IF ( Model/=2 ) WRITE ( PRMS_output_unit, '(A)' ) Description//' '//Versn(:n)//', version: '//Versn(n+2:nc)
       END SUBROUTINE print_module
 
