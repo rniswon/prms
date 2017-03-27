@@ -102,7 +102,7 @@
       USE PRMS_BASIN, ONLY: Hru_area_dble, DNEARZERO, Active_hrus, Hru_route_order
       IMPLICIT NONE
       INTRINSIC ABS
-      INTEGER, EXTERNAL :: getvartype, numchars, getparam !, getvarsize
+      INTEGER, EXTERNAL :: getvartype, numchars, getvarsize, getparam
       EXTERNAL read_error, PRMS_open_output_file
 ! Local Variables
       INTEGER :: ios, ierr, size, dim, jj, j, i, k
@@ -131,12 +131,12 @@
           PRINT *, '       only real or double variables allowed'
           ierr = 1
         ENDIF
-!        size = getvarsize(NsubOutVar_names(jj)(:Nc_vars(jj)), dim )
-!        IF ( size/=Nhru ) THEN
-!          PRINT *, 'ERROR, invalid nsub_summary variable:', NsubOutVar_names(jj)(:Nc_vars(jj))
-!          PRINT *, '       only variables dimensioned by nhru, nssr, or ngw are allowed'
-!          ierr = 1
-!        ENDIF
+        size = getvarsize(NsubOutVar_names(jj)(:Nc_vars(jj)), dim )
+        IF ( size/=Nhru ) THEN
+          PRINT *, 'ERROR, invalid nsub_summary variable:', NsubOutVar_names(jj)(:Nc_vars(jj))
+          PRINT *, '       only variables dimensioned by nhru, nssr, or ngw are allowed'
+          ierr = 1
+        ENDIF
       ENDDO
       IF ( ierr==1 ) STOP
       IF ( Double_vars==1 ) THEN

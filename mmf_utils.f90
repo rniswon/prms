@@ -1,6 +1,6 @@
 !***********************************************************************
 ! DONE:
-!  getdim, declfix, declmodule, decldim
+!  getdim, declfix, declmodule, decldim, declparam, getparam
 !  control_string, control_integer, control_string_array
 !  declpri - removed
 !  read Control File
@@ -9,15 +9,11 @@
 ! Place holders:
 !  getstep - need (current time step, initially 0, restart last)
 !  deltim - need (need time step increment in hours, hard-coded to 24)
-!  declparam - need parameter data structure
 !  declvar - need variable data structure, need cast type
-!  getparam - need parameter data structure, need cast type
 !  getparamstring - need parameter data structure
 !  dattim - need function, or just compute the current date and time
-!  Read Parameter File - put parameters in data structure
 !
 ! TO DO:
-! need to read Data File, check dimensions, verify, start and end time
 ! getvartype
 ! get rid of getvar
 !***********************************************************************
@@ -1179,3 +1175,34 @@
       IF ( ierr==1 ) STOP
  
       END SUBROUTINE setparam
+
+!***********************************************************************
+! getvarsize - return the number of values for a parameter
+!***********************************************************************
+      INTEGER FUNCTION getvarsize(Varname, Numvalues)
+      USE PRMS_MMFAPI
+      IMPLICIT NONE
+      ! Arguments
+      INTEGER, INTENT(OUT) :: Numvalues
+      CHARACTER(LEN=*), INTENT(IN) :: Varname
+      ! Functions
+      INTRINSIC TRIM
+      ! Local Variables
+      INTEGER :: found, i
+!***********************************************************************
+      found = 0
+      DO i = 1, Num_variables
+        IF ( Varname==TRIM(Variable_data(i)%variable_name) ) THEN
+          found = i
+          getvarsize = Variable_data(i)%numvals
+          Numvalues = getvarsize
+          EXIT
+        ENDIF
+      ENDDO
+
+      IF ( found==0 ) THEN
+        PRINT *, 'ERROR, Variable: ', Varname, ' not declared'
+        STOP
+      ENDIF
+ 
+      END FUNCTION getvarsize

@@ -168,7 +168,7 @@
      &                       Start_year, Start_month, Start_day, End_year, Parameter_check_flag
       IMPLICIT NONE
       INTRINSIC ABS, DBLE
-      INTEGER, EXTERNAL :: getparam, getvartype, numchars !, getvarsize
+      INTEGER, EXTERNAL :: getparam, getvartype, numchars, getvarsize
       EXTERNAL read_error, PRMS_open_output_file
 ! Local Variables
       INTEGER :: i, jj, is, ios, ierr, size, dim
@@ -223,13 +223,13 @@
           PRINT *, '       only real or double variables allowed'
           ierr = 1
         ENDIF
-!        size = getvarsize(MapOutVar_names(jj)(:Nc_vars(jj)), dim )
-!        IF ( size/=Nhru ) THEN
-!          PRINT *, 'ERROR, invalid map_results variable:', MapOutVar_names(jj)(:Nc_vars(jj))
-!          PRINT *, '       only variables with the number of values equal to nhru allowed'
-!          PRINT *, '       other possible dimensions are nssr, ngw, nhrucell, and ngwcell'
-!          ierr = 1
-!        ENDIF
+        size = getvarsize(MapOutVar_names(jj)(:Nc_vars(jj)), dim )
+        IF ( size/=Nhru ) THEN
+          PRINT *, 'ERROR, invalid map_results variable:', MapOutVar_names(jj)(:Nc_vars(jj))
+          PRINT *, '       only variables with the number of values equal to nhru allowed'
+          PRINT *, '       other possible dimensions are nssr, ngw, nhrucell, and ngwcell'
+          ierr = 1
+        ENDIF
       ENDDO
 
       Dailyresults = 0
