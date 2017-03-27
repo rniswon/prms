@@ -1269,7 +1269,7 @@
       ENDIF
 
       Dprst_in = 0.0D0
-      IF ( Dprst_area_clos_max>0.0 ) THEN
+      IF ( Dprst_area_open_max>0.0 ) THEN
         Dprst_in = DBLE( inflow*Dprst_area_open_max ) ! inch-acres
         Dprst_vol_open = Dprst_vol_open + Dprst_in
       ENDIF
