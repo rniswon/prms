@@ -130,7 +130,7 @@
       CHARACTER(LEN=*), INTENT(IN) :: Modname, Paramname, Dimenname, Datatype
       CHARACTER(LEN=*), INTENT(IN) :: Defvalue, Minvalue, Maxvalue, Descshort, Desclong, Units
       ! INTRINSIC
-      INTRINSIC INDEX
+      INTRINSIC INDEX, TRIM
       ! Functions
       INTEGER, EXTERNAL :: numchars, isdeclared, getdim
       EXTERNAL :: check_parameters_declared, read_error

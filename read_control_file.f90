@@ -65,7 +65,7 @@
       CHARACTER(LEN=MAXCONTROL_LENGTH) :: paramstring
       REAL, ALLOCATABLE :: real_parameter_values(:)
 !***********************************************************************
-      Version_read_control_file = 'read_control_file.f90 2017-03-27 13:28:00Z'
+      Version_read_control_file = 'read_control_file.f90 2017-03-28 14:35:00Z'
 
       ! control filename cannot include blanks
       CALL get_control_filename(Control_file, nchars)
@@ -121,7 +121,7 @@
       END SUBROUTINE read_control_file
 
 !***********************************************************************
-! setup_cont - Set control parameter values
+! setup_cont - Set control parameter value defaults
 !***********************************************************************
       SUBROUTINE setup_cont()
       USE PRMS_CONTROL_FILE
@@ -832,12 +832,6 @@
       Control_parameter_data(i)%values_character(numvalues) = Transp_on_dynamic
       Control_parameter_data(i)%data_type = 4
       i = i + 1
-!      Control_parameter_data(i)%name = 'stats_output_file'
-!      ALLOCATE ( Control_parameter_data(i)%values_character(numvalues) )
-!      Stats_output_file = 'stats.out'
-!      Control_parameter_data(i)%values_character(numvalues) = Stats_output_file
-!      Control_parameter_data(i)%data_type = 4
-!      i = i + 1
 !      Control_parameter_data(i)%name = 'pkwater_equiv_day'
 !      ALLOCATE ( Control_parameter_data(i)%values_character(numvalues) )
 !      Pkwater_equiv_day = 'pkwater_equiv.day'

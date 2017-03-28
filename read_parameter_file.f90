@@ -90,6 +90,7 @@
       SUBROUTINE read_parameter_file_params
       USE PRMS_READ_PARAM_FILE
       USE PRMS_CONTROL_FILE, ONLY: Control_parameter_data, Param_file_control_parameter_id
+      USE PRMS_MMFAPI, ONLY: Num_parameters, Parameter_data
       IMPLICIT NONE
       ! Functions
       EXTERNAL read_error, PRMS_open_input_file, setparam
@@ -98,11 +99,11 @@
       CHARACTER(LEN=16) :: string
       CHARACTER(LEN=32) :: paramstring
       CHARACTER(LEN=12) :: dim_string(2)
-      INTEGER nchars, ios, num_dims, num_param_values, i, j, k, param_type, num, inum, numfiles
+      INTEGER nchars, ios, num_dims, num_param_values, i, j, k, param_type, num, inum, numfiles, ii, duplicate, found
       INTEGER, ALLOCATABLE :: idmy(:)
       REAL, ALLOCATABLE :: dmy(:)
       !***********************************************************************
-      Version_read_parameter_file = 'read_parameter_file.f90 2017-03-27 15:28:00Z'
+      Version_read_parameter_file = 'read_parameter_file.f90 2017-03-28 14:36:00Z'
       CALL print_module(Version_read_parameter_file, 'Read Parameter File         ', 90)
 ! Find parameter section
       REWIND ( Param_unit )
@@ -149,17 +150,39 @@
         READ ( Param_unit, *, IOSTAT=ios ) param_type
         IF ( ios/=0 ) CALL read_error(11, 'invalid parameter type '//paramstring(:nchars))
         IF ( param_type<1 .OR. param_type>3 ) CALL read_error(11, 'invalid parameter type: '//paramstring(:nchars))
+        ! check to see if parameter already read
+        duplicate = 0
+        found = 0
+        DO ii = 1, Num_parameters
+          IF ( paramstring(:nchars)==TRIM(Parameter_data(ii)%param_name) ) THEN
+            found = ii
+            IF ( Parameter_data(ii)%read_flag==1 ) THEN
+              PRINT '(/,3A)', 'WARNING, parameter: ', TRIM(paramstring), ' specified more than once'
+              inum = MIN ( num_param_values, 5 )
+              PRINT *, '        Ignoring previous value(s)'
+              duplicate = ii
+              EXIT
+            ENDIF
+          ENDIF
+        ENDDO
+        IF ( found==0 ) STOP 'ERROR in read_parameter_file_params, parameter not in data base'
         IF ( param_type==1 ) THEN
           ALLOCATE ( idmy(num_param_values), dmy(1) )
           READ ( Param_unit, *, IOSTAT=ios ) (idmy(j),j=1,num_param_values)
           IF ( ios/=0 ) CALL read_error(11, 'incorrect number of parameter values: '//paramstring(:nchars))
+          IF ( duplicate>0 ) &
+     &         PRINT '(A,5I8)', '         Using (up to 5 values printed):', (idmy(j), j=1, inum)
         ELSE
           ALLOCATE ( dmy(num_param_values), idmy(1) )
           READ ( Param_unit, *, IOSTAT=ios ) (dmy(j),j=1,num_param_values)
           IF ( ios/=0 ) CALL read_error(11, 'incorrect number of parameter values: '//paramstring(:nchars))
+          IF ( duplicate>0 ) &
+     &         PRINT '(A,5F8.2)', '         Using (up to 5 values printed): ', (dmy(j), j=1, inum)
         ENDIF
+        IF ( duplicate>0 ) PRINT *, ' '
         CALL setparam(paramstring(:nchars), num_param_values, param_type, num_dims, dim_string, dmy, idmy)
         Read_parameters = Read_parameters + 1
+        Parameter_data(found)%read_flag = 1
         DEALLOCATE ( dmy, idmy )
       ENDDO
       ENDDO
