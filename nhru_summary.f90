@@ -123,7 +123,7 @@
       ierr = 0
       DO jj = 1, NhruOutVars
         Nc_vars(jj) = numchars(NhruOutVar_names(jj))
-        Nhru_var_type(jj) = getvartype(NhruOutVar_names(jj)(:Nc_vars(jj)), Nhru_var_type(jj) )
+        Nhru_var_type(jj) = getvartype(NhruOutVar_names(jj)(:Nc_vars(jj)) )
         IF ( Nhru_var_type(jj)==3 ) Double_vars = 1
         IF ( Nhru_var_type(jj)/=2 .AND. Nhru_var_type(jj)/=3 ) THEN
           PRINT *, 'ERROR, invalid nhru_summary variable:', NhruOutVar_names(jj)(:Nc_vars(jj))

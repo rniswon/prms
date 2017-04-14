@@ -217,7 +217,7 @@
       ierr = 0
       DO jj = 1, NmapOutVars
         Nc_vars(jj) = numchars(MapOutVar_names(jj))
-        Map_var_type(jj) = getvartype(MapOutVar_names(jj)(:Nc_vars(jj)), Map_var_type(jj) )
+        Map_var_type(jj) = getvartype(MapOutVar_names(jj)(:Nc_vars(jj)) )
         IF ( Map_var_type(jj)/=2 .AND. Map_var_type(jj)/=3 ) THEN
           PRINT *, 'ERROR, invalid map_results variable:', MapOutVar_names(jj)(:Nc_vars(jj))
           PRINT *, '       only real or double variables allowed'

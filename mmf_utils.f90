@@ -1,7 +1,7 @@
 !***********************************************************************
 ! DONE:
 !  getdim, declfix, declmodule, decldim, declparam, getparam
-!  control_string, control_integer, control_string_array
+!  control_string, control_integer, control_string_array, getvartype
 !  declpri - removed
 !  read Control File
 !  read Parameter File dimension section
@@ -14,7 +14,6 @@
 !  dattim - need function, or just compute the current date and time
 !
 ! TO DO:
-! getvartype
 ! get rid of getvar
 !***********************************************************************
       MODULE PRMS_MMFAPI
@@ -49,6 +48,8 @@
              CHARACTER(LEN=256) :: description
              INTEGER :: numvals, data_flag, decl_flag, get_flag, var_name_nchars, id_num
              CHARACTER(LEN=12) :: data_type, dimen_names, module_name, units
+             INTEGER, POINTER :: values_int(:)
+             REAL, POINTER :: values_real(:)
              DOUBLE PRECISION, POINTER :: values_dble(:)
         END TYPE PRMS_variable
         TYPE ( PRMS_variable ), SAVE, ALLOCATABLE :: Variable_data(:)
@@ -338,8 +339,16 @@
       ENDIF
       Variable_data(Num_variables)%data_flag = type_flag
 
-      ALLOCATE ( Variable_data(Num_variables)%values_dble(Numvalues) )
-      Variable_data(Num_variables)%values_dble => Values(:Numvalues)
+      IF ( type_flag==1 ) THEN
+        ALLOCATE ( Variable_data(Num_variables)%values_int(Numvalues) )
+!        Variable_data(Num_variables)%values_int => Values(:Numvalues)
+      ELSEIF (type_flag==2 ) THEN
+        ALLOCATE ( Variable_data(Num_variables)%values_real(Numvalues) )
+!        Variable_data(Num_variables)%values_real => Values(:Numvalues)
+      ELSEIF (type_flag==3 ) THEN
+        ALLOCATE ( Variable_data(Num_variables)%values_dble(Numvalues) )
+        Variable_data(Num_variables)%values_dble => Values(:Numvalues)
+      ENDIF
 
       declvar = 0
       END FUNCTION declvar
@@ -356,17 +365,34 @@
       ! values could be any data type
       REAL, INTENT(OUT) :: Values(Numvalues)
       ! Functions
-      INTRINSIC TRANSFER
+      !INTRINSIC TRANSFER
       INTEGER, EXTERNAL :: find_variable
       ! Local Variables
-      INTEGER :: var_id
-      REAL :: temp(Numvalues)
+      INTEGER :: var_id, var_type
+      INTEGER, ALLOCATABLE :: itemp(:)
+      REAL, ALLOCATABLE :: temp(:)
+      DOUBLE PRECISION, ALLOCATABLE :: dtemp(:)
 !***********************************************************************
       var_id = find_variable(Modname, Varname, Numvalues, Data_type)
+      var_type = Variable_data(var_id)%data_flag
 
-      temp = transfer(Variable_data(var_id)%values_dble, temp)
-       !temp = Variable_data(var_id)%values_dble
-       !print *, Numvalues, varname, temp
+      IF ( var_type==1 ) THEN
+        ALLOCATE ( itemp(Numvalues) )
+        itemp = Variable_data(var_id)%values_int
+        Values = transfer(itemp, Values)
+        DEALLOCATE ( itemp )
+      ELSEIF ( var_type==2 ) THEN
+        ALLOCATE ( temp(Numvalues) )
+        temp = Variable_data(var_id)%values_real
+        Values = transfer(temp, Values)
+        DEALLOCATE ( temp )
+      ELSEIF ( var_type==3 ) THEN
+        ALLOCATE ( dtemp(Numvalues) )
+        dtemp = Variable_data(var_id)%values_dble
+        Values = transfer(dtemp, Values)
+        DEALLOCATE ( dtemp )
+      ENDIF
+      
 
       !Values = TRANSFER(Variable_data(var_id)%values_dble,Values)
       !do i = 1, Numvalues
@@ -375,11 +401,8 @@
       !    IF ( values(i)<0.0 ) values(i) = 0.0
       !    !print *, Variable_data(var_id)%values_dble(i)
       !ENDDO
-      values = temp
-      !print *, 'values', values
-      !print *, 'temp', temp
-       !stop
-      !print *, 'pointer', Variable_data(var_id)%values_dble
+      !values = temp
+
       getvar = 0
       END FUNCTION getvar
 
@@ -493,19 +516,18 @@
           RETURN
         ENDIF
       ENDDO
-      PRINT *, 'ERROR control parameter: ', Varname, ' not available, remove from Control File'
+      PRINT *, 'ERROR variable: ', Varname, ' not available'
       STOP
       END FUNCTION getvar_id
 
 !***********************************************************************
-! getvartype - get variable type needed to be compatible with MMF function
+! getvartype - get variable type
 !***********************************************************************
-      INTEGER FUNCTION getvartype(Varname, Var_type)
+      INTEGER FUNCTION getvartype(Varname)
       USE PRMS_MMFAPI
       IMPLICIT NONE
       ! Arguments
       CHARACTER(LEN=*), INTENT(IN) :: Varname
-      INTEGER, INTENT(OUT) :: Var_type
       ! Functions
       INTRINSIC TRIM
       ! Local Variables
@@ -515,37 +537,13 @@
       DO i = 1, Num_variables
         IF ( Varname==TRIM(Variable_data(i)%variable_name) ) THEN
           getvartype = Variable_data(i)%data_flag
-          Var_type = getvartype
+          getvartype = getvartype
           RETURN
         ENDIF
       ENDDO
-      PRINT *, 'ERROR control parameter: ', Varname, ' not available, remove from Control File'
+      PRINT *, 'ERROR variable: ', Varname, ' not available'
       STOP
       END FUNCTION getvartype
-
-!***********************************************************************
-! getvar_type - get variable type
-!***********************************************************************
-      INTEGER FUNCTION getvar_type(Varname)
-      USE PRMS_MMFAPI
-      IMPLICIT NONE
-      ! Arguments
-      CHARACTER(LEN=*), INTENT(IN) :: Varname
-      ! Functions
-      INTRINSIC TRIM
-      ! Local Variables
-      INTEGER :: i
-!***********************************************************************
-      getvar_type = 1
-      DO i = 1, Num_variables
-        IF ( Varname==TRIM(Variable_data(i)%variable_name) ) THEN
-          getvar_type = Variable_data(i)%data_flag
-          RETURN
-        ENDIF
-      ENDDO
-      PRINT *, 'ERROR control parameter: ', Varname, ' not available, remove from Control File'
-      STOP
-      END FUNCTION getvar_type
 
 !***********************************************************************
 ! getvarnvals - get variable number of values
