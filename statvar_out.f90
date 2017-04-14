@@ -66,7 +66,7 @@
       USE PRMS_MODULE, ONLY: Timestep
       IMPLICIT NONE
 ! Functions
-      INTEGER, EXTERNAL :: numchars, getvar_type, getvarnvals
+      INTEGER, EXTERNAL :: numchars, getvartype, getvarnvals
       EXTERNAL PRMS_open_output_file
 ! Local Variables
       INTEGER :: jj, ios, ierr, itype
@@ -96,7 +96,7 @@
       ierr = 0
       DO jj = 1, NstatVars
         Nc_vars(jj) = numchars(statVar_names(jj))
-        itype = getvar_type(statVar_names(jj)(:Nc_vars(jj)))
+        itype = getvartype(statVar_names(jj)(:Nc_vars(jj)))
         IF ( itype<1 .AND. itype>3 ) THEN
           ierr = 1
           PRINT *, 'ERROR, invalid statvar type: 1, 2, and 3 allowed', itype

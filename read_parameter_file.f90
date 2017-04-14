@@ -165,7 +165,10 @@
             ENDIF
           ENDIF
         ENDDO
-        IF ( found==0 ) STOP 'ERROR in read_parameter_file_params, parameter not in data base'
+        IF ( found==0 ) then
+            !STOP 'ERROR in read_parameter_file_params, parameter not in data base'
+            print *, 'Parameter name:', paramstring
+            endif
         IF ( param_type==1 ) THEN
           ALLOCATE ( idmy(num_param_values), dmy(1) )
           READ ( Param_unit, *, IOSTAT=ios ) (idmy(j),j=1,num_param_values)

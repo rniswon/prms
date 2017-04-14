@@ -48,7 +48,7 @@
       USE PRMS_MODULE, ONLY: Nhru, Timestep
       IMPLICIT NONE
 ! Functions
-      INTEGER, EXTERNAL :: numchars, getvar_type, getvarnvals
+      INTEGER, EXTERNAL :: numchars, getvartype, getvarnvals
 ! Local Variables
       INTEGER :: jj, ierr, itype
 !***********************************************************************
@@ -68,7 +68,7 @@
       ierr = 0
       DO jj = 1, NumdispVar_names
         Nc_vars(jj) = numchars(dispVar_names(jj))
-        itype = getvar_type(dispVar_names(jj)(:Nc_vars(jj)))
+        itype = getvartype(dispVar_names(jj)(:Nc_vars(jj)))
         IF ( itype<1 .OR. itype>3 ) THEN
           ierr = 1
           PRINT *, 'ERROR, invalid runtime variable type: 1, 2, and 3 allowed', itype

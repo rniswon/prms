@@ -155,7 +155,7 @@
       ! Functions
       INTRINSIC TRANSFER
       EXTERNAL read_error
-      INTEGER, EXTERNAL :: getvarnvals, getvar_id, getvar_type
+      INTEGER, EXTERNAL :: getvarnvals, getvar_id
       ! Local Variables
       INTEGER datatime(6), jj, ios, column_end, column, nvals, var_id
 !***********************************************************************
@@ -177,7 +177,7 @@
         nvals = getvarnvals(Data_varname(jj))
         var_id = getvar_id(Data_varname(jj))
         column_end = column_end + nvals
-        Variable_data(var_id)%values_dble = TRANSFER(Data_line_values(column:column_end), Variable_data(var_id)%values_dble)
+        Variable_data(var_id)%values_real = TRANSFER(Data_line_values(column:column_end), Variable_data(var_id)%values_real)
         column = column + nvals
       ENDDO
       END SUBROUTINE read_data_line
