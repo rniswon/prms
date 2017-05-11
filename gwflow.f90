@@ -82,7 +82,7 @@
 !***********************************************************************
       gwflowdecl = 0
 
-      Version_gwflow = 'gwflow.f90 2016-10-17 16:01:00Z'
+      Version_gwflow = 'gwflow.f90 2016-12-09 12:40:00Z'
       CALL print_module(Version_gwflow, 'Groundwater                 ', 90)
       MODNAME = 'gwflow'
 
@@ -495,34 +495,27 @@
           ENDIF
         ENDIF
 
-        IF ( gwstor<0.0D0 ) THEN ! could happen with water use
-          IF ( Print_debug>-1 ) PRINT *, 'Warning, groundwater reservoir for HRU:', i, ' is < 0.0', gwstor
-          gwflow = 0.0D0
-          gwsink = 0.0D0
-        ELSE
-
 ! Compute groundwater discharge
-          gwflow = gwstor*DBLE( Gwflow_coef(i) )
+        gwflow = gwstor*DBLE( Gwflow_coef(i) )
 
 ! Reduce storage by outflow
-          gwstor = gwstor - gwflow
+        gwstor = gwstor - gwflow
 
-          gwsink = 0.0D0
-          IF ( Gwsink_coef(i)>0.0 ) THEN
-            gwsink = gwstor*DBLE( Gwsink_coef(i) )
-            gwstor = gwstor - gwsink
-          ENDIF
+        gwsink = 0.0D0
+        IF ( Gwsink_coef(i)>0.0 ) THEN
+          gwsink = gwstor*DBLE( Gwsink_coef(i) )
+          gwstor = gwstor - gwsink
+        ENDIF
 ! if gwr_swale_flag = 1 swale GWR flow goes to sink, 2 included in stream network and cascades
 ! maybe gwr_swale_flag = 3 abs(hru_segment) so hru_segment could be changed from 0 to allow HRU swales
-          IF ( Gwr_swale_flag==1 ) THEN
-            IF ( Gwr_type(i)==3 ) THEN
-              gwsink = gwsink + gwflow
-              gwflow = 0.0D0
-            ENDIF
+        IF ( Gwr_swale_flag==1 ) THEN
+          IF ( Gwr_type(i)==3 ) THEN
+            gwsink = gwsink + gwflow
+            gwflow = 0.0D0
           ENDIF
-          Basin_gwsink = Basin_gwsink + gwsink
         ENDIF
         Gwres_sink(i) = SNGL( gwsink/gwarea )
+        Basin_gwsink = Basin_gwsink + gwsink
         Basin_gwstor = Basin_gwstor + gwstor
 
         Gwres_flow(i) = SNGL( gwflow/gwarea )

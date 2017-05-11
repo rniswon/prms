@@ -4,12 +4,11 @@
       INTEGER FUNCTION strmflow_in_out()
       USE PRMS_MODULE, ONLY: Process, Nsegment
       USE PRMS_SET_TIME, ONLY: Cfs_conv
-      USE PRMS_BASIN, ONLY: Active_area, CFS2CMS_CONV
+      USE PRMS_BASIN, ONLY: Active_area, CFS2CMS_CONV, Obsin_segment, Segment_order, Tosegment
       USE PRMS_GWFLOW, ONLY: Basin_gwflow
       USE PRMS_FLOWVARS, ONLY: Basin_ssflow, Basin_cfs, Basin_cms, Basin_stflow_in, &
      &    Basin_sroff_cfs, Basin_ssflow_cfs, Basin_gwflow_cfs, Basin_stflow_out, &
      &    Seg_inflow, Seg_outflow, Seg_upstream_inflow, Seg_lateral_inflow, Flow_out
-      USE PRMS_ROUTING, ONLY: Obsin_segment, Segment_order, Tosegment, Obsout_segment, Segment_type, Flow_to_lakes
       USE PRMS_SRUNOFF, ONLY: Basin_sroff
       USE PRMS_OBS, ONLY: Streamflow_cfs
       IMPLICIT NONE
@@ -27,22 +26,16 @@
         Seg_outflow = 0.0D0
         Seg_upstream_inflow = 0.0D0
         Flow_out = 0.0D0
-        Flow_to_lakes = 0.0D0
         DO i = 1, Nsegment
           iorder = Segment_order(i)
           toseg = Tosegment(iorder)
           IF ( Obsin_segment(iorder)>0 ) Seg_upstream_inflow(iorder) = Streamflow_cfs(Obsin_segment(iorder))
           Seg_inflow(iorder) = Seg_upstream_inflow(iorder) + Seg_lateral_inflow(iorder)
-          IF ( Obsout_segment(iorder)>0 ) THEN
-            Seg_outflow(iorder) = Streamflow_cfs(Obsout_segment(iorder))
-          ELSE
-            Seg_outflow(iorder) = Seg_inflow(iorder)
-          ENDIF
+          Seg_outflow(iorder) = Seg_inflow(iorder)
           IF ( toseg==0 ) THEN
             Flow_out = Flow_out + Seg_outflow(iorder)
           ELSE
             Seg_upstream_inflow(toseg) = Seg_upstream_inflow(toseg) + Seg_outflow(iorder)
-            IF ( Segment_type(iorder)==2 ) Flow_to_lakes = Flow_to_lakes + Seg_outflow(iorder)
           ENDIF
         ENDDO
         area_fac = Cfs_conv*Active_area
@@ -54,7 +47,7 @@
         Basin_ssflow_cfs = Basin_ssflow*area_fac
         Basin_gwflow_cfs = Basin_gwflow*area_fac
       ELSEIF ( Process(:4)=='decl' ) THEN
-        Version_strmflow = 'strmflow_in_out.f90 2016-11-21 16:01:00Z'
+        Version_strmflow = 'strmflow_in_out.f90 2014-12-02 19:06:41Z'
         CALL print_module(Version_strmflow, 'Streamflow Routing          ', 90)
       ENDIF
 

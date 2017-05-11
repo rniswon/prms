@@ -128,7 +128,7 @@
 !***********************************************************************
       climateflow_decl = 0
 
-      Version_climateflow = 'climateflow.f90 2016-07-22 17:22:00Z'
+      Version_climateflow = 'climateflow.f90 2017-01-23 12:35:00Z'
       CALL print_module(Version_climateflow, 'Common States and Fluxes    ', 90)
       MODNAME = 'climateflow'
 
@@ -1094,7 +1094,7 @@
         WRITE ( Restart_outunit ) MODNAME
         WRITE ( Restart_outunit ) Basin_ppt, Basin_rain, Basin_snow, Basin_obs_ppt, Basin_temp, Basin_orad, &
      &          Basin_tmax, Basin_tmin, Solrad_tmax, Solrad_tmin, Basin_transp_on, Basin_potet, Basin_horad, &
-     &          Basin_swrad, Orad, Flow_out
+     &          Basin_potsw, Orad, Flow_out
         WRITE ( Restart_outunit ) Basin_cfs, Basin_cms, Basin_ssflow_cfs, Basin_sroff_cfs, Basin_stflow_in, &
      &          Basin_gwflow_cfs, Basin_stflow_out, Basin_ssflow, Basin_soil_to_gw, Basin_actet, &
      &          Basin_swale_et, Basin_perv_et, Basin_soil_moist, Basin_ssstor, Basin_lakeevap, Basin_lake_stor
@@ -1154,7 +1154,7 @@
         CALL check_restart(MODNAME, module_name)
         READ ( Restart_inunit ) Basin_ppt, Basin_rain, Basin_snow, Basin_obs_ppt, Basin_temp, Basin_orad, &
      &         Basin_tmax, Basin_tmin, Solrad_tmax, Solrad_tmin, Basin_transp_on, Basin_potet, Basin_horad, &
-     &         Basin_swrad, Orad, Flow_out
+     &         Basin_potsw, Orad, Flow_out
         READ ( Restart_inunit ) Basin_cfs, Basin_cms, Basin_ssflow_cfs, Basin_sroff_cfs, Basin_stflow_in, &
      &         Basin_gwflow_cfs, Basin_stflow_out, Basin_ssflow, Basin_soil_to_gw, Basin_actet, &
      &         Basin_swale_et, Basin_perv_et, Basin_soil_moist, Basin_ssstor, Basin_lakeevap, Basin_lake_stor

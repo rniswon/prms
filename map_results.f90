@@ -72,7 +72,7 @@
 !***********************************************************************
       map_resultsdecl = 0
 
-      Version_map_results = 'map_results.f90 2017-01-23 15:29:00Z'
+      Version_map_results = 'map_results.f90 2017-01-23 15:12:00Z'
       CALL print_module(Version_map_results, 'Output Summary              ', 90)
       MODNAME = 'map_results'
 
@@ -175,7 +175,7 @@
       IMPLICIT NONE
       INTRINSIC ABS, DBLE
       INTEGER, EXTERNAL :: getparam, getvartype, numchars, getvarsize
-      EXTERNAL read_error, PRMS_open_output_file
+      EXTERNAL read_error, PRMS_open_output_file, checkdim_param_limits
 ! Local Variables
       INTEGER :: i, jj, is, ios, ierr, size, dim
       REAL, ALLOCATABLE, DIMENSION(:) :: map_frac
@@ -327,6 +327,10 @@
           ALLOCATE ( map_frac(Ngwcell) )
           map_frac = 0.0
           DO i = 1, Nhrucell
+            ierr = 0
+            CALL checkdim_param_limits(i, 'gvr_cell_id', 'nhrucell', Gvr_map_id(i), 1, Ngwcell, ierr)
+            CALL checkdim_param_limits(i, 'gvr_hru_id', 'nhrucell', Gvr_hru_id(i), 1, Nhru, ierr)
+            IF ( ierr==1 ) Inputerror_flag = 1
             IF ( Gvr_map_id(i)>0 .AND. Gvr_hru_id(i)>0 .AND. Gvr_map_frac(i)>0.0 ) THEN
               is = Gvr_map_id(i)
               map_frac(is) = map_frac(is) + Gvr_map_frac(i)
