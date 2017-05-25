@@ -266,7 +266,7 @@
 !**********************************************************************
       INTEGER FUNCTION basinit()
       USE PRMS_BASIN
-      USE PRMS_MODULE, ONLY: Nhru, Nlake, Nsegment, Cascade_flag, Dprst_flag, Numlakes, &
+      USE PRMS_MODULE, ONLY: Nhru, Nlake, Nsegment, Cascade_flag, Dprst_flag, &
      &    Print_debug, Inputerror_flag, Model, PRMS_VERSION, Starttime, Endtime, &
      &    Stream_order_flag, Lake_route_flag, Et_flag, Precip_flag, Nobs, Cascadegw_flag, Prms_output_unit
       IMPLICIT NONE
