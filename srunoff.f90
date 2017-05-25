@@ -109,7 +109,7 @@
 !***********************************************************************
       srunoffdecl = 0
 
-      Version_srunoff = 'srunoff.f90 2017-03-24 09:08:00Z'
+      Version_srunoff = 'srunoff.f90 2017-05-15 15:40:00Z'
       IF ( Sroff_flag==1 ) THEN
         MODNAME = 'srunoff_smidx'
       ELSE
@@ -1037,6 +1037,7 @@
 
 ! reset Sroff as it accumulates flow to streams
       Runoff = Runoff - Hru_sroff_down
+!      IF ( ABS(Runoff)<CLOSEZERO ) Runoff = 0.0
       IF ( Runoff<0.0 ) THEN
 !        IF ( Runoff<-NEARZERO ) PRINT *, 'runoff < NEARZERO', Runoff
         IF ( Hru_sroff_down>ABS(Runoff) ) THEN
@@ -1295,7 +1296,7 @@
           dprst_srp = dprst_srp + dprst_srp_clos/Hruarea
           Dprst_vol_clos = Dprst_vol_clos + DBLE( dprst_srp_clos )
         ENDIF
-        Srp = Srp - dprst_srp
+        Srp = Srp - dprst_srp/Perv_frac
         IF ( Srp<0.0 ) THEN
           IF ( Srp<-NEARZERO ) PRINT *, 'dprst srp<0.0', Srp, dprst_srp
           ! may need to adjust dprst_srp and volumes
@@ -1315,7 +1316,7 @@
           dprst_sri = dprst_sri + dprst_sri_clos/Hruarea
           Dprst_vol_clos = Dprst_vol_clos + DBLE( dprst_sri_clos )
         ENDIF
-        Sri = Sri - dprst_sri
+        Sri = Sri - dprst_sri/Imperv_frac
         IF ( Sri<0.0 ) THEN
           IF ( Sri<-NEARZERO ) PRINT *, 'dprst sri<0.0', Sri, dprst_sri
           ! may need to adjust dprst_sri and volumes
