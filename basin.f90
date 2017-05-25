@@ -242,14 +242,14 @@
         ! parameters
         ALLOCATE ( Lake_hru_id(Nhru) )
         IF ( declparam(MODNAME, 'lake_hru_id', 'nhru', 'integer', &
-     &       '0', 'bounded', 'numlakes', & ! nlake is number of lake HRUs, numlakes the number of lakes
+     &       '0', 'bounded', 'nlake', & ! nlake is number of lake HRUs, numlakes the number of lakes
      &       'Identification number of the lake associated with an HRU', &
      &       'Identification number of the lake associated with an HRU;'// &
      &       ' more than one HRU can be associated with each lake', &
      &       'none')/=0 ) CALL read_error(1, 'lake_hru_id')
         IF ( (Lake_route_flag==1 .AND. Model/=0) .OR. Model==99 ) THEN
-          ALLOCATE ( Lake_type(Numlakes) )
-          IF ( declparam(MODNAME, 'lake_type', 'numlakes', 'integer', &
+          ALLOCATE ( Lake_type(Nlake) )
+          IF ( declparam(MODNAME, 'lake_type', 'nlake', 'integer', &
      &         '1', '1', '6', &
      &         'Type of lake routing method', &
      &         'Type of lake routing method (1=Puls routing; 2=linear routing; 3=flow through;'// &
@@ -268,7 +268,7 @@
       USE PRMS_BASIN
       USE PRMS_MODULE, ONLY: Nhru, Nlake, Nsegment, Cascade_flag, Dprst_flag, Numlakes, &
      &    Print_debug, Inputerror_flag, Model, PRMS_VERSION, Starttime, Endtime, &
-     &    Stream_order_flag, Lake_route_flag, Et_flag, Precip_flag, Nobs, Cascadegw_flag
+     &    Stream_order_flag, Lake_route_flag, Et_flag, Precip_flag, Nobs, Cascadegw_flag, Prms_output_unit
       IMPLICIT NONE
 ! Functions
       INTEGER, EXTERNAL :: getparam
@@ -314,7 +314,7 @@
         IF ( getparam(MODNAME, 'lake_hru_id', Nhru, 'integer', Lake_hru_id)/=0 ) CALL read_error(1, 'lake_hru_id')
         Lake_area = 0.0D0
         IF ( Lake_route_flag==1 .AND. Model/=0 ) THEN
-          IF ( getparam(MODNAME, 'lake_type', Numlakes, 'integer', Lake_type)/=0 ) CALL read_error(2, 'lake_type')
+          IF ( getparam(MODNAME, 'lake_type', Nlake, 'integer', Lake_type)/=0 ) CALL read_error(2, 'lake_type')
         ENDIF
       ENDIF
 
@@ -469,19 +469,17 @@
         Inputerror_flag = 1
       ENDIF
       IF ( Nlake>0 ) THEN
-        DO i = 1, Numlakes
-          IF ( Lake_area(i)<DNEARZERO ) THEN
-            PRINT *, 'ERROR, Lake:', i, ' has 0 area, thus no value of lake_hru_id is associated with the lake'
-            Inputerror_flag = 1
-          ENDIF
-        ENDDO
         IF ( Model/=0 ) THEN
           IF ( Numlakes_check/=Nlake ) THEN
             PRINT *, 'WARNING, number of lakes specified in lake_hru_id'
             PRINT *, 'does not equal dimension nlake:', Nlake, ', number of lakes:', Numlakes_check
 !            Inputerror_flag = 1 ! make warning for now to allow PRMS-only with multiple HRU lakes
           ENDIF
-          DO i = 1, Numlakes
+          DO i = 1, Nlake
+            IF ( Lake_area(i)<DNEARZERO ) THEN
+              PRINT *, 'ERROR, Lake:', i, ' has 0 area, thus no value of lake_hru_id is associated with the lake'
+              Inputerror_flag = 1
+            ENDIF
             IF ( Lake_route_flag==1 ) THEN
               IF ( Lake_type(i)==4 .OR. Lake_type(i)==5 ) Weir_gate_flag = 1
             ENDIF
@@ -597,26 +595,28 @@
       ENDIF
 
 !     print out start and end times
-      !CALL write_outfile(' Surface Water and Energy Budgets Simulated by '//PRMS_VERSION)
-      CALL write_outfile(' ')
-      WRITE (buffer, 9002) 'Start time: ', Starttime
-      CALL write_outfile(buffer(:31))
-      WRITE (buffer, 9002) 'End time:   ', Endtime
-      CALL write_outfile(buffer(:31))
-      CALL write_outfile(' ')
-      WRITE (buffer, 9003) 'Model domain area:   ', Totarea, '    Active basin area:', Active_area
-      CALL write_outfile(buffer)
-      WRITE (buffer, 9004) 'Fraction impervious:  ', basin_imperv, '    Fraction pervious: ', basin_perv
-      CALL write_outfile(buffer)
-      IF ( Water_area>0.0D0 ) THEN
-        WRITE (buffer, 9004) 'Lake area:            ', Water_area, '    Fraction lakes:    ', Water_area*Basin_area_inv
+      IF ( Print_debug>-2 ) THEN
+        !CALL write_outfile(' Surface Water and Energy Budgets Simulated by '//PRMS_VERSION)
+        WRITE ( Prms_output_unit, '(1X)' )
+        WRITE (buffer, 9002) 'Start time: ', Starttime
+        CALL write_outfile(buffer(:31))
+        WRITE (buffer, 9002) 'End time:   ', Endtime
+        CALL write_outfile(buffer(:31))
+        WRITE ( Prms_output_unit, '(1X)' )
+        WRITE (buffer, 9003) 'Model domain area:   ', Totarea, '    Active basin area:', Active_area
         CALL write_outfile(buffer)
-      ENDIF
-      IF ( Dprst_flag==1 ) THEN
-        WRITE (buffer, 9005) 'DPRST area:          ', basin_dprst, '    Fraction DPRST:   ', basin_dprst*Basin_area_inv
+        WRITE (buffer, 9004) 'Fraction impervious:  ', basin_imperv, '    Fraction pervious: ', basin_perv
         CALL write_outfile(buffer)
+        IF ( Water_area>0.0D0 ) THEN
+          WRITE (buffer, 9004) 'Lake area:            ', Water_area, '    Fraction lakes:    ', Water_area*Basin_area_inv
+          CALL write_outfile(buffer)
+        ENDIF
+        IF ( Dprst_flag==1 ) THEN
+          WRITE (buffer, 9005) 'DPRST area:          ', basin_dprst, '    Fraction DPRST:   ', basin_dprst*Basin_area_inv
+          CALL write_outfile(buffer)
+        ENDIF
+        CALL write_outfile(' ')
       ENDIF
-      CALL write_outfile(' ')
 
  9002 FORMAT (A, I4.2, 2('/', I2.2), I3.2, 2(':', I2.2))
  9003 FORMAT (2(A,F13.2))
