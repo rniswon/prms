@@ -48,7 +48,7 @@
         TYPE ( PRMS_control_parameter ), SAVE, ALLOCATABLE :: Control_parameter_data(:)
       END MODULE PRMS_CONTROL_FILE
 
-      SUBROUTINE read_control_file
+      SUBROUTINE read_control_file()
       USE PRMS_CONTROL_FILE
       USE PRMS_MODULE, ONLY: Version_read_control_file, Print_debug, Model, PRMS_output_unit, Model_output_file
       IMPLICIT NONE
@@ -129,7 +129,7 @@
       ! Local Variables
       INTEGER i, numvalues
 !***********************************************************************
-      Num_control_parameters = 121 ! WARNING, hard coded, DANGER, DANGER
+      Num_control_parameters = 200 ! WARNING, hard coded, DANGER, DANGER
       ! allocate and store parameter data
       ALLOCATE ( Control_parameter_data(Num_control_parameters+20) ) ! allow for extra parameters being expected
       DO i = 1, Num_control_parameters

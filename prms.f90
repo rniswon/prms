@@ -13,17 +13,17 @@
 ! Local Variables
       INTEGER :: i
 !***********************************************************************
-      CALL gsflow_prms('setdims')
+      CALL gsflow_prms('setdims', AFR)
 
-      CALL gsflow_prms('decl')
+      CALL gsflow_prms('decl', AFR)
 
-      CALL gsflow_prms('init')
+      CALL gsflow_prms('init', AFR)
 
       IF ( Model<2 ) THEN
         DO i = 1, Number_timesteps
-          CALL gsflow_prms('run') !add AFR and exchange vectors and model mode
+          CALL gsflow_prms('run', AFR) !add AFR and exchange vectors and model mode
         ENDDO
-        CALL gsflow_prms('clean')
+        CALL gsflow_prms('clean', AFR)
       ENDIF
 
       END PROGRAM PRMS_FORTRAN
