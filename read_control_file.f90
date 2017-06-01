@@ -50,7 +50,7 @@
 
       SUBROUTINE read_control_file()
       USE PRMS_CONTROL_FILE
-      USE PRMS_MODULE, ONLY: Version_read_control_file, Print_debug, Model, PRMS_output_unit, Model_output_file
+      USE PRMS_MODULE, ONLY: Version_read_control_file, Print_debug, Model_output_file
       IMPLICIT NONE
       ! Functions
       INTRINSIC TRIM
@@ -59,13 +59,13 @@
       ! Local Variables
       CHARACTER(LEN=MAXCONTROL_LENGTH) :: paramname
       CHARACTER(LEN=4) :: string
-      INTEGER nchars, ios, numvalues, param_type, control_unit, j, iret
+      INTEGER nchars, ios, numvalues, param_type, control_unit, j
       INTEGER, ALLOCATABLE :: int_parameter_values(:)
       CHARACTER(LEN=MAXFILE_LENGTH), ALLOCATABLE :: parameter_values(:)
       CHARACTER(LEN=MAXCONTROL_LENGTH) :: paramstring
       REAL, ALLOCATABLE :: real_parameter_values(:)
 !***********************************************************************
-      Version_read_control_file = 'read_control_file.f90 2017-06-01 14:13:00Z'
+      Version_read_control_file = 'read_control_file.f90 2017-06-01 16:56:00Z'
 
       ! control filename cannot include blanks
       CALL get_control_filename(Control_file, nchars)

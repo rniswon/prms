@@ -20,7 +20,6 @@
       CHARACTER(LEN=24) :: dimstring
       INTEGER nchars, ios, dimen_value
 !***********************************************************************
-
       CALL PRMS_open_input_file(Param_unit, Param_file, 'param_file', 0, ios)
       IF ( ios/=0 ) STOP
       IF ( Print_debug>-1 ) THEN
@@ -103,7 +102,7 @@
       INTEGER, ALLOCATABLE :: idmy(:)
       REAL, ALLOCATABLE :: dmy(:)
       !***********************************************************************
-      Version_read_parameter_file = 'read_parameter_file.f90 2017-03-28 14:36:00Z'
+      Version_read_parameter_file = 'read_parameter_file.f90 2017-06-01 16:57:00Z'
       CALL print_module(Version_read_parameter_file, 'Read Parameter File         ', 90)
 ! Find parameter section
       REWIND ( Param_unit )
@@ -166,9 +165,10 @@
           ENDIF
         ENDDO
         IF ( found==0 ) then
-            !STOP 'ERROR in read_parameter_file_params, parameter not in data base'
-            print *, 'Parameter name:', paramstring
-            endif
+          !STOP 'ERROR in read_parameter_file_params, parameter not in data base'
+          PRINT *, 'Parameter name: ', paramstring, ' is ignored as not required'
+          CYCLE
+        ENDIF
         IF ( param_type==1 ) THEN
           ALLOCATE ( idmy(num_param_values), dmy(1) )
           READ ( Param_unit, *, IOSTAT=ios ) (idmy(j),j=1,num_param_values)
