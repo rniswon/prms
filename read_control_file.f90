@@ -65,7 +65,7 @@
       CHARACTER(LEN=MAXCONTROL_LENGTH) :: paramstring
       REAL, ALLOCATABLE :: real_parameter_values(:)
 !***********************************************************************
-      Version_read_control_file = 'read_control_file.f90 2017-03-28 14:35:00Z'
+      Version_read_control_file = 'read_control_file.f90 2017-06-01 14:13:00Z'
 
       ! control filename cannot include blanks
       CALL get_control_filename(Control_file, nchars)
@@ -108,15 +108,6 @@
       ENDDO
       IF ( Print_debug>-1 ) PRINT *, EQULS
       CLOSE ( control_unit )
-
-      ! Open PRMS module output file
-      IF ( control_string(Model_output_file, 'model_output_file')/=0 ) CALL read_error(5, 'prms.out')
-      IF ( Print_debug>-2 ) THEN
-        IF ( Model/=2 .OR. Model/=3 .OR. Model/=5 .OR. Model/=6 ) THEN
-          CALL PRMS_open_output_file(PRMS_output_unit, Model_output_file, 'model_output_file', 0, iret)
-          IF ( iret/=0 ) STOP
-        ENDIF
-      ENDIF
 
       END SUBROUTINE read_control_file
 

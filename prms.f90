@@ -12,18 +12,22 @@
       EXTERNAL gsflow_prms
 ! Local Variables
       INTEGER :: i
+      LOGICAL :: AFR, MODSIM_ON_OFF
 !***********************************************************************
-      CALL gsflow_prms('setdims', AFR)
+      AFR = .TRUE.
+      MODSIM_ON_OFF = .FALSE.
 
-      CALL gsflow_prms('decl', AFR)
+      CALL gsflow_prms('setdims', AFR, Number_timesteps, MODSIM_ON_OFF)
 
-      CALL gsflow_prms('init', AFR)
+      CALL gsflow_prms('decl', AFR, Number_timesteps, MODSIM_ON_OFF)
+
+      CALL gsflow_prms('init', AFR, Number_timesteps, MODSIM_ON_OFF)
 
       IF ( Model<2 ) THEN
         DO i = 1, Number_timesteps
-          CALL gsflow_prms('run', AFR) !add AFR and exchange vectors and model mode
+          CALL gsflow_prms('run', AFR, Number_timesteps, MODSIM_ON_OFF) !add exchange vectors and model mode
         ENDDO
-        CALL gsflow_prms('clean', AFR)
+        CALL gsflow_prms('clean', AFR, Number_timesteps, MODSIM_ON_OFF)
       ENDIF
 
       END PROGRAM PRMS_FORTRAN
