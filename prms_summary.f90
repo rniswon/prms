@@ -110,8 +110,8 @@
           ALLOCATE ( Poi_gage_segment(Npoigages) )
           IF ( declparam(MODNAME, 'poi_gage_segment', 'npoigages', 'integer', &
      &         '0', 'bounded', 'nsegment', &
-     &         'Segment index for gage POI', &
-     &         'Segment index for gage POI', &
+     &         'Segment index for each gage POI', &
+     &         'Segment index for each gage POI', &
      &         'none')/=0 ) CALL read_error(1, 'poi_gage_segment')
           ALLOCATE ( Poi_gage_id(Npoigages) )
           IF ( declparam(MODNAME, 'poi_gage_id', 'npoigages', 'string', &
