@@ -834,7 +834,8 @@
               IF ( status/=0 ) STOP 'ERROR, bad value after -set argument'
               IF ( Print_debug>-1 ) PRINT *, 'PRMS command line argument,', i, ': ', TRIM(command_line_arg)
               IF ( param_type==1 ) THEN
-                READ ( command_line_arg, * ) Control_parameter_data(index)%values_int(j)
+                READ ( command_line_arg, *, IOSTAT=status ) Control_parameter_data(index)%values_int(j)
+                IF ( status/=0 ) STOP 'ERROR, reading integer command line argument'
               ELSEIF ( param_type==4 ) THEN
                 Control_parameter_data(index)%values_character(j) = command_line_arg
               ELSEIF ( param_type==2 ) THEN

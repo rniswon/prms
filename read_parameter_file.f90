@@ -87,6 +87,7 @@
 ! Read Parameter File Dimensions
 !***********************************************************************
       SUBROUTINE read_parameter_file_params
+      USE PRMS_MODULE, ONLY: EQULS
       USE PRMS_READ_PARAM_FILE
       USE PRMS_CONTROL_FILE, ONLY: Control_parameter_data, Param_file_control_parameter_id
       USE PRMS_MMFAPI, ONLY: Num_parameters, Parameter_data
@@ -102,8 +103,9 @@
       INTEGER, ALLOCATABLE :: idmy(:)
       REAL, ALLOCATABLE :: dmy(:)
       !***********************************************************************
-      Version_read_parameter_file = 'read_parameter_file.f90 2017-06-01 16:57:00Z'
+      Version_read_parameter_file = 'read_parameter_file.f90 2017-06-09 15:08:00Z'
       CALL print_module(Version_read_parameter_file, 'Read Parameter File         ', 90)
+      PRINT '(A)', EQULS
 ! Find parameter section
       REWIND ( Param_unit )
       DO
