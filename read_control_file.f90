@@ -874,7 +874,7 @@
         IF ( TRIM(Paramname)==TRIM(Control_parameter_data(i)%name) ) THEN
           found = i
           dtype = Control_parameter_data(i)%data_type
-          Control_parameter_data(i)%read_flag = 1
+          Control_parameter_data(i)%numvals = Numvalues
           IF ( Control_parameter_data(i)%read_flag > 2 ) THEN ! one of variably sized parameters
             IF ( dtype==1 ) THEN
               DEALLOCATE ( Control_parameter_data(i)%values_int )
@@ -886,7 +886,7 @@
               STOP 'ERROR, allocatable control parameter that is real'
             ENDIF
           ENDIF
-          Control_parameter_data(i)%numvals = Numvalues
+          Control_parameter_data(i)%read_flag = 1
           IF ( dtype==1 ) THEN
             DO j = 1, Numvalues
               Control_parameter_data(i)%values_int(j) = Paramval_int(j)
