@@ -110,12 +110,12 @@
           ALLOCATE ( Poi_gage_segment(Npoigages) )
           IF ( declparam(MODNAME, 'poi_gage_segment', 'npoigages', 'integer', &
      &         '0', 'bounded', 'nsegment', &
-     &         'Segment index for each gage POI', &
-     &         'Segment index for each gage POI', &
+     &         'Segment index for each POI gage', &
+     &         'Segment index for each POI gage', &
      &         'none')/=0 ) CALL read_error(1, 'poi_gage_segment')
           ALLOCATE ( Poi_gage_id(Npoigages) )
           IF ( declparam(MODNAME, 'poi_gage_id', 'npoigages', 'string', &
-     &         '0', '0', '99999999', &
+     &         '0', '0', '9999999', &
      &         'POI Gage ID', 'USGS stream gage for each POI gage', &
      &         'none')/=0 ) CALL read_error(1, 'poi_gage_id')
         ENDIF

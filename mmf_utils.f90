@@ -867,7 +867,7 @@
 ! data base and checks to be sure a required parameter has a value (read or default)
 !***********************************************************************
       INTEGER FUNCTION control_integer(Parmval, Paramname)
-      USE PRMS_CONTROL_FILE, ONLY: Num_control_parameters, Control_parameter_data
+      USE PRMS_CONTROL_FILE, ONLY: Num_control_parameters, Control_parameter_data, Max_num_control_parameters
       IMPLICIT NONE
       ! Arguments
       CHARACTER(LEN=*), INTENT(IN) :: Paramname
@@ -887,6 +887,7 @@
       ENDDO
       IF ( found==0 ) THEN
         Num_control_parameters = Num_control_parameters + 1
+        IF ( Num_control_parameters > Max_num_control_parameters ) STOP 'ERROR, exceeded maximum number of control parameters'
         PRINT *, 'WARNING, control parameter not in Control File: ', TRIM(Paramname), ', set to 0'
         Control_parameter_data(Num_control_parameters)%read_flag = 2 ! set to default
         Control_parameter_data(Num_control_parameters)%data_type = 1
@@ -936,7 +937,7 @@
 ! function checks to be sure a required parameter has a value (read or default)
 !***********************************************************************
       INTEGER FUNCTION control_string(Parmval, Paramname)
-      USE PRMS_CONTROL_FILE, ONLY: Num_control_parameters, Control_parameter_data
+      USE PRMS_CONTROL_FILE, ONLY: Num_control_parameters, Control_parameter_data, Max_num_control_parameters
       IMPLICIT NONE
       ! Functions
       INTRINSIC :: TRIM
