@@ -93,7 +93,7 @@
 !***********************************************************************
       srunoffdecl = 0
 
-      Version_srunoff = 'srunoff.f90 2017-05-15 15:40:00Z'
+      Version_srunoff = 'srunoff.f90 2017-05-22 11:00:00Z'
       IF ( Sroff_flag==1 ) THEN
         MODNAME = 'srunoff_smidx'
       ELSE
