@@ -72,7 +72,7 @@
 !***********************************************************************
       map_resultsdecl = 0
 
-      Version_map_results = 'map_results.f90 2017-01-23 15:12:00Z'
+      Version_map_results = 'map_results.f90 2017-05-22 11:21:00Z'
       CALL print_module(Version_map_results, 'Output Summary              ', 90)
       MODNAME = 'map_results'
 
@@ -344,8 +344,9 @@
             IF ( map_frac(i)<0.0 ) THEN
               PRINT *, 'ERROR, accounting for area of mapped spatial unit is negative:'
               PRINT *, '       Map id:', i, ' Fraction:', map_frac(i)
+              Inputerror_flag = 1
             ELSEIF ( map_frac(i)<NEARZERO ) THEN
-              CYCLE              
+              CYCLE
             ELSEIF ( map_frac(i)>1.0001 ) THEN
               PRINT *, 'WARNING, excess accounting for area of mapped spatial unit:'
               PRINT *, '         Map id:', i, ' Fraction:', map_frac(i)
