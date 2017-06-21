@@ -925,8 +925,8 @@
       INTEGER FUNCTION szrun()
       USE PRMS_SOILZONE
       USE PRMS_MODULE, ONLY: Dprst_flag, Print_debug, &
-     &    Model, Nlake, Nhrucell, Cascade_flag, Dprst_flag
-      USE PRMS_BASIN, ONLY: Hru_type, Hru_perv, Hru_frac_perv, Kkiter, &
+     &    Model, Nlake, Nhrucell, Cascade_flag, Dprst_flag, Kkiter
+      USE PRMS_BASIN, ONLY: Hru_type, Hru_perv, Hru_frac_perv, &
      &    Hru_route_order, Active_hrus, Basin_area_inv, Hru_area, &
      &    NEARZERO, Lake_hru_id, Cov_type, Numlake_hrus, CLOSEZERO, Hru_area_dble
       USE PRMS_CLIMATEVARS, ONLY: Hru_ppt, Transp_on, Potet, Basin_potet
