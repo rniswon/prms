@@ -142,7 +142,7 @@
 
       IF ( Mapflg==0 .OR. Model==99 ) THEN
         IF ( declparam(MODNAME, 'gvr_cell_id', 'nhrucell', 'integer', &
-     &       '0', 'bounded', 'ngwcell', &
+     &       '55', 'bounded', 'ngwcell', &
      &       'Corresponding grid cell id associated with each GVR', &
      &       'Index of the grid cell associated with each gravity reservoir', &
      &       'none')/=0 ) CALL read_error(1, 'gvr_cell_id')
@@ -310,6 +310,12 @@
 
       IF ( Mapflg==0 ) THEN
         IF ( getparam(MODNAME, 'gvr_cell_id', Nhrucell, 'integer', Gvr_map_id)/=0 ) CALL read_error(2, 'gvr_cell_id')
+          IF ( Gvr_map_id(1)==55 .AND. Gvr_map_id(MAX(2,Nhrucell-111))==55 .AND. Gvr_map_id(MAX(5,Nhrucell-444))==99 ) THEN
+          PRINT '(/,A,/)', 'WARNING: values of gvr_cell_id set to 1 to nhrucell'
+          DO i = 1, Nhrucell
+            Gvr_map_id(i) = i
+          ENDDO
+        ENDIF
         IF ( Nhru/=Nhrucell ) THEN
           IF ( getparam(MODNAME, 'gvr_hru_id', Nhrucell, 'integer', Gvr_hru_id)/=0 ) CALL read_error(2, 'gvr_hru_id')
         ELSE
