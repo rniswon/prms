@@ -204,10 +204,9 @@
 
       ALLOCATE ( Gwsink_coef(Ngw) )
       IF ( declparam(MODNAME, 'gwsink_coef', 'ngw', 'real', &
-     &     '0.0', '0.0', '0.05', &
+     &     '0.0', '0.0', '1.0', &
      &     'Groundwater sink coefficient', &
-     &     'Linear coefficient in the equation to compute outflow'// &
-     &     ' to the groundwater sink for each GWR', &
+     &     'Linear coefficient in the equation to compute outflow to the groundwater sink for each GWR', &
      &     'fraction/day')/=0 ) CALL read_error(1, 'gwsink_coef')
 
       IF ( Lake_route_flag==1 .OR. Model==99 ) THEN
