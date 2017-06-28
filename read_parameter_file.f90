@@ -20,6 +20,7 @@
       CHARACTER(LEN=24) :: dimstring
       INTEGER nchars, ios, dimen_value
 !***********************************************************************
+      Version_read_parameter_file = 'read_parameter_file.f90 2017-06-28 09:36:00Z'
       CALL PRMS_open_input_file(Param_unit, Param_file, 'param_file', 0, ios)
       IF ( ios/=0 ) STOP
       IF ( Print_debug>-1 ) THEN
@@ -103,8 +104,6 @@
       INTEGER, ALLOCATABLE :: idmy(:)
       REAL, ALLOCATABLE :: dmy(:)
       !***********************************************************************
-      Version_read_parameter_file = 'read_parameter_file.f90 2017-06-09 15:08:00Z'
-      CALL print_module(Version_read_parameter_file, 'Read Parameter File         ', 90)
       PRINT '(A)', EQULS
 ! Find parameter section
       REWIND ( Param_unit )
