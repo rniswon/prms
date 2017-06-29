@@ -40,7 +40,7 @@
 !***********************************************************************
 !     declare parameters and variables
 !***********************************************************************
-      SUBROUTINE Basin_summarydecl()
+      SUBROUTINE basin_summarydecl()
       USE PRMS_BASIN_SUMMARY
       USE PRMS_MODULE, ONLY: Model, Inputerror_flag
       IMPLICIT NONE
@@ -52,8 +52,8 @@
       INTEGER :: i
       CHARACTER(LEN=80), SAVE :: Version_basin_summary
 !***********************************************************************
-      Version_basin_summary = 'basin_summary.f90 2017-06-29 14:56:00Z'
-      CALL print_module(Version_basin_summary, 'Subbasin Output Summary     ', 90)
+      Version_basin_summary = 'basin_summary.f90 2017-06-29 16:11:00Z'
+      CALL print_module(Version_basin_summary, 'Basin Output Summary        ', 90)
       MODNAME = 'basin_summary'
 
       IF ( control_integer(BasinOutVars, 'basinOutVars')/=0 ) BasinOutVars = 0
@@ -138,7 +138,7 @@
         ALLOCATE ( Basin_var_yearly(BasinOutVars) )
         Basin_var_yearly = 0.0D0
         WRITE ( Output_fmt3, 9003 ) BasinOutVars
-	  ENDIF
+      ENDIF
       IF ( Monthly_flag==1 ) THEN
         Monthdays = 0.0D0
         ALLOCATE ( Basin_var_monthly(BasinOutVars) )
@@ -222,7 +222,7 @@
           IF ( (Nowmonth==Start_month .AND. Nowday==Start_day) .OR. last_day==1 ) THEN
             DO jj = 1, BasinOutVars
               IF ( BasinOut_freq==5 ) Basin_var_yearly(jj) = Basin_var_yearly(jj)/Yeardays
-			ENDDO
+            ENDDO
             WRITE ( Yearlyunit, Output_fmt3) Lastyear, (Basin_var_yearly(jj), jj=1, BasinOutVars)
             Basin_var_yearly = 0.0D0
             Yeardays = 0
@@ -254,13 +254,13 @@
           Basin_var_monthly(jj) = Basin_var_monthly(jj) + Basin_var_daily(jj)
           IF ( write_month==1 ) THEN
             IF ( BasinOut_freq==4 ) Basin_var_monthly(jj) = Basin_var_monthly(jj)/Monthdays
-		  ENDIF
+          ENDIF
         ENDDO
       ENDIF
 
       IF ( Daily_flag==1 ) WRITE ( Dailyunit, Output_fmt) Nowyear, Nowmonth, Nowday, (Basin_var_daily(jj), jj=1,BasinOutVars)
       IF ( write_month==1 ) THEN
-	    WRITE ( Monthlyunit, Output_fmt) Nowyear, Nowmonth, Nowday, (Basin_var_monthly(jj), jj=1,BasinOutVars)
+        WRITE ( Monthlyunit, Output_fmt) Nowyear, Nowmonth, Nowday, (Basin_var_monthly(jj), jj=1,BasinOutVars)
         Monthdays = 0.0D0
         Basin_var_monthly = 0.0D0
       ENDIF

@@ -1,5 +1,5 @@
 !***********************************************************************
-!     Output a set of declared variables by subbasin for use with R
+!     Output a set of declared variables by subbasin in CSV format
 !***********************************************************************
       MODULE PRMS_NSUB_SUMMARY
       USE PRMS_MODULE, ONLY: MAXFILE_LENGTH
@@ -58,7 +58,7 @@
       INTEGER :: i
       CHARACTER(LEN=80), SAVE :: Version_nsub_summary
 !***********************************************************************
-      Version_nsub_summary = 'nsub_summary.f90 2017-01-27 09:40:00Z'
+      Version_nsub_summary = 'nsub_summary.f90 2017-06-29 16:20:00Z'
       CALL print_module(Version_nsub_summary, 'Subbasin Output Summary     ', 90)
       MODNAME = 'nsub_summary'
 
@@ -105,7 +105,7 @@
       INTEGER, EXTERNAL :: getvartype, numchars, getvarsize, getparam
       EXTERNAL read_error, PRMS_open_output_file
 ! Local Variables
-      INTEGER :: ios, ierr, size, dim, jj, j, i, k
+      INTEGER :: ios, ierr, size, dum, jj, j, i, k
       CHARACTER(LEN=MAXFILE_LENGTH) :: fileName
 !***********************************************************************
       Begin_results = 1
@@ -131,7 +131,7 @@
           PRINT *, '       only real or double variables allowed'
           ierr = 1
         ENDIF
-        size = getvarsize(NsubOutVar_names(jj)(:Nc_vars(jj)), dim )
+        size = getvarsize(NsubOutVar_names(jj)(:Nc_vars(jj)), dum )
         IF ( size/=Nhru ) THEN
           PRINT *, 'ERROR, invalid nsub_summary variable:', NsubOutVar_names(jj)(:Nc_vars(jj))
           PRINT *, '       only variables dimensioned by nhru, nssr, or ngw are allowed'
@@ -160,7 +160,7 @@
         ALLOCATE ( Nsub_var_yearly(Nsub, NsubOutVars), Yearlyunit(NsubOutVars) )
         Nsub_var_yearly = 0.0D0
         WRITE ( Output_fmt3, 9003 ) Nsub
-	  ENDIF
+      ENDIF
       IF ( Monthly_flag==1 ) THEN
         Monthdays = 0.0D0
         ALLOCATE ( Nsub_var_monthly(Nsub, NsubOutVars), Monthlyunit(NsubOutVars) )
@@ -226,7 +226,7 @@
       END SUBROUTINE nsub_summaryinit
 
 !***********************************************************************
-!     Output set of declared variables in R compatible format
+!     Output set of declared variables in CSV format
 !***********************************************************************
       SUBROUTINE nsub_summaryrun()
       USE PRMS_NSUB_SUMMARY
