@@ -82,7 +82,7 @@
 !***********************************************************************
       gwflowdecl = 0
 
-      Version_gwflow = 'gwflow.f90 2016-12-09 12:40:00Z'
+      Version_gwflow = 'gwflow.f90 2017-06-29 11:49:00Z'
       CALL print_module(Version_gwflow, 'Groundwater                 ', 90)
       MODNAME = 'gwflow'
 
@@ -204,10 +204,9 @@
 
       ALLOCATE ( Gwsink_coef(Ngw) )
       IF ( declparam(MODNAME, 'gwsink_coef', 'ngw', 'real', &
-     &     '0.0', '0.0', '0.05', &
+     &     '0.0', '0.0', '1.0', &
      &     'Groundwater sink coefficient', &
-     &     'Linear coefficient in the equation to compute outflow'// &
-     &     ' to the groundwater sink for each GWR', &
+     &     'Linear coefficient in the equation to compute outflow to the groundwater sink for each GWR', &
      &     'fraction/day')/=0 ) CALL read_error(1, 'gwsink_coef')
 
       IF ( Lake_route_flag==1 .OR. Model==99 ) THEN

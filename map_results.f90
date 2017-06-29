@@ -24,7 +24,7 @@
       CHARACTER(LEN=11), SAVE :: MODNAME
 ! Declared Parameters
       INTEGER, SAVE :: Ncol, Prms_warmup, Mapvars_freq, Mapvars_units
-      INTEGER, SAVE, ALLOCATABLE :: Gvr_map_id(:), Gvr_hru_id(:)
+      INTEGER, SAVE, ALLOCATABLE :: Gvr_hru_id(:)
       REAL, SAVE, ALLOCATABLE :: Gvr_map_frac(:)
 ! Control Parameters
       INTEGER, SAVE :: NmapOutVars
@@ -72,7 +72,7 @@
 !***********************************************************************
       map_resultsdecl = 0
 
-      Version_map_results = 'map_results.f90 2017-05-22 11:21:00Z'
+      Version_map_results = 'map_results.f90 2017-06-28 12:09:00Z'
       CALL print_module(Version_map_results, 'Output Summary              ', 90)
       MODNAME = 'map_results'
 
@@ -109,7 +109,7 @@
             STOP 'ERROR, in map_results, nhrucell = 0 and must be > 0'
           ENDIF
         ENDIF
-        ALLOCATE ( Gvr_map_id(Nhrucell), Gvr_map_frac(Nhrucell), Gvr_hru_id(Nhrucell), Map_var_id(Ngwcell) )
+        ALLOCATE ( Gvr_map_frac(Nhrucell), Gvr_hru_id(Nhrucell), Map_var_id(Ngwcell) )
         ALLOCATE ( Gvr_map_frac_dble(Nhrucell) )
       ENDIF
 
@@ -141,11 +141,6 @@
      &     'none')/=0 ) CALL read_error(1, 'ncol')
 
       IF ( Mapflg==0 .OR. Model==99 ) THEN
-        IF ( declparam(MODNAME, 'gvr_cell_id', 'nhrucell', 'integer', &
-     &       '55', 'bounded', 'ngwcell', &
-     &       'Corresponding grid cell id associated with each GVR', &
-     &       'Index of the grid cell associated with each gravity reservoir', &
-     &       'none')/=0 ) CALL read_error(1, 'gvr_cell_id')
         IF ( Nhrucell/=Ngwcell .OR. Model==99 ) THEN
           IF ( declparam(MODNAME, 'gvr_cell_pct', 'nhrucell', 'real', &
      &         '0.0', '0.0', '1.0', &
@@ -170,12 +165,12 @@
       INTEGER FUNCTION map_resultsinit()
       USE PRMS_MAP_RESULTS
       USE PRMS_MODULE, ONLY: Nhru, Print_debug, Nhrucell, Ngwcell, Inputerror_flag, MapOutON_OFF, &
-     &                       Start_year, Start_month, Start_day, End_year, Parameter_check_flag
+     &                       Start_year, Start_month, Start_day, End_year, Parameter_check_flag, Gvr_cell_id
       USE PRMS_BASIN, ONLY: NEARZERO
       IMPLICIT NONE
       INTRINSIC ABS, DBLE
       INTEGER, EXTERNAL :: getparam, getvartype, numchars, getvarsize
-      EXTERNAL read_error, PRMS_open_output_file, checkdim_param_limits
+      EXTERNAL read_error, PRMS_open_output_file
 ! Local Variables
       INTEGER :: i, jj, is, ios, ierr, size, dim
       REAL, ALLOCATABLE, DIMENSION(:) :: map_frac
@@ -309,13 +304,6 @@
       IF ( ierr==1 ) Inputerror_flag = 1
 
       IF ( Mapflg==0 ) THEN
-        IF ( getparam(MODNAME, 'gvr_cell_id', Nhrucell, 'integer', Gvr_map_id)/=0 ) CALL read_error(2, 'gvr_cell_id')
-          IF ( Gvr_map_id(1)==55 .AND. Gvr_map_id(MAX(2,Nhrucell-111))==55 .AND. Gvr_map_id(MAX(5,Nhrucell-444))==99 ) THEN
-          PRINT '(/,A,/)', 'WARNING: values of gvr_cell_id set to 1 to nhrucell'
-          DO i = 1, Nhrucell
-            Gvr_map_id(i) = i
-          ENDDO
-        ENDIF
         IF ( Nhru/=Nhrucell ) THEN
           IF ( getparam(MODNAME, 'gvr_hru_id', Nhrucell, 'integer', Gvr_hru_id)/=0 ) CALL read_error(2, 'gvr_hru_id')
         ELSE
@@ -333,16 +321,12 @@
           ALLOCATE ( map_frac(Ngwcell) )
           map_frac = 0.0
           DO i = 1, Nhrucell
-            ierr = 0
-            CALL checkdim_param_limits(i, 'gvr_cell_id', 'nhrucell', Gvr_map_id(i), 1, Ngwcell, ierr)
-            CALL checkdim_param_limits(i, 'gvr_hru_id', 'nhrucell', Gvr_hru_id(i), 1, Nhru, ierr)
-            IF ( ierr==1 ) Inputerror_flag = 1
-            IF ( Gvr_map_id(i)>0 .AND. Gvr_hru_id(i)>0 .AND. Gvr_map_frac(i)>0.0 ) THEN
-              is = Gvr_map_id(i)
+            IF ( Gvr_cell_id(i)>0 .AND. Gvr_hru_id(i)>0 .AND. Gvr_map_frac(i)>0.0 ) THEN
+              is = Gvr_cell_id(i)
               map_frac(is) = map_frac(is) + Gvr_map_frac(i)
             ELSEIF ( Print_debug>-1 ) THEN
               PRINT *, 'WARNING, map intersection:', i, ' ignored as specification is incomplete'
-              PRINT *, '         HRU:', Gvr_hru_id(i), ' Map unit:', Gvr_map_id(i), 'Fraction:', Gvr_map_frac(i)
+              PRINT *, '         HRU:', Gvr_hru_id(i), ' Map unit:', Gvr_cell_id(i), 'Fraction:', Gvr_map_frac(i)
             ENDIF
           ENDDO
 
@@ -354,8 +338,8 @@
             ELSEIF ( map_frac(i)<NEARZERO ) THEN
               CYCLE
             ELSEIF ( map_frac(i)>1.0001 ) THEN
-              PRINT *, 'WARNING, excess accounting for area of mapped spatial unit:'
-              PRINT *, '         Map id:', i, ' Fraction:', map_frac(i)
+                PRINT *, 'WARNING, excess accounting for area of mapped spatial unit:'
+                PRINT *, '         Map id:', i, ' Fraction:', map_frac(i)
             ELSEIF ( map_frac(i)<0.9999 ) THEN
               IF ( Print_debug>-1 ) THEN
                 PRINT *, 'WARNING, incomplete accounting for area of mapped spatial unit'
@@ -381,7 +365,7 @@
 !***********************************************************************
       INTEGER FUNCTION map_resultsrun()
       USE PRMS_MAP_RESULTS
-      USE PRMS_MODULE, ONLY: Nhru, Nhrucell, Start_month, Start_day, End_year, End_month, End_day
+      USE PRMS_MODULE, ONLY: Nhru, Nhrucell, Start_month, Start_day, End_year, End_month, End_day, Gvr_cell_id
       USE PRMS_BASIN, ONLY: Hru_area_dble, Active_hrus, Hru_route_order, Basin_area_inv, NEARZERO
       USE PRMS_SET_TIME, ONLY: Nowyear, Nowmonth, Nowday, Modays
       IMPLICIT NONE
@@ -438,9 +422,9 @@
               ELSE
                 Map_var_id = 0.0D0
                 DO k = 1, Nhrucell
-                  IF ( Gvr_map_frac(k)<NEARZERO ) CYCLE
-                  Map_var_id(Gvr_map_id(k)) = Map_var_id(Gvr_map_id(k)) + &
-     &                                        Map_var_yr(Gvr_hru_id(k), jj)*Gvr_map_frac_dble(k)
+                  IF ( Gvr_map_frac(k)<NEARZERO .OR. Gvr_cell_id(k)<1 ) CYCLE
+                  Map_var_id(Gvr_cell_id(k)) = Map_var_id(Gvr_cell_id(k)) + &
+     &                                         Map_var_yr(Gvr_hru_id(k), jj)*Gvr_map_frac_dble(k)
                 ENDDO
                 CALL write_results(Yrunit(jj), Map_var_id)
               ENDIF
@@ -513,9 +497,9 @@
           ELSE
             Map_var_id = 0.0D0
             DO k = 1, Nhrucell
-              IF ( Gvr_map_frac(k)<NEARZERO ) CYCLE
-              Map_var_id(Gvr_map_id(k)) = Map_var_id(Gvr_map_id(k)) + &
-     &                                    Map_var_daily(Gvr_hru_id(k), jj)*Gvr_map_frac_dble(k)
+              IF ( Gvr_map_frac(k)<NEARZERO .OR. Gvr_cell_id(k)<1 ) CYCLE
+              Map_var_id(Gvr_cell_id(k)) = Map_var_id(Gvr_cell_id(k)) + &
+     &                                     Map_var_daily(Gvr_hru_id(k), jj)*Gvr_map_frac_dble(k)
             ENDDO
             CALL write_results(Dailyunit(jj), Map_var_id)
           ENDIF
@@ -543,9 +527,9 @@
             ELSE
               Map_var_id = 0.0D0
               DO k = 1, Nhrucell
-                IF ( Gvr_map_frac(k)<NEARZERO ) CYCLE
-                Map_var_id(Gvr_map_id(k)) = Map_var_id(Gvr_map_id(k)) + &
-     &                                      Map_var_week(Gvr_hru_id(k),jj)*Gvr_map_frac_dble(k)
+                IF ( Gvr_map_frac(k)<NEARZERO .OR. Gvr_cell_id(k)<1 ) CYCLE
+                Map_var_id(Gvr_cell_id(k)) = Map_var_id(Gvr_cell_id(k)) + &
+     &                                       Map_var_week(Gvr_hru_id(k),jj)*Gvr_map_frac_dble(k)
               ENDDO
               CALL write_results(Weekunit(jj), Map_var_id)
             ENDIF
@@ -577,9 +561,9 @@
             ELSE
               Map_var_id = 0.0D0
               DO k = 1, Nhrucell
-                IF ( Gvr_map_frac(k)<NEARZERO ) CYCLE
-                Map_var_id(Gvr_map_id(k)) = Map_var_id(Gvr_map_id(k)) + &
-     &                                      Map_var_mon(Gvr_hru_id(k), jj)*Gvr_map_frac_dble(k)
+                IF ( Gvr_map_frac(k)<NEARZERO .OR. Gvr_cell_id(k)<1 ) CYCLE
+                Map_var_id(Gvr_cell_id(k)) = Map_var_id(Gvr_cell_id(k)) + &
+     &                                       Map_var_mon(Gvr_hru_id(k), jj)*Gvr_map_frac_dble(k)
               ENDDO
               CALL write_results(Monunit(jj), Map_var_id)
             ENDIF
@@ -612,9 +596,9 @@
             ELSE
               Map_var_id = 0.0D0
               DO k = 1, Nhrucell
-                IF ( Gvr_map_frac(k)<NEARZERO ) CYCLE
-                Map_var_id(Gvr_map_id(k)) = Map_var_id(Gvr_map_id(k)) + &
-     &                                      Map_var_tot(Gvr_hru_id(k), jj)*Gvr_map_frac_dble(k)
+                IF ( Gvr_map_frac(k)<NEARZERO .OR. Gvr_cell_id(k)<1 ) CYCLE
+                Map_var_id(Gvr_cell_id(k)) = Map_var_id(Gvr_cell_id(k)) + &
+     &                                       Map_var_tot(Gvr_hru_id(k), jj)*Gvr_map_frac_dble(k)
               ENDDO
               CALL write_results(Totunit(jj), Map_var_id)
             ENDIF

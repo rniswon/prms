@@ -1,4 +1,4 @@
-      ! utils_prms.f90 2016-12-09 12:48:00Z
+      ! utils_prms.f90 2017-03-22 11:44:00Z
 !***********************************************************************
 !     Read CBH File to current time
 !***********************************************************************
@@ -823,26 +823,23 @@
       ! Functions
       INTRINSIC INDEX
       ! Local Variables
-      INTEGER nc, n, nb
-      CHARACTER(LEN=72) :: buffer
-      CHARACTER(LEN=32), PARAMETER :: blanks = '                                '
+      INTEGER nc, n
 !***********************************************************************
-      nc = INDEX( Versn, 'Z' )
+      nc = INDEX( Versn, 'Z' ) - 10
       IF ( Ftntype==90 ) THEN
         n = INDEX( Versn, '.f90' ) + 3
       ELSE
         n = INDEX( Versn, '.f' ) + 1
       ENDIF
-      nb = 25 - n
-      WRITE (buffer, '(A)' ) Description//'     '//Versn(:n)//blanks(:nb)//Versn(n+2:nc-10)
-      PRINT '(A)', buffer
-      WRITE ( Logunt, '(A)' ) buffer
-      IF ( Model/=2 ) WRITE ( PRMS_output_unit, '(A)' ) buffer
-      END SUBROUTINE print_module
+      PRINT '(A)', Description//'   '//Versn(:n)//', version: '//Versn(n+2:nc)
+      WRITE ( Logunt, '(A)' ) Description//'   '//Versn(:n)//', version: '//Versn(n+2:nc)
+      IF ( Model/=2 ) WRITE ( PRMS_output_unit, '(A)' ) Description//'   '//Versn(:n)//', version: '//Versn(n+2:nc)
+    END SUBROUTINE print_module
 
 !***********************************************************************
 ! check restart file module order
 !***********************************************************************
+
       SUBROUTINE check_restart(Modname, Restart_module)
       IMPLICIT NONE
       ! Arguments
@@ -985,8 +982,8 @@
 ! and compute some basin variables
 !***********************************************************************
       SUBROUTINE check_nhru_params()
-      USE PRMS_MODULE, ONLY: Temp_flag, Ntemp, Nevap, Print_debug, Inputerror_flag
-      USE PRMS_BASIN, ONLY: Hru_type, Active_hrus, Hru_route_order, Cov_type
+      USE PRMS_MODULE, ONLY: Temp_flag, Ntemp, Nevap, Inputerror_flag
+      USE PRMS_BASIN, ONLY: Active_hrus, Hru_route_order
       USE PRMS_CLIMATEVARS, ONLY: Hru_tsta, Hru_pansta, Use_pandata
       IMPLICIT NONE
 ! Functions
@@ -1000,18 +997,8 @@
       ! Sanity checks for parameters
       DO j = 1, Active_hrus
         i = Hru_route_order(j)
-
         IF ( check_tsta==1 ) CALL checkdim_param_limits(i, 'hru_tsta', 'ntemp', Hru_tsta(i), 1, Ntemp, Inputerror_flag)
-
         IF ( Use_pandata==1 ) CALL checkdim_param_limits(i, 'hru_pansta', 'nevap', Hru_pansta(i), 1, Nevap, Inputerror_flag)
-
-        IF ( Hru_type(i)==2 ) THEN
-          IF ( Cov_type(i)/=0 ) THEN
-            IF ( Print_debug>-1 ) PRINT *,  'WARNING, cov_type must be 0 for lakes, reset from:', Cov_type(i), ' to 0 for HRU:', i
-            Cov_type(i) = 0
-          ENDIF
-          CYCLE
-        ENDIF
       ENDDO
 
       END SUBROUTINE check_nhru_params

@@ -155,12 +155,13 @@
       Monthly_flag = 0
       IF ( NsubOut_freq==2 .OR. NsubOut_freq==3 .OR. NsubOut_freq==4 ) Monthly_flag = 1
 
-      IF ( NsubOut_freq==5 ) THEN
+      IF ( NsubOut_freq>4 ) THEN
         Yeardays = 0
         ALLOCATE ( Nsub_var_yearly(Nsub, NsubOutVars), Yearlyunit(NsubOutVars) )
         Nsub_var_yearly = 0.0D0
         WRITE ( Output_fmt3, 9003 ) Nsub
-      ELSEIF ( Monthly_flag==1 ) THEN
+	  ENDIF
+      IF ( Monthly_flag==1 ) THEN
         Monthdays = 0.0D0
         ALLOCATE ( Nsub_var_monthly(Nsub, NsubOutVars), Monthlyunit(NsubOutVars) )
         Nsub_var_monthly = 0.0D0
@@ -272,8 +273,8 @@
                 IF ( NsubOut_freq==5 ) Nsub_var_yearly(k, jj) = Nsub_var_yearly(k, jj)/Yeardays
                 Nsub_var_yearly(k, jj) = Nsub_var_yearly(k, jj)/Sub_area(k)
               ENDDO
+              WRITE ( Yearlyunit(jj), Output_fmt3) Lastyear, (Nsub_var_yearly(j,jj), j=1,Nsub)
             ENDDO
-            WRITE ( Yearlyunit(jj), Output_fmt3) Lastyear, (Nsub_var_yearly(j,jj), j=1,Nsub)
             Nsub_var_yearly = 0.0D0
             Yeardays = 0
             Lastyear = Nowyear
@@ -303,7 +304,7 @@
         ENDDO
       ENDIF
 
-      IF ( NsubOut_freq==5 ) THEN
+      IF ( NsubOut_freq>4 ) THEN
         DO jj = 1, NsubOutVars
           DO j = 1, Active_hrus
             i = Hru_route_order(j)

@@ -13,7 +13,7 @@
       REAL, PARAMETER :: FEET2METERS = 0.3048
       REAL, PARAMETER :: METERS2FEET = 1.0/FEET2METERS
       CHARACTER(LEN=5), SAVE :: MODNAME
-      INTEGER, SAVE :: Numlake_hrus, Active_hrus, Active_gwrs, Numlakes
+      INTEGER, SAVE :: Numlake_hrus, Active_hrus, Active_gwrs, Numlakes_check
       INTEGER, SAVE :: Hemisphere, Dprst_clos_flag, Dprst_open_flag
       DOUBLE PRECISION, SAVE :: Land_area, Water_area
       DOUBLE PRECISION, SAVE :: Basin_area_inv, Basin_lat, Totarea, Active_area
@@ -77,7 +77,7 @@
 !***********************************************************************
       basdecl = 0
 
-      Version_basin = 'basin.f90 2017-03-24 09:08:00Z'
+      Version_basin = 'basin.f90 2017-06-29 11:15:00Z'
       CALL print_module(Version_basin, 'Basin Definition            ', 90)
       MODNAME = 'basin'
 
@@ -311,7 +311,7 @@
         IF ( getparam(MODNAME, 'lake_hru_id', Nhru, 'integer', Lake_hru_id)/=0 ) CALL read_error(1, 'lake_hru_id')
         Lake_area = 0.0D0
         IF ( Lake_route_flag==1 .AND. Model/=0 ) THEN
-          IF ( getparam(MODNAME, 'lake_hru', Nlake, 'real', Lake_hru)/=0 ) CALL read_error(2, 'lake_hru')
+          IF ( getparam(MODNAME, 'lake_hru', Nlake, 'integer', Lake_hru)/=0 ) CALL read_error(2, 'lake_hru')
         ENDIF
       ENDIF
 
@@ -328,7 +328,7 @@
       basin_perv = 0.0D0
       basin_imperv = 0.0D0
       basin_dprst = 0.0D0
-      Numlakes = 0
+      Numlakes_check = 0
       Numlake_hrus = 0
       Totarea = 0.0D0
       Land_area = 0.0D0
@@ -351,14 +351,14 @@
           Water_area = Water_area + harea_dble
           Numlake_hrus = Numlake_hrus + 1
           lakeid = Lake_hru_id(i)
-          IF ( lakeid>Numlakes ) Numlakes = lakeid
+          IF ( lakeid>Numlakes_check ) Numlakes_check = lakeid
           IF ( Nlake<1 ) THEN
-            PRINT *, 'ERROR, invalid hru_type value = 2 for HRU:', i, ' and nlake value = 0'
+            PRINT *, 'ERROR, hru_type = 2 for HRU:', i, ' and dimension nlake = 0'
             Inputerror_flag = 1
           ELSEIF ( lakeid==0 ) THEN
-            PRINT *, 'ERROR, lake_hru_id value = 0 for lake HRU:', i
+            PRINT *, 'ERROR, hru_type = 2 for HRU:', i, ' and lake_hru_id = 0'
             Inputerror_flag = 1
-          ELSE
+          ELSEIF ( lakeid>0 ) THEN
             Lake_area(lakeid) = Lake_area(lakeid) + harea_dble
           ENDIF
         ELSE
@@ -461,16 +461,16 @@
         Inputerror_flag = 1
       ENDIF
       IF ( Nlake>0 ) THEN
-        DO i = 1, Nlake
+        DO i = 1, Numlakes_check
           IF ( Lake_area(i)<DNEARZERO ) THEN
             PRINT *, 'ERROR, Lake:', i, ' has 0 area, thus no value of lake_hru_id is associated with the lake'
             Inputerror_flag = 1
           ENDIF
         ENDDO
         IF ( Model==0 ) THEN
-          IF ( Numlakes/=Nlake ) THEN
+          IF ( Numlakes_check/=Nlake ) THEN
             PRINT *, 'ERROR, number of lakes specified in hru_type'
-            PRINT *, 'does not equal dimension nlake:', Nlake, ', number of lakes:', Numlakes
+            PRINT *, 'does not equal dimension nlake:', Nlake, ', number of lakes:', Numlakes_check
             Inputerror_flag = 1
           ENDIF
         ELSEIF ( Lake_route_flag==1 ) THEN
@@ -479,27 +479,28 @@
             PRINT *, 'does not equal dimension nlake:', Nlake, ', number of lake HRUs:', Numlake_hrus
             PRINT *, 'For PRMS lake routing each lake must be a single HRU'
             Inputerror_flag = 1
-          ENDIF
-          DO i = 1, Nlake
-            j = Lake_hru(i)
-            IF ( j>0 ) THEN
-              IF ( Lake_hru_id(j)==0 ) THEN
-                Lake_hru_id(j) = i
-              ELSEIF ( Lake_hru_id(j)/=i ) THEN
-                PRINT *, 'ERROR, parameter values for lake_hru and lake_hru_id in conflict for Lake:', i, ', HRU:', j
+          ELSE
+            DO i = 1, Nlake
+              j = Lake_hru(i)
+              IF ( j>0 ) THEN
+                IF ( Lake_hru_id(j)==0 ) THEN
+                  Lake_hru_id(j) = i
+                ELSEIF ( Lake_hru_id(j)/=i ) THEN
+                  PRINT *, 'ERROR, parameter values for lake_hru and lake_hru_id in conflict for Lake:', i, ', HRU:', j
+                  Inputerror_flag = 1
+                  CYCLE
+                ENDIF
+              ELSE
+                PRINT *, 'ERROR, lake_hru=0 for lake:', i
                 Inputerror_flag = 1
                 CYCLE
               ENDIF
-            ELSE
-              PRINT *, 'ERROR, lake_hru=0 for lake:', i
-              Inputerror_flag = 1
-              CYCLE
-            ENDIF
-            IF ( Hru_type(j)/=2 ) THEN
-              PRINT *, 'ERROR, HRU:', j, ' specifed to be a lake by lake_hru but hru_type not equal 2'
-              Inputerror_flag = 1
-            ENDIF
-          ENDDO
+              IF ( Hru_type(j)/=2 ) THEN
+                PRINT *, 'ERROR, HRU:', j, ' specifed to be a lake by lake_hru but hru_type not equal 2'
+                Inputerror_flag = 1
+              ENDIF
+            ENDDO
+          ENDIF
         ENDIF
       ENDIF
 
@@ -611,7 +612,7 @@
       ENDIF
 
 !     print out start and end times
-      !CALL write_outfile(' Surface Water and Energy Budgets Simulated by '//PRMS_VERSION)
+        !CALL write_outfile(' Surface Water and Energy Budgets Simulated by '//PRMS_VERSION)
       CALL write_outfile(' ')
       WRITE (buffer, 9002) 'Start time: ', Starttime
       CALL write_outfile(buffer(:31))
