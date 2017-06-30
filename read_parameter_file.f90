@@ -88,7 +88,6 @@
 ! Read Parameter File Dimensions
 !***********************************************************************
       SUBROUTINE read_parameter_file_params
-      USE PRMS_MODULE, ONLY: EQULS
       USE PRMS_READ_PARAM_FILE
       USE PRMS_CONTROL_FILE, ONLY: Control_parameter_data, Param_file_control_parameter_id
       USE PRMS_MMFAPI, ONLY: Num_parameters, Parameter_data
@@ -104,7 +103,6 @@
       INTEGER, ALLOCATABLE :: idmy(:)
       REAL, ALLOCATABLE :: dmy(:)
       !***********************************************************************
-      PRINT '(A)', EQULS
 ! Find parameter section
       REWIND ( Param_unit )
       DO

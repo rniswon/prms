@@ -9,11 +9,11 @@
      &      Strmflow_module, Transp_module, Soilzone_module, Print_debug, Dprst_flag, Subbasin_flag, Frozen_flag, &
      &      CsvON_OFF, MapOutON_OFF, Model_mode, Orad_flag, Endtime, Starttime, Snow_cbh_flag, Stream_temp_flag, &
      &      Cascade_flag, Cascadegw_flag, Prms_warmup, Humidity_cbh_flag, Windspeed_cbh_flag, &
-     &      Gwflow_cbh_flag, NhruOutON_OFF, NsubOutON_OFF, Dyn_imperv_flag, Dyn_dprst_flag, Dyn_intcp_flag, &
+     &      Gwflow_cbh_flag, NhruOutON_OFF, NsubOutON_OFF, BasinOutON_OFF, Dyn_imperv_flag, Dyn_dprst_flag, Dyn_intcp_flag, &
      &      Dyn_covtype_flag, Dyn_potet_flag, Dyn_transp_flag, Dyn_soil_flag, Dyn_radtrncf_flag, Dyn_transp_on_flag, &
      &      Dyn_sro2dprst_perv_flag, Dyn_sro2dprst_imperv_flag, Dyn_fallfrost_flag, &
      &      Dyn_springfrost_flag, Dyn_snareathresh_flag, Dyn_covden_flag, Segment_transferON_OFF, Gwr_transferON_OFF, &
-     &      Lake_transferON_OFF, External_transferON_OFF, Dprst_transferON_OFF
+     &      Lake_transferON_OFF, External_transferON_OFF, Dprst_transferON_OFF, basinOutON_OFF
         USE GSFMODFLOW, ONLY: Modflow_name, Modflow_time_zero
         USE PRMS_CLIMATE_HRU, ONLY: Precip_day, Tmax_day, Tmin_day, Potet_day, Transp_day, Swrad_day, &
      &      Cbh_check_flag, Cbh_binary_flag, Windspeed_day, Humidity_day
@@ -21,6 +21,7 @@
         USE PRMS_MAP_RESULTS, ONLY: NmapOutVars, MapOutVar_names
         USE PRMS_NHRU_SUMMARY, ONLY: NhruOutVars, NhruOut_freq, NhruOutBaseFileName, NhruOutVar_names
         USE PRMS_NSUB_SUMMARY, ONLY: NsubOutVars, NsubOut_freq, NsubOutBaseFileName, NsubOutVar_names
+        USE PRMS_BASIN_SUMMARY, ONLY: BasinOutVars, BasinOut_freq, BasinOutBaseFileName, BasinOutVar_names
         USE PRMS_DYNAMIC_PARAM_READ, ONLY: imperv_frac_dynamic, imperv_stor_dynamic, dprst_depth_dynamic, dprst_frac_dynamic, &
      &      wrain_intcp_dynamic, srain_intcp_dynamic, snow_intcp_dynamic, covtype_dynamic, &
      &      potetcoef_dynamic, transpbeg_dynamic, transpend_dynamic, &
@@ -68,7 +69,7 @@
       CHARACTER(LEN=MAXCONTROL_LENGTH) :: paramstring
       REAL, ALLOCATABLE :: real_parameter_values(:)
 !***********************************************************************
-      Version_read_control_file = 'read_control_file.f90 2017-06-09 14:50:00Z'
+      Version_read_control_file = 'read_control_file.f90 2017-06-30 14:10:00Z'
 
       ! control filename cannot include blanks
       CALL get_control_filename(Model_control_file, nchars)
@@ -234,6 +235,12 @@
       Control_parameter_data(i)%name = 'nsubOutVars'
       NsubOutVars = 0
       i = i + 1
+      Control_parameter_data(i)%name = 'basinOutON_OFF'
+      BasinOutON_OFF = 0
+      i = i + 1
+      Control_parameter_data(i)%name = 'basinOutVars'
+      BasinOutVars = 0
+      i = i + 1
       Control_parameter_data(i)%name = 'statsON_OFF'
       StatsON_OFF = 0
       i = i + 1
@@ -258,12 +265,13 @@
       Control_parameter_data(i)%name = 'ndispGraphs'
       NdispGraphs = 0
       i = i + 1
-      Control_parameter_data(i)%name = 'nsubOutVars'
-      NsubOutVars = 0
-      i = i + 1
       Control_parameter_data(i)%name = 'nsubOut_freq'
       NsubOut_freq = 1
       Control_parameter_data(i)%values_int(1) = NsubOut_freq
+      i = i + 1
+      Control_parameter_data(i)%name = 'basinOut_freq'
+      BasinOut_freq = 1
+      Control_parameter_data(i)%values_int(1) = BasinOut_freq
       i = i + 1
       Control_parameter_data(i)%name = 'prms_warmup'
       Prms_warmup = 1
@@ -379,6 +387,10 @@
       Control_parameter_data(i)%read_flag = 3 ! need to allocate
       i = i + 1
       Control_parameter_data(i)%name = 'nsubOutVar_names'
+      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%read_flag = 3 ! need to allocate
+      i = i + 1
+      Control_parameter_data(i)%name = 'basinOutVar_names'
       Control_parameter_data(i)%data_type = 4
       Control_parameter_data(i)%read_flag = 3 ! need to allocate
       i = i + 1
@@ -506,6 +518,11 @@
       Control_parameter_data(i)%name = 'nsubOutBaseFileName'
       NsubOutBaseFileName = 'nsubout_path'
       Control_parameter_data(i)%values_character(1) = NsubOutBaseFileName
+      Control_parameter_data(i)%data_type = 4
+      i = i + 1
+      Control_parameter_data(i)%name = 'basinOutBaseFileName'
+      BasinOutBaseFileName = 'basinout_path'
+      Control_parameter_data(i)%values_character(1) = BasinOutBaseFileName
       Control_parameter_data(i)%data_type = 4
       i = i + 1
       Control_parameter_data(i)%name = 'tmax_day'
