@@ -224,7 +224,7 @@
       USE PRMS_BASIN
       USE PRMS_MODULE, ONLY: Nhru, Nlake, Dprst_flag, &
      &    Print_debug, Inputerror_flag, Model, PRMS_VERSION, Starttime, Endtime, &
-     &    Lake_route_flag, Cascadegw_flag, Numlakes, Prms_output_unit
+     &    Lake_route_flag, Cascadegw_flag, Numlakes
       IMPLICIT NONE
 ! Functions
       INTEGER, EXTERNAL :: getparam
