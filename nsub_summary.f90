@@ -1,5 +1,5 @@
 !***********************************************************************
-!     Output a set of declared variables by subbasin for use with R
+!     Output a set of declared variables by subbasin in CSV format
 !***********************************************************************
       MODULE PRMS_NSUB_SUMMARY
       USE PRMS_MODULE, ONLY: MAXFILE_LENGTH
@@ -58,7 +58,7 @@
       INTEGER :: i
       CHARACTER(LEN=80), SAVE :: Version_nsub_summary
 !***********************************************************************
-      Version_nsub_summary = 'nsub_summary.f90 2017-01-27 09:40:00Z'
+      Version_nsub_summary = 'nsub_summary.f90 2017-06-29 16:20:00Z'
       CALL print_module(Version_nsub_summary, 'Subbasin Output Summary     ', 90)
       MODNAME = 'nsub_summary'
 
@@ -105,7 +105,7 @@
       INTEGER, EXTERNAL :: getvartype, numchars, getvarsize, getparam
       EXTERNAL read_error, PRMS_open_output_file
 ! Local Variables
-      INTEGER :: ios, ierr, size, dim, jj, j, i, k
+      INTEGER :: ios, ierr, size, dum, jj, j, i, k
       CHARACTER(LEN=MAXFILE_LENGTH) :: fileName
 !***********************************************************************
       Begin_results = 1
@@ -124,14 +124,14 @@
       ierr = 0
       DO jj = 1, NsubOutVars
         Nc_vars(jj) = numchars(NsubOutVar_names(jj))
-        Nsub_var_type(jj) = getvartype(NsubOutVar_names(jj)(:Nc_vars(jj)) )
+        Nsub_var_type(jj) = getvartype(NsubOutVar_names(jj)(:Nc_vars(jj)), Nsub_var_type(jj) )
         IF ( Nsub_var_type(jj)==3 ) Double_vars = 1
         IF ( Nsub_var_type(jj)/=2 .AND. Nsub_var_type(jj)/=3 ) THEN
           PRINT *, 'ERROR, invalid nsub_summary variable:', NsubOutVar_names(jj)(:Nc_vars(jj))
           PRINT *, '       only real or double variables allowed'
           ierr = 1
         ENDIF
-        size = getvarsize(NsubOutVar_names(jj)(:Nc_vars(jj)), dim )
+        size = getvarsize(NsubOutVar_names(jj)(:Nc_vars(jj)), dum )
         IF ( size/=Nhru ) THEN
           PRINT *, 'ERROR, invalid nsub_summary variable:', NsubOutVar_names(jj)(:Nc_vars(jj))
           PRINT *, '       only variables dimensioned by nhru, nssr, or ngw are allowed'
@@ -155,12 +155,13 @@
       Monthly_flag = 0
       IF ( NsubOut_freq==2 .OR. NsubOut_freq==3 .OR. NsubOut_freq==4 ) Monthly_flag = 1
 
-      IF ( NsubOut_freq==5 ) THEN
+      IF ( NsubOut_freq>4 ) THEN
         Yeardays = 0
         ALLOCATE ( Nsub_var_yearly(Nsub, NsubOutVars), Yearlyunit(NsubOutVars) )
         Nsub_var_yearly = 0.0D0
         WRITE ( Output_fmt3, 9003 ) Nsub
-      ELSEIF ( Monthly_flag==1 ) THEN
+      ENDIF
+      IF ( Monthly_flag==1 ) THEN
         Monthdays = 0.0D0
         ALLOCATE ( Nsub_var_monthly(Nsub, NsubOutVars), Monthlyunit(NsubOutVars) )
         Nsub_var_monthly = 0.0D0
@@ -225,7 +226,7 @@
       END SUBROUTINE nsub_summaryinit
 
 !***********************************************************************
-!     Output set of declared variables in R compatible format
+!     Output set of declared variables in CSV format
 !***********************************************************************
       SUBROUTINE nsub_summaryrun()
       USE PRMS_NSUB_SUMMARY
@@ -272,8 +273,8 @@
                 IF ( NsubOut_freq==5 ) Nsub_var_yearly(k, jj) = Nsub_var_yearly(k, jj)/Yeardays
                 Nsub_var_yearly(k, jj) = Nsub_var_yearly(k, jj)/Sub_area(k)
               ENDDO
+              WRITE ( Yearlyunit(jj), Output_fmt3) Lastyear, (Nsub_var_yearly(j,jj), j=1,Nsub)
             ENDDO
-            WRITE ( Yearlyunit(jj), Output_fmt3) Lastyear, (Nsub_var_yearly(j,jj), j=1,Nsub)
             Nsub_var_yearly = 0.0D0
             Yeardays = 0
             Lastyear = Nowyear
@@ -303,7 +304,7 @@
         ENDDO
       ENDIF
 
-      IF ( NsubOut_freq==5 ) THEN
+      IF ( NsubOut_freq>4 ) THEN
         DO jj = 1, NsubOutVars
           DO j = 1, Active_hrus
             i = Hru_route_order(j)

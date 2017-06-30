@@ -98,7 +98,7 @@
 !***********************************************************************
       snodecl = 0
 
-      Version_snowcomp = 'snowcomp.f90 2016-10-14 16:37:00Z'
+      Version_snowcomp = 'snowcomp.f90 2016-06-16 13:25:00Z'
       CALL print_module(Version_snowcomp, 'Snow Dynamics               ', 90)
       MODNAME = 'snowcomp'
 
@@ -569,11 +569,11 @@
 !***********************************************************************
       INTEGER FUNCTION snorun()
       USE PRMS_SNOW
-      USE PRMS_MODULE, ONLY: Nhru, Print_debug
+      USE PRMS_MODULE, ONLY: Nhru, Ndepl, Print_debug
       USE PRMS_BASIN, ONLY: DNEARZERO, Hru_area, Active_hrus, Hru_type, &
      &    Basin_area_inv, Hru_route_order, Cov_type
       USE PRMS_CLIMATEVARS, ONLY: Newsnow, Pptmix, Orad, Basin_horad, Potet_sublim, &
-     &    Hru_ppt, Prmx, Tmaxc, Tminc, Tavgc, Swrad, Potet, Transp_on, Tmax_allsnow_c
+     &    Basin_ppt, Prmx, Tmaxc, Tminc, Tavgc, Swrad, Potet, Transp_on, Tmax_allsnow_c
       USE PRMS_FLOWVARS, ONLY: Pkwater_equiv
       USE PRMS_SET_TIME, ONLY: Jday, Nowmonth, Julwater
       USE PRMS_INTCP, ONLY: Net_rain, Net_snow, Net_ppt, Canopy_covden, Hru_intcpevap
@@ -687,13 +687,16 @@
 
           ! HRU STEP 2 - CALCULATE THE NEW SNOW COVERED AREA
           !**********************************************************
-          ! Compute snow-covered area from depletion curve
-          k = Hru_deplcrv(i)
-          ! calculate the new snow covered area
-          CALL snowcov(Iasw(i), Newsnow(i), Snowcov_area(i), &
-     &                 Snarea_curve(1, k), Pkwater_equiv(i), Pst(i), &
-     &                 Snarea_thresh(i), Net_snow(i), Scrv(i), &
-     &                 Pksv(i), Snowcov_areasv(i), Ai(i), i)
+          ! Compute snow-covered area if depletion curves are available
+          IF ( Ndepl>0 ) THEN
+            ! use the snow depletion curve for the current HRU
+            k = Hru_deplcrv(i)
+            ! calculate the new snow covered area
+            CALL snowcov(Iasw(i), Newsnow(i), Snowcov_area(i), &
+     &                   Snarea_curve(1, k), Pkwater_equiv(i), Pst(i), &
+     &                   Snarea_thresh(i), Net_snow(i), Scrv(i), &
+     &                   Pksv(i), Snowcov_areasv(i), Ai(i), i)
+          ENDIF
 
           ! HRU STEP 3 - COMPUTE THE NEW ALBEDO
           !**********************************************************
@@ -715,9 +718,9 @@
           ! temparature is halfway between the minimum and average temperature for the day
           !temp = (Tminc(i)+Tavgc(i))*0.5
           !emis = ((temp+273.16)**(Emis_coefb-4.0))*(10.0**(Emis_coefa+1.0))/5.670373E−8 ! /by Stefan Boltzmann in SI units
-          ! If there is any precipitation in the HRU, reset the
+          ! If there is any precipitation in the basin, reset the
           ! emissivity to 1
-          IF ( Hru_ppt(i)>0.0 ) emis = 1.0 ! [fraction of radiation]
+          IF ( Basin_ppt>DNEARZERO ) emis = 1.0 ! [fraction of radiation]  !rsr??? change to hru_ppt ??
           ! Save the current value of emissivity
           esv = emis ! [fraction of radiation]
           ! The incoming shortwave radiation is the HRU radiation
@@ -825,7 +828,7 @@
           temp = (Tminc(i)+Tavgc(i))*0.5
           ! calculate the night time energy balance
           CALL snowbal(niteda, Tstorm_mo(i,Nowmonth), Iasw(i), &
-     &                 temp, esv, Hru_ppt(i), trd, Emis_noppt(i), &
+     &                 temp, esv, Basin_ppt, trd, Emis_noppt(i), &
      &                 Canopy_covden(i), cec, Pkwater_equiv(i), &
      &                 Pk_def(i), Pk_temp(i), Pk_ice(i), Freeh2o(i), &
      &                 Snowcov_area(i), Snowmelt(i), Pk_depth(i), &
@@ -844,7 +847,7 @@
             ! temperature for the day
             temp = (Tmaxc(i)+Tavgc(i))*0.5 ! [degrees C]
             CALL snowbal(niteda, Tstorm_mo(i,Nowmonth), Iasw(i), &
-     &                   temp, esv, Hru_ppt(i), trd, Emis_noppt(i), &
+     &                   temp, esv, Basin_ppt, trd, Emis_noppt(i), &
      &                   Canopy_covden(i), cec, Pkwater_equiv(i), &
      &                   Pk_def(i), Pk_temp(i), Pk_ice(i), Freeh2o(i), &
      &                   Snowcov_area(i), Snowmelt(i), Pk_depth(i), &
@@ -1699,11 +1702,11 @@
 !      Subroutine to compute energy balance of snowpack
 !        1st call is for night period, 2nd call for day period
 !***********************************************************************
-      SUBROUTINE snowbal(Niteda, Tstorm_mo, Iasw, Temp, Esv, Hru_ppt, &
+      SUBROUTINE snowbal(Niteda, Tstorm_mo, Iasw, Temp, Esv, Basin_ppt, &
      &           Trd, Emis_noppt, Canopy_covden, Cec, Pkwater_equiv, &
      &           Pk_def, Pk_temp, Pk_ice, Freeh2o, Snowcov_area, &
      &           Snowmelt, Pk_depth, Pss, Pst, Pk_den, Cst, Cal, Sw, Freeh2o_cap)
-      USE PRMS_BASIN, ONLY: CLOSEZERO
+      USE PRMS_BASIN, ONLY: CLOSEZERO, DNEARZERO
       IMPLICIT NONE
       INTRINSIC SNGL
       EXTERNAL calin, caloss
@@ -1711,8 +1714,8 @@
       INTEGER, INTENT(IN) :: Niteda, Tstorm_mo
       INTEGER, INTENT(INOUT) :: Iasw
       REAL, INTENT(IN) :: Temp, Esv, Trd, Cec, Cst, Canopy_covden
-      REAL, INTENT(IN) :: Emis_noppt, Sw, Freeh2o_cap
-      REAL, INTENT(IN) :: Hru_ppt, Snowcov_area
+      REAL, INTENT(IN) :: Emis_noppt, Sw, Freeh2o_cap, Snowcov_area
+      DOUBLE PRECISION, INTENT(IN) :: Basin_ppt
       DOUBLE PRECISION, INTENT(OUT) :: Pst, Pss
       REAL, INTENT(OUT) :: Cal
       REAL, INTENT(INOUT) :: Pk_den, Pk_def, Pk_temp, Pk_ice
@@ -1752,7 +1755,7 @@
 
       ! If precipitation over the time period was due to
       ! convective thunderstorms, then the emissivity should be reset
-      IF ( Hru_ppt>0.0 ) THEN
+      IF ( Basin_ppt>DNEARZERO ) THEN !rsr??? change to hru_ppt?
         IF ( Tstorm_mo==1 ) THEN
 
           ! The emissivity of air depends on if it is day or night
@@ -1803,8 +1806,8 @@
       ! no energy from convection or condensation
       cecsub = 0.0 ! [cal/cm^2] or [Langleys]
       IF ( Temp>0.0 ) THEN
-        IF ( Hru_ppt>0.0 ) cecsub = Cec*Temp ! [cal/cm^2]
-                                             ! or [Langleys]
+        IF ( Basin_ppt>DNEARZERO ) cecsub = Cec*Temp ! [cal/cm^2]   !rsr why basin_ppt ???, change to hru_ppt?
+                                                     ! or [Langleys]
       ENDIF
 
       ! Total energy potentially available from atmosphere: longwave,
