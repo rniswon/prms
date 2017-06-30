@@ -23,11 +23,11 @@
       CHARACTER(LEN=15), SAVE :: Mapfmt
       CHARACTER(LEN=11), SAVE :: MODNAME
 ! Declared Parameters
-      INTEGER, SAVE :: Ncol, Prms_warmup, Mapvars_freq, Mapvars_units
+      INTEGER, SAVE :: Ncol, Mapvars_freq, Mapvars_units
       INTEGER, SAVE, ALLOCATABLE :: Gvr_hru_id(:)
       REAL, SAVE, ALLOCATABLE :: Gvr_map_frac(:)
 ! Control Parameters
-      INTEGER, SAVE :: NmapOutVars
+      INTEGER, SAVE :: NmapOutVars, Prms_warmup
       CHARACTER(LEN=36), SAVE, ALLOCATABLE :: MapOutVar_names(:)
       END MODULE PRMS_MAP_RESULTS
 
@@ -76,6 +76,7 @@
       CALL print_module(Version_map_results, 'Output Summary              ', 90)
       MODNAME = 'map_results'
 
+      IF ( control_integer(Prms_warmup, 'prms_warmup')/=0 ) prms_warmup = 0
       IF ( control_integer(NmapOutVars, 'nmapOutVars')/=0 ) NmapOutVars = 0
       IF ( NmapOutVars==0 ) THEN
         IF ( Model/=99 ) THEN
@@ -127,12 +128,6 @@
      &     'Flag to specify the output units of mapped results (0=units of the variable;'// &
      &     ' 1=inches to feet; 2=inches to centimeters; 3=inches to meters; as states or fluxes)', &
      &     'none')/=0 ) CALL read_error(1, 'mapvars_units')
-
-      IF ( declparam(MODNAME, 'prms_warmup', 'one', 'integer', &
-     &     '1', '0', '12', &
-     &     'Number of years to simulate before writing mapped results', &
-     &     'Number of years to simulate before writing mapped results', &
-     &     'years')/=0 ) CALL read_error(1, 'prms_warmup')
 
       IF ( declparam(MODNAME, 'ncol', 'one', 'integer', &
      &     '1', '1', '50000', &
@@ -187,7 +182,6 @@
         RETURN
       ENDIF
       IF ( getparam(MODNAME, 'ncol', 1, 'integer', Ncol)/=0 ) CALL read_error(2, 'ncol')
-      IF ( getparam(MODNAME, 'prms_warmup', 1, 'integer', Prms_warmup)/=0 ) CALL read_error(2, 'prms_warmup')
       IF ( getparam(MODNAME, 'mapvars_units', 1, 'integer', Mapvars_units)/=0 ) CALL read_error(2, 'Mapvars_units')
       IF ( Prms_warmup>0 ) Begin_results = 0
       Begyr = Begyr + Prms_warmup
@@ -219,7 +213,7 @@
       ierr = 0
       DO jj = 1, NmapOutVars
         Nc_vars(jj) = numchars(MapOutVar_names(jj))
-        Map_var_type(jj) = getvartype(MapOutVar_names(jj)(:Nc_vars(jj)), Map_var_type(jj) )
+        Map_var_type(jj) = getvartype(MapOutVar_names(jj)(:Nc_vars(jj)) )
         IF ( Map_var_type(jj)/=2 .AND. Map_var_type(jj)/=3 ) THEN
           PRINT *, 'ERROR, invalid map_results variable:', MapOutVar_names(jj)(:Nc_vars(jj))
           PRINT *, '       only real or double variables allowed'
@@ -338,8 +332,8 @@
             ELSEIF ( map_frac(i)<NEARZERO ) THEN
               CYCLE
             ELSEIF ( map_frac(i)>1.0001 ) THEN
-                PRINT *, 'WARNING, excess accounting for area of mapped spatial unit:'
-                PRINT *, '         Map id:', i, ' Fraction:', map_frac(i)
+              PRINT *, 'WARNING, excess accounting for area of mapped spatial unit:'
+              PRINT *, '         Map id:', i, ' Fraction:', map_frac(i)
             ELSEIF ( map_frac(i)<0.9999 ) THEN
               IF ( Print_debug>-1 ) THEN
                 PRINT *, 'WARNING, incomplete accounting for area of mapped spatial unit'

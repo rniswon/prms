@@ -30,9 +30,9 @@
 
       INTEGER FUNCTION temp_1sta_laps()
       USE PRMS_TEMP_1STA_LAPS
-      USE PRMS_MODULE, ONLY: Process, Nhru, Ntemp, Save_vars_to_file, &
-     &    Inputerror_flag, Temp_flag, Init_vars_from_file, Model, Start_month, Print_debug
-      USE PRMS_BASIN, ONLY: Hru_elev, Hru_area, &
+      USE PRMS_MODULE, ONLY: Process, Nhru, Ntemp, &
+     &    Inputerror_flag, Temp_flag, Model, Start_month, Print_debug
+      USE PRMS_BASIN, ONLY: Hru_elev, Hru_area, MAXTEMP, MINTEMP, &
      &    Active_hrus, Hru_route_order, Basin_area_inv, NEARZERO
       USE PRMS_CLIMATEVARS, ONLY: Tmax_aspect_adjust, Tmin_aspect_adjust, Tsta_elev, &
      &    Hru_tsta, Solrad_tmax, Solrad_tmin, Basin_temp, Basin_tmax, &
@@ -43,7 +43,7 @@
 ! Functions
       INTRINSIC INDEX, ABS
       INTEGER, EXTERNAL :: declparam, getparam
-      EXTERNAL read_error, temp_set, print_module, temp_1sta_laps_restart, print_date, checkdim_param_limits
+      EXTERNAL read_error, temp_set, print_module, print_date, checkdim_param_limits
 ! Local Variables
       INTEGER :: j, k, jj, i, kk, kkk, l, ierr
       REAL :: tmx, tmn, tdiff
@@ -56,7 +56,7 @@
         kkk = 0
         DO i = 1, Ntemp
           IF ( Nuse_tsta(i)>0 ) THEN
-            IF ( Tmax(i)<-99.0 .OR. Tmax(i)>150.0 ) THEN
+            IF ( Tmax(i)<MINTEMP .OR. Tmax(i)>MAXTEMP ) THEN
               Tmax_cnt(i) = Tmax_cnt(i) + 1
               IF ( Tmax_cnt(i)<Max_missing ) THEN
                 IF ( Print_debug>-1 ) THEN
@@ -74,7 +74,7 @@
               Tmax_prev(i) = Tmax(i)
               Tmax_cnt(i) = 0
             ENDIF
-            IF ( Tmin(i)<-99.0 .OR. Tmin(i)>150.0 ) THEN
+            IF ( Tmin(i)<MINTEMP .OR. Tmin(i)>MAXTEMP ) THEN
               Tmin_cnt(i) = Tmin_cnt(i) + 1
               IF ( Tmin_cnt(i)<Max_missing ) THEN
                 IF ( Print_debug>-1 ) THEN
@@ -130,7 +130,7 @@
         Basin_temp = Basin_temp*Basin_area_inv
         Solrad_tmax = Tmax(Basin_tsta)
         Solrad_tmin = Tmin(Basin_tsta)
-        IF ( Solrad_tmax<-99.0 .OR. Solrad_tmax>150.0 ) THEN
+        IF ( Solrad_tmax<MINTEMP .OR. Solrad_tmax>MAXTEMP ) THEN
           IF ( Print_debug>-1 ) THEN
             PRINT *, 'Bad temperature data to set solrad_tmax:', Solrad_tmax, ' using last valid value:', Solrad_tmax_good
             CALL print_date(0)
@@ -139,7 +139,7 @@
         ELSE
           Solrad_tmax_good = Solrad_tmax
         ENDIF
-        IF ( Solrad_tmin<-99.0 .OR. Solrad_tmin>150.0 ) THEN
+        IF ( Solrad_tmin<MINTEMP .OR. Solrad_tmin>MAXTEMP ) THEN
           IF ( Print_debug>-1 ) THEN
             PRINT *, 'Bad temperature data to set solrad_tmin:', Solrad_tmin, ' using last valid value:', Solrad_tmin_good
             CALL print_date(0)
@@ -150,7 +150,7 @@
         ENDIF
 
       ELSEIF ( Process(:4)=='decl' ) THEN
-        Version_temp = 'temp_1sta_laps.f90 2016-05-12 16:15:00Z'
+        Version_temp = 'temp_1sta_laps.f90 2017-03-20 15:36:00Z'
         IF ( Temp_flag==1 ) THEN
           MODNAME = 'temp_1sta'
         ELSE
@@ -201,7 +201,6 @@
      &       'none')/=0 ) CALL read_error(1, 'max_missing')
 
       ELSEIF ( Process(:4)=='init' ) THEN
-        IF ( Init_vars_from_file==1 ) CALL temp_1sta_laps_restart(1)
 
         ! Initialize variables, get parameter values, compute Elfac
         IF ( Temp_flag==1 ) THEN
@@ -244,19 +243,15 @@
           ENDIF
         ENDIF
 
-        IF ( Init_vars_from_file==0 ) THEN
-          Solrad_tmax_good = Solrad_tmax
-          Solrad_tmin_good = Solrad_tmin
-          Tmax_cnt = 0
-          Tmin_cnt = 0
-          DO i = 1, Ntemp
-            Tmax_prev(i) = Tmax_allrain(1, Start_month)
-          ENDDO
-          Tmin_prev = Tmax_prev
-        ENDIF
+        Solrad_tmax_good = Solrad_tmax
+        Solrad_tmin_good = Solrad_tmin
+        Tmax_cnt = 0
+        Tmin_cnt = 0
 
-      ELSEIF ( Process(:5)=='clean' ) THEN
-        IF ( Save_vars_to_file==1 ) CALL temp_1sta_laps_restart(0)
+        DO i = 1, Ntemp
+          Tmax_prev(i) = Tmax_allrain(1, Start_month)
+        ENDDO
+        Tmin_prev = Tmax_prev
 
       ENDIF
 
@@ -267,34 +262,3 @@
      &        'Fix Data File or increase parameter max_missing' )
 
       END FUNCTION temp_1sta_laps
-
-!***********************************************************************
-!     Write to or read from restart file
-!***********************************************************************
-      SUBROUTINE temp_1sta_laps_restart(In_out)
-      USE PRMS_MODULE, ONLY: Restart_outunit, Restart_inunit
-      USE PRMS_TEMP_1STA_LAPS
-      IMPLICIT NONE
-      ! Argument
-      INTEGER, INTENT(IN) :: In_out
-      EXTERNAL check_restart
-      ! Local Variable
-      CHARACTER(LEN=9) :: module_name
-!***********************************************************************
-      IF ( In_out==0 ) THEN
-        WRITE ( Restart_outunit ) MODNAME
-        WRITE ( Restart_outunit ) Solrad_tmax_good, Solrad_tmin_good
-        WRITE ( Restart_outunit ) Tmax_cnt
-        WRITE ( Restart_outunit ) Tmin_cnt
-        WRITE ( Restart_outunit ) Tmax_prev
-        WRITE ( Restart_outunit ) Tmin_prev
-      ELSE
-        READ ( Restart_inunit ) module_name
-        CALL check_restart(MODNAME, module_name)
-        READ ( Restart_inunit ) Solrad_tmax_good, Solrad_tmin_good
-        READ ( Restart_inunit ) Tmax_cnt
-        READ ( Restart_inunit ) Tmin_cnt
-        READ ( Restart_inunit ) Tmax_prev
-        READ ( Restart_inunit ) Tmin_prev
-      ENDIF
-      END SUBROUTINE temp_1sta_laps_restart

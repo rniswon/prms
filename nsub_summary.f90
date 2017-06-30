@@ -124,7 +124,7 @@
       ierr = 0
       DO jj = 1, NsubOutVars
         Nc_vars(jj) = numchars(NsubOutVar_names(jj))
-        Nsub_var_type(jj) = getvartype(NsubOutVar_names(jj)(:Nc_vars(jj)), Nsub_var_type(jj) )
+        Nsub_var_type(jj) = getvartype(NsubOutVar_names(jj)(:Nc_vars(jj)) )
         IF ( Nsub_var_type(jj)==3 ) Double_vars = 1
         IF ( Nsub_var_type(jj)/=2 .AND. Nsub_var_type(jj)/=3 ) THEN
           PRINT *, 'ERROR, invalid nsub_summary variable:', NsubOutVar_names(jj)(:Nc_vars(jj))

@@ -27,7 +27,7 @@
       USE PRMS_MODULE, ONLY: Process, Nhru, Climate_transp_flag, Orad_flag, Model, &
      &    Climate_precip_flag, Climate_temp_flag, Climate_potet_flag, Climate_swrad_flag, &
      &    Start_year, Start_month, Start_day, Humidity_cbh_flag, Windspeed_cbh_flag
-      USE PRMS_BASIN, ONLY: Active_hrus, Hru_route_order, Hru_area, Basin_area_inv, MM2INCH
+      USE PRMS_BASIN, ONLY: Active_hrus, Hru_route_order, Hru_area, Basin_area_inv, MM2INCH, MINTEMP, MAXTEMP
       USE PRMS_CLIMATEVARS, ONLY: Solrad_tmax, Solrad_tmin, Basin_temp, &
      &    Basin_tmax, Basin_tmin, Tmaxf, Tminf, Tminc, Tmaxc, Tavgf, &
      &    Tavgc, Hru_ppt, Hru_rain, Hru_snow, Prmx, Pptmix, Newsnow, &
@@ -150,8 +150,8 @@
 
           IF ( Climate_temp_flag==1 ) THEN
             IF ( Cbh_check_flag==1 ) THEN
-              CALL check_cbh_value('Tmaxf', Tmaxf(i), -99.0, 150.0, missing)
-              CALL check_cbh_value('Tminf', Tminf(i), -99.0, 150.0, missing)
+              CALL check_cbh_value('Tmaxf', Tmaxf(i), MINTEMP, MAXTEMP, missing)
+              CALL check_cbh_value('Tminf', Tminf(i), MINTEMP, MAXTEMP, missing)
             ENDIF
             tmax_hru = Tmaxf(i) + Tmax_cbh_adj(i, Nowmonth)
             tmin_hru = Tminf(i) + Tmin_cbh_adj(i, Nowmonth)
@@ -242,7 +242,7 @@
         IF ( Windspeed_cbh_flag==1 ) Basin_windspeed = Basin_windspeed*Basin_area_inv
 
       ELSEIF ( Process(:4)=='decl' ) THEN
-        Version_climate_hru = 'climate_hru.f90 2016-11-03 18:08:00Z'
+        Version_climate_hru = 'climate_hru.f90 2017-03-20 15:34:00Z'
         MODNAME = 'climate_hru'
 
         IF ( control_integer(Cbh_check_flag, 'cbh_check_flag')/=0 ) Cbh_check_flag = 1
