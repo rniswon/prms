@@ -1,4 +1,4 @@
-      ! utils_prms.f90 2017-03-22 11:44:00Z
+      ! utils_prms.f90 2017-06-30 09:46:00Z
 !***********************************************************************
 !     Read CBH File to current time
 !***********************************************************************
@@ -821,20 +821,27 @@
       CHARACTER(LEN=*), INTENT(IN) :: Description, Versn
       INTEGER, INTENT(IN) :: Ftntype
       ! Functions
-      INTRINSIC INDEX
+      INTRINSIC INDEX, TRIM
       ! Local Variables
-      INTEGER nc, n
+      INTEGER nc, n, nb, is
+      CHARACTER(LEN=28) :: blanks
+      CHARACTER(LEN=80) :: string
 !***********************************************************************
       nc = INDEX( Versn, 'Z' ) - 10
+      n = INDEX( Versn, '.f' ) - 1
+      IF ( n<1 ) n = 1
       IF ( Ftntype==90 ) THEN
-        n = INDEX( Versn, '.f90' ) + 3
+        is = 5
       ELSE
-        n = INDEX( Versn, '.f' ) + 1
+        is = 3
       ENDIF
-      PRINT '(A)', Description//'   '//Versn(:n)//', version: '//Versn(n+2:nc)
-      WRITE ( Logunt, '(A)' ) Description//'   '//Versn(:n)//', version: '//Versn(n+2:nc)
-      IF ( Model/=2 ) WRITE ( PRMS_output_unit, '(A)' ) Description//'   '//Versn(:n)//', version: '//Versn(n+2:nc)
-    END SUBROUTINE print_module
+      blanks = ' '
+      nb = 29 - (n + 3)
+      string = Description//'   '//Versn(:n)//blanks(:nb)//Versn(n+is:nc)
+      PRINT '(A)', TRIM( string )
+      WRITE ( Logunt, '(A)' ) TRIM( string )
+      IF ( Model/=2 ) WRITE ( PRMS_output_unit, '(A)' ) TRIM( string )
+      END SUBROUTINE print_module
 
 !***********************************************************************
 ! check restart file module order
