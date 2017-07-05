@@ -82,7 +82,7 @@
 !***********************************************************************
       gwflowdecl = 0
 
-      Version_gwflow = 'gwflow.f90 2017-03-21 10:25:00Z'
+      Version_gwflow = 'gwflow.f90 2017-07-05 10:25:00Z'
       CALL print_module(Version_gwflow, 'Groundwater                 ', 90)
       MODNAME = 'gwflow'
 
@@ -165,13 +165,13 @@
      &       'Basin area-weighted average of lake-bed seepage to GWRs', &
      &       'acre-inches', Basin_lake_seep)/=0 ) CALL read_error(3, 'basin_lake_seep')
 
-        ALLOCATE ( Lake_seepage(Ngw) )
-        IF ( declvar(MODNAME, 'lake_seepage', 'ngw', Ngw, 'double', &
+        ALLOCATE ( Lake_seepage(Numlakes) )
+        IF ( declvar(MODNAME, 'lake_seepage', 'numlakes', Numlakes, 'double', &
      &       'Lake-bed seepage from each lake to associated GWRs', &
      &       'inches', Lake_seepage)/=0 ) CALL read_error(3, 'lake_seepage')
 
-        ALLOCATE ( Gw_seep_lakein(Ngw) )
-        IF ( declvar(MODNAME, 'gw_seep_lakein', 'ngw', Ngw, 'double', &
+        ALLOCATE ( Gw_seep_lakein(Numlakes) )
+        IF ( declvar(MODNAME, 'gw_seep_lakein', 'numlakes', Numlakes, 'double', &
      &       'Groundwater discharge to any associated lake for each GWR', &
      &       'inches', Gw_seep_lakein)/=0 ) CALL read_error(3, 'gw_seep_lakein')
 
@@ -437,9 +437,9 @@
                   PRINT *, 'Lake elevation, storage, and water balance not adjusted'
                   seepage = -Gwres_stor(j)
                 ENDIF
-                Gw_seep_lakein(j) = Gw_seep_lakein(j) - seepage
+                Gw_seep_lakein(jjj) = Gw_seep_lakein(jjj) - seepage
               ELSE
-                Lake_seepage(j) = Lake_seepage(j) + seepage
+                Lake_seepage(jjj) = Lake_seepage(jjj) + seepage
               ENDIF
               Basin_lake_seep = Basin_lake_seep + seepage*Hru_area_dble(j)
               Gwres_stor(j) = Gwres_stor(j) + seepage
