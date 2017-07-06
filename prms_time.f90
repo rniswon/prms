@@ -15,7 +15,7 @@
 !***********************************************************************
       INTEGER FUNCTION prms_time()
       USE PRMS_SET_TIME
-      USE PRMS_MODULE, ONLY: Process, Timestep, Starttime, Endtime, Number_timesteps
+      USE PRMS_MODULE, ONLY: Process, Timestep, Starttime
       USE PRMS_BASIN, ONLY: Hemisphere, Basin_area_inv, FT2_PER_ACRE
       IMPLICIT NONE
 ! Functions
@@ -24,7 +24,7 @@
       DOUBLE PRECISION, EXTERNAL :: deltim
       EXTERNAL :: dattim, print_module, read_data_line
 ! Local Variables
-      INTEGER :: startday, endday
+      INTEGER :: startday
       DOUBLE PRECISION :: dt
       CHARACTER(LEN=80), SAVE :: Version_prms_time
 !***********************************************************************
@@ -61,8 +61,6 @@
           Julwater = julian_day('start', 'water')
           startday = compute_julday(Starttime(1), Starttime(2), Starttime(3))
           Julian_day_absolute = startday
-          endday = compute_julday(Endtime(1), Endtime(2), Endtime(3))
-          Number_timesteps = endday - startday + 1
         ENDIF
 
         Nowyear = Nowtime(1)
@@ -107,7 +105,7 @@
         ENDIF
 
       ELSEIF ( Process(:4)=='decl' ) THEN
-        Version_prms_time = 'prms_time.f90 2017-03-27 14:16:00Z'
+        Version_prms_time = 'prms_time.f90 2017-07-06 14:16:00Z'
         CALL print_module(Version_prms_time, 'PRMS Set Time Variables     ', 90)
 !        MODNAME = 'prms_time'
         Timestep_seconds = 86400.0D0
