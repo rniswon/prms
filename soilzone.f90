@@ -114,7 +114,7 @@
 !***********************************************************************
       INTEGER FUNCTION szdecl()
       USE PRMS_SOILZONE
-      USE PRMS_MODULE, ONLY: Model, Nhru, Nsegment, Nlake, Nhrucell, Print_debug, Cascade_flag
+      USE PRMS_MODULE, ONLY: Model, Nhru, Nsegment, Nlake, Nhrucell, Print_debug, Cascade_flag, GSFLOW_flag
       IMPLICIT NONE
 ! Functions
       INTEGER, EXTERNAL :: declparam, declvar, getdim
@@ -450,7 +450,7 @@
      &     'Fraction of sublimation of AET for each HRU', &
      &     'decimal fraction', Snowevap_aet_frac)/=0 ) CALL read_error(3, 'snowevap_aet_frac')
 
-      IF ( Model==0 .OR. Model==99 ) THEN
+      IF ( GSFLOW_flag==1 .OR. Model==99 ) THEN
         IF ( Nhrucell<-1 ) STOP 'ERROR, dimension nhrucell not specified > 0'
         ALLOCATE ( Gravity_stor_res(Nhrucell) )
         IF ( declvar(MODNAME, 'gravity_stor_res', 'nhrucell', Nhrucell, 'real', &
@@ -510,7 +510,7 @@
       IF ( Print_debug==7 ) CALL PRMS_open_module_file(DBGUNT, 'soilzone.dbg')
 
 ! Declare Parameters
-      IF ( Model==0 .OR. Model==99 ) THEN
+      IF ( GSFLOW_flag==1 .OR. Model==99 ) THEN
         ALLOCATE ( Gvr_hru_id(Nhrucell) )
         IF ( Nhru/=Nhrucell ) THEN
           IF ( declparam(MODNAME, 'gvr_hru_id', 'nhrucell', 'integer', &
@@ -605,8 +605,8 @@
 !***********************************************************************
       INTEGER FUNCTION szinit()
       USE PRMS_SOILZONE
-      USE PRMS_MODULE, ONLY: Print_debug, Nhru, Nssr, Nlake, Model, Nhrucell, &
-     &    Inputerror_flag, Cascade_flag, Init_vars_from_file
+      USE PRMS_MODULE, ONLY: Print_debug, Nhru, Nssr, Nlake, Nhrucell, &
+     &    Inputerror_flag, Cascade_flag, Init_vars_from_file, GSFLOW_flag
       USE PRMS_BASIN, ONLY: Hru_type, Hru_perv, &
      &    Basin_area_inv, Hru_area, CLOSEZERO, Hru_frac_perv, Numlake_hrus
       USE PRMS_FLOWVARS, ONLY: Soil_moist_max, Soil_rechr_max, &
@@ -637,7 +637,7 @@
         IF ( getparam(MODNAME, 'lake_evap_adj', 12*Nlake, 'real', Lake_evap_adj)/=0 ) CALL read_error(2, 'lake_evap_adj')
       ENDIF
 
-      IF ( Model==0 ) THEN
+      IF ( GSFLOW_flag==1 ) THEN
         IF ( Nhru/=Nhrucell ) THEN
           IF ( getparam(MODNAME, 'gvr_hru_id', Nhrucell, 'integer', Gvr_hru_id)/=0 ) CALL read_error(2, 'gvr_hru_id')
         ELSE
@@ -801,7 +801,7 @@
         CALL init_basin_vars()
 
 ! initialize arrays (dimensioned Nhrucell)
-        IF ( Model==0 ) THEN
+        IF ( GSFLOW_flag==1 ) THEN
           Gvr2sm = 0.0 ! dimension nhru
           Sm2gw_grav = 0.0 ! dimension nhrucell
           Sm2gw_grav_old = 0.0 ! dimension nhrucell
@@ -810,7 +810,7 @@
 
 ! initialize arrays (dimensioned Nhrucell)
       Max_gvrs = 0
-      IF ( Model==0 ) THEN
+      IF ( GSFLOW_flag==1 ) THEN
         ierr = 0
         Hru_gvr_count = 0
         DO i = 1, Nhrucell
@@ -860,7 +860,7 @@
       INTEGER FUNCTION szrun()
       USE PRMS_SOILZONE
       USE PRMS_MODULE, ONLY: Dprst_flag, Print_debug, Kkiter, &
-     &    Model, Nlake, Nhrucell, Cascade_flag, Dprst_flag, Frozen_flag
+     &    Nlake, Nhrucell, Cascade_flag, Dprst_flag, Frozen_flag, GSFLOW_flag
       USE PRMS_BASIN, ONLY: Hru_type, Hru_perv, Hru_frac_perv, &
      &    Hru_route_order, Active_hrus, Basin_area_inv, Hru_area, &
      &    NEARZERO, Lake_hru_id, Cov_type, Numlake_hrus, CLOSEZERO, Hru_area_dble
@@ -895,7 +895,7 @@
 !***********************************************************************
       szrun = 0
 
-      IF ( Model==0 ) THEN
+      IF ( GSFLOW_flag==1 ) THEN
         IF ( Kkiter==0 ) STOP 'ERROR, problem with KKITER, equals 0'
 
         IF ( Kkiter==1 ) THEN
@@ -1102,7 +1102,7 @@
 
 ! compute slow interflow and ssr_to_gw
         topfr = 0.0
-        IF ( Model==0 ) THEN
+        IF ( GSFLOW_flag==1 ) THEN
           ! capacity for whole HRU
           capacity = (Soil_moist_max(i) - Soil_moist(i))*perv_frac
           CALL compute_gravflow(i, capacity, Slowcoef_lin(i), &
@@ -1836,7 +1836,7 @@
 !     soilzone_restart - write or read soilzone restart file
 !***********************************************************************
       SUBROUTINE soilzone_restart(In_out)
-      USE PRMS_MODULE, ONLY: Restart_outunit, Restart_inunit, Nlake, Model, Cascade_flag
+      USE PRMS_MODULE, ONLY: Restart_outunit, Restart_inunit, Nlake, GSFLOW_flag, Cascade_flag
       USE PRMS_SOILZONE
       IMPLICIT NONE
       ! Argument
@@ -1873,7 +1873,7 @@
         WRITE ( Restart_outunit ) Pref_flow
         WRITE ( Restart_outunit ) Snowevap_aet_frac
         WRITE ( Restart_outunit ) Gvr2pfr
-        IF ( Model==0 ) THEN
+        IF ( GSFLOW_flag==1 ) THEN
           WRITE ( Restart_outunit ) Gravity_stor_res
           WRITE ( Restart_outunit ) Gvr2sm
           WRITE ( Restart_outunit ) Sm2gw_grav
@@ -1916,7 +1916,7 @@
         READ ( Restart_inunit ) Pref_flow
         READ ( Restart_inunit ) Snowevap_aet_frac
         READ ( Restart_inunit ) Gvr2pfr
-        IF ( Model==0 ) THEN
+        IF ( GSFLOW_flag==1 ) THEN
           READ ( Restart_inunit ) Gravity_stor_res
           READ ( Restart_inunit ) Gvr2sm
           READ ( Restart_inunit ) Sm2gw_grav

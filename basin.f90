@@ -67,7 +67,7 @@
       INTEGER FUNCTION basdecl()
       USE PRMS_BASIN
       USE PRMS_MODULE, ONLY: Model, Nhru, Nlake, Dprst_flag, Lake_route_flag, &
-     &    Et_flag, Precip_flag, Cascadegw_flag, Numlakes
+     &    Et_flag, Precip_flag, Cascadegw_flag, Numlakes, GSFLOW_flag
       IMPLICIT NONE
 ! Functions
       INTEGER, EXTERNAL :: declparam, declvar
@@ -130,7 +130,7 @@
 
       ! local arrays
       ALLOCATE ( Hru_route_order(Nhru) )
-      IF ( Model/=0 .OR. Cascadegw_flag>0 ) ALLOCATE ( Gwr_route_order(Nhru), Gwr_type(Nhru) )
+      IF ( GSFLOW_flag==0 .OR. Cascadegw_flag>0 ) ALLOCATE ( Gwr_route_order(Nhru), Gwr_type(Nhru) )
       IF ( Et_flag==5 .OR. Et_flag==11 .OR. Et_flag==6 ) ALLOCATE ( Hru_elev_feet(Nhru) )
       IF ( Precip_flag==5 ) ALLOCATE ( Hru_elev_meters(Nhru) )
 
@@ -204,7 +204,7 @@
      &       'Identification number of the lake associated with an HRU;'// &
      &       ' more than one HRU can be associated with each lake', &
      &       'none')/=0 ) CALL read_error(1, 'lake_hru_id')
-        IF ( (Lake_route_flag==1 .AND. Model/=0) .OR. Model==99 ) THEN
+        IF ( (Lake_route_flag==1 .AND. GSFLOW_flag==0 ) .OR. Model==99 ) THEN
           ALLOCATE ( Lake_type(Numlakes) )
           IF ( declparam(MODNAME, 'lake_type', 'numlakes', 'integer', &
      &         '1', '1', '6', &
@@ -223,7 +223,7 @@
 !**********************************************************************
       INTEGER FUNCTION basinit()
       USE PRMS_BASIN
-      USE PRMS_MODULE, ONLY: Nhru, Nlake, Dprst_flag, &
+      USE PRMS_MODULE, ONLY: Nhru, Nlake, Dprst_flag, GSFLOW_flag, &
      &    Print_debug, Model, PRMS_VERSION, Starttime, Endtime, &
      &    Lake_route_flag, Et_flag, Precip_flag, Cascadegw_flag, Prms_output_unit, Numlakes
       IMPLICIT NONE
@@ -257,7 +257,7 @@
       IF ( Nlake>0 ) THEN
         IF ( getparam(MODNAME, 'lake_hru_id', Nhru, 'integer', Lake_hru_id)/=0 ) CALL read_error(1, 'lake_hru_id')
         Lake_area = 0.0D0
-        IF ( Lake_route_flag==1 .AND. Model/=0 ) THEN
+        IF ( Lake_route_flag==1 .AND. GSFLOW_flag==0 ) THEN
           IF ( getparam(MODNAME, 'lake_type', Numlakes, 'integer', Lake_type)/=0 ) CALL read_error(2, 'lake_type')
         ENDIF
       ENDIF
@@ -368,7 +368,7 @@
       Active_hrus = j
       Active_area = Land_area + Water_area
 
-      IF ( Model/=0 .OR. Cascadegw_flag>0 ) THEN
+      IF ( GSFLOW_flag==0 .OR. Cascadegw_flag>0 ) THEN
         Active_gwrs = Active_hrus
         Gwr_type = Hru_type
         Gwr_route_order = Hru_route_order
@@ -392,10 +392,12 @@
             basin_error = 1
           ENDIF
         ENDDO
-        IF ( Model/=0 ) THEN
-          DO i = 1, Numlakes
-            IF ( Lake_type(i)==4 .OR. Lake_type(i)==5 ) Weir_gate_flag = 1
-          ENDDO
+        IF ( GSFLOW_flag==0 ) THEN
+          IF ( Lake_route_flag==1 ) THEN
+            DO i = 1, Numlakes
+              IF ( Lake_type(i)==4 .OR. Lake_type(i)==5 ) Weir_gate_flag = 1
+            ENDDO
+          ENDIF
           IF ( Numlakes_check/=Numlakes ) THEN
             PRINT *, 'ERROR, number of lakes specified in lake_hru_id'
             PRINT *, 'does not equal dimension numlakes:', Numlakes, ', number of lakes:', Numlakes_check
