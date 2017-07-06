@@ -75,7 +75,7 @@
 !***********************************************************************
       basdecl = 0
 
-      Version_basin = 'basin.f90 2017-07-03 12:08:00Z'
+      Version_basin = 'basin.f90 2017-07-06 11:20:00Z'
       CALL print_module(Version_basin, 'Basin Definition            ', 90)
       MODNAME = 'basin'
 
@@ -391,9 +391,11 @@
             PRINT *, 'ERROR, Lake:', i, ' has 0 area, thus no value of lake_hru_id is associated with the lake'
             basin_error = 1
           ENDIF
-          IF ( Lake_type(i)==4 .OR. Lake_type(i)==5 ) Weir_gate_flag = 1
         ENDDO
         IF ( Model/=0 ) THEN
+          DO i = 1, Numlakes
+            IF ( Lake_type(i)==4 .OR. Lake_type(i)==5 ) Weir_gate_flag = 1
+          ENDDO
           IF ( Numlakes_check/=Numlakes ) THEN
             PRINT *, 'ERROR, number of lakes specified in lake_hru_id'
             PRINT *, 'does not equal dimension numlakes:', Numlakes, ', number of lakes:', Numlakes_check
