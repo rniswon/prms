@@ -58,7 +58,7 @@
       IMPLICIT NONE
       ! Functions
       INTRINSIC TRIM
-      INTEGER, EXTERNAL :: numchars, control_string
+      INTEGER, EXTERNAL :: numchars
       EXTERNAL read_error, set_control_parameter, PRMS_open_input_file, write_outfile, PRMS_open_output_file !, print_module
       ! Local Variables
       CHARACTER(LEN=MAXCONTROL_LENGTH) :: paramname

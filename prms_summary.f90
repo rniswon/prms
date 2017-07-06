@@ -83,7 +83,7 @@
 
 ! Declare procedure
       ELSEIF ( Process(:4)=='decl' ) THEN
-        Version_prms_summary = 'prms_summary.f90 2016-10-19 11:17:00Z'
+        Version_prms_summary = 'prms_summary.f90 2017-07-06 13:49:00Z'
         CALL print_module(Version_prms_summary, 'Output Summary              ', 90)
         MODNAME = 'prms_summary'
 
@@ -241,7 +241,7 @@
       CHARACTER(LEN=17) :: fmt3
       CHARACTER(LEN=27) :: fmt2
 !***********************************************************************
-      IF ( control_string(statvar_file, 'stat_var_file')/=0 ) CALL read_error(5, 'statvar.out')
+      IF ( control_string(statvar_file, 'stat_var_file')/=0 ) CALL read_error(5, 'stat_var_file')
       CALL PRMS_open_input_file(inunit, statvar_file, 'stat_var_file', 0, ios)
       IF ( ios/=0 ) STOP 'ERROR, opening statvar file'
       statvar_file_csv = statvar_file(:numchars(statvar_file))//'.csv'
