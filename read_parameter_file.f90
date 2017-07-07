@@ -20,7 +20,7 @@
       CHARACTER(LEN=24) :: dimstring
       INTEGER nchars, ios, dimen_value
 !***********************************************************************
-      Version_read_parameter_file = 'read_parameter_file.f90 2017-06-28 09:36:00Z'
+      Version_read_parameter_file = 'read_parameter_file.f90 2017-07-07 15:18:00Z'
       CALL PRMS_open_input_file(Param_unit, Param_file, 'param_file', 0, ios)
       IF ( ios/=0 ) STOP
       IF ( Print_debug>-1 ) THEN
@@ -95,6 +95,7 @@
       ! Functions
       EXTERNAL read_error, PRMS_open_input_file, setparam
       INTEGER, EXTERNAL :: control_string, numchars, getdim
+      INTRINSIC :: TRIM
       ! Local Variables
       CHARACTER(LEN=16) :: string
       CHARACTER(LEN=32) :: paramstring
@@ -164,8 +165,8 @@
           ENDIF
         ENDDO
         IF ( found==0 ) then
-          !STOP 'ERROR in read_parameter_file_params, parameter not in data base'
-          PRINT *, 'Parameter name: ', paramstring, ' is ignored as not required'
+          PRINT '(/)'
+          PRINT *, 'Values for parameter: ', TRIM(paramstring), ' are ignored as the parameter is not used'
           CYCLE
         ENDIF
         IF ( param_type==1 ) THEN
@@ -191,3 +192,29 @@
       
       CLOSE ( param_unit )
       END SUBROUTINE read_parameter_file_params
+
+!***********************************************************************
+! Check for parameters declared but not in Parameter File
+!***********************************************************************
+      SUBROUTINE check_parameters
+      USE PRMS_MMFAPI, ONLY: Num_parameters, Parameter_data
+      IMPLICIT NONE
+      ! Functions
+      EXTERNAL read_error, PRMS_open_input_file, setparam
+      INTEGER, EXTERNAL :: control_string, numchars, getdim
+      INTRINSIC :: TRIM
+      ! Local Variables
+      INTEGER :: i
+      !***********************************************************************
+      DO i = 1, Num_parameters
+        IF ( Parameter_data(i)%decl_flag==1 .AND. Parameter_data(i)%read_flag==0 ) THEN
+          PRINT *, 'Parameter: ', TRIM(Parameter_data(i)%param_name), ' is not specified'
+          IF ( Parameter_data(i)%data_flag==1 ) THEN
+            PRINT *, '           Set to default value:', Parameter_data(i)%default_int
+          ELSEIF ( Parameter_data(i)%data_flag==2 ) THEN
+            PRINT *, '           Set to default value:', Parameter_data(i)%default_real
+          ENDIF
+        ENDIF
+      ENDDO
+
+      END SUBROUTINE check_parameters
