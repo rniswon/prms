@@ -26,7 +26,7 @@
       REAL, ALLOCATABLE :: var(:)
       CHARACTER(LEN=80), SAVE :: Version_read_data_file
 !***********************************************************************
-      Version_read_data_file = 'read_data_file.f90 2017-03-11 12:38:00Z'
+      Version_read_data_file = 'read_data_file.f90 2017-07-07 13:53:00Z'
       CALL print_module(Version_read_data_file, 'Read Data File              ', 90)
 
       IF ( control_string(data_filename, 'data_file')/=0 ) CALL read_error(5, 'data_file')
@@ -154,7 +154,7 @@
       IMPLICIT NONE
       ! Functions
       INTRINSIC TRANSFER
-      EXTERNAL read_error
+      EXTERNAL read_error, check_data_variables
       INTEGER, EXTERNAL :: getvarnvals, getvar_id
       ! Local Variables
       INTEGER datatime(6), jj, ios, column_end, column, nvals, var_id
@@ -178,6 +178,12 @@
         var_id = getvar_id(Data_varname(jj))
         column_end = column_end + nvals
         Variable_data(var_id)%values_real = TRANSFER(Data_line_values(column:column_end), Variable_data(var_id)%values_real)
+        CALL check_data_variables(Data_varname(jj),nvals,Data_line_values(column:column_end),1,ios)
+        IF ( ios/=0 ) THEN
+          PRINT *, 'ERROR, Data File corrupted. Reading variable: ', Data_varname(jj)
+          PRINT *, 'Date:', Nowtime(1), Nowtime(2), Nowtime(3)
+          STOP
+        ENDIF
         column = column + nvals
       ENDDO
       END SUBROUTINE read_data_line
