@@ -94,7 +94,6 @@
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Currinsum(:), Pastin(:), Pastout(:)
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Outflow_ts(:), Inflow_ts(:)
       CHARACTER(LEN=14), SAVE :: MODNAME
-      INTEGER, SAVE, ALLOCATABLE :: Lake_id(:)
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: C24(:, :), S24(:, :), Wvd(:, :)
 !   Dimensions
       INTEGER, SAVE :: Mxnsos, Ngate, Nstage, Ngate2, Nstage2, Ngate3, Nstage3, Ngate4, Nstage4
@@ -108,7 +107,7 @@
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Lake_seep_in(:), Lake_evap(:), Lake_2gw(:), Lake_outq2(:)
 !   Declared Parameters
       REAL, SAVE, ALLOCATABLE :: Segment_flow_init(:)
-      INTEGER, SAVE, ALLOCATABLE :: Obsout_lake(:), Lake_out2(:), Nsos(:), Ratetbl_lake(:), Lake_segment_id(:)
+      INTEGER, SAVE, ALLOCATABLE :: Obsout_lake(:), Lake_out2(:), Nsos(:), Ratetbl_lake(:), Segment_lake_id(:)
       REAL, SAVE, ALLOCATABLE :: Lake_qro(:), Lake_coef(:), Elev_outflow(:), Weir_coef(:), Weir_len(:)
       REAL, SAVE, ALLOCATABLE :: Lake_out2_a(:), Lake_out2_b(:), O2(:, :), S2(:, :)
       REAL, SAVE, ALLOCATABLE :: Lake_din1(:), Lake_init(:), Lake_vol_init(:)
@@ -190,7 +189,7 @@
 !     muskingum_lake_decl - Declare parameters and variables and allocate arrays
 !   Declared Parameters
 !     tosegment, hru_segment, obsin_segment, K_coef, x_coef, segment_type
-!     lake_type, lake_init, lake_qro, lake_din1, lake_coef, o2, s2, nsos, hru_area, lake_segment_id
+!     lake_type, lake_init, lake_qro, lake_din1, lake_coef, o2, s2, nsos, hru_area, segment_lake_id
 !     tbl_stage, tbl_gate, lake_vol_init, rate_table, weir_coef, weir_len, elev_outflow, elevlake_init
 !     lake_out2, lake_out2_a, lake_out2_b
 !***********************************************************************
@@ -206,7 +205,7 @@
 !***********************************************************************
       muskingum_lake_decl = 0
 
-      Version_muskingum_lake = 'muskingum_lake.f90 2017-07-03 11:49:00Z'
+      Version_muskingum_lake = 'muskingum_lake.f90 2017-07-07 13:57:00Z'
       CALL print_module(Version_muskingum_lake, 'Streamflow Routing          ', 90)
       MODNAME = 'muskingum_lake'
 
@@ -215,7 +214,6 @@
       IF ( Mxnsos==-1 ) CALL read_error(1, 'mxnsos')
       IF ( Model==99 .AND. Mxnsos<1 ) Mxnsos = 1
 
-      ALLOCATE ( Lake_id(Nsegment) )
       IF ( Mxnsos>0 ) ALLOCATE ( Wvd(Mxnsos, Numlakes), S24(Mxnsos, Numlakes), C24(Mxnsos, Numlakes) )
 
       Ngate = 0
@@ -392,12 +390,12 @@
       ENDIF
 
 ! Declared Parameters
-      ALLOCATE ( Lake_segment_id(Numlakes) )
-      IF ( declparam(MODNAME, 'lake_segment_id', 'numlakes', 'integer', &
-     &     '0', 'bounded', 'nsegment', &
-     &     'Index of segment for each lake', &
-     &     'Index of segment for each lake', &
-     &     'none')/=0 ) CALL read_error(1, 'lake_segment_id')
+      ALLOCATE ( Segment_lake_id(Nsegment) )
+      IF ( declparam(MODNAME, 'segment_lake_id', 'nsegment', 'integer', &
+     &     '0', 'bounded', 'numlakes', &
+     &     'Index of lake for each segment', &
+     &     'Index of lake for each segment', &
+     &     'none')/=0 ) CALL read_error(1, 'segment_lake_id')
 
       IF ( Init_vars_from_file==0 ) THEN
         ALLOCATE ( Lake_qro(Numlakes) )
@@ -614,11 +612,11 @@
       INTEGER FUNCTION muskingum_lake_init()
       USE PRMS_MUSKINGUM_LAKE
       USE PRMS_MODULE, ONLY: Nsegment, Inputerror_flag, Init_vars_from_file, Nratetbl, Nhru, Cascade_flag, Numlakes
-      USE PRMS_BASIN, ONLY: NEARZERO, Basin_area_inv, DNEARZERO, Active_hrus, Hru_route_order, Gwr_type, &
+      USE PRMS_BASIN, ONLY: NEARZERO, Basin_area_inv, DNEARZERO, Gwr_type, &
      &    CFS2CMS_CONV, Lake_hru_id, Weir_gate_flag, Lake_type
       USE PRMS_FLOWVARS, ONLY: Seg_inflow, Seg_outflow, Basin_lake_stor
       USE PRMS_SET_TIME, ONLY: Cfs_conv
-      USE PRMS_ROUTING, ONLY: Basin_segment_storage, Segment_type, Hru_segment
+      USE PRMS_ROUTING, ONLY: Basin_segment_storage
       IMPLICIT NONE
 ! Functions
       INTRINSIC ABS, NINT, DBLE, DABS
@@ -647,15 +645,6 @@
       ENDDO
       Basin_segment_storage = Basin_segment_storage*Basin_area_inv/Cfs_conv
 
-      Lake_id = 0
-      DO jjj = 1, Active_hrus
-        j = Hru_route_order(jjj)
-        i = Hru_segment(j)
-        IF ( i>0 ) THEN
-          IF ( Segment_type(i)==2 ) Lake_id(i) = Lake_hru_id(j)
-        ENDIF
-      ENDDO
-
       IF ( Init_vars_from_file==0 ) THEN
         IF ( getparam(MODNAME, 'lake_qro', Numlakes, 'real', Lake_qro)/=0 ) CALL read_error(2, 'lake_qro')
         DO j = 1, Numlakes
@@ -681,7 +670,7 @@
         ENDIF
       ENDIF
 
-      IF ( getparam(MODNAME, 'lake_segment_id', Numlakes, 'real', Lake_segment_id)/=0 ) CALL read_error(2, 'lake_segment_id')
+      IF ( getparam(MODNAME, 'segment_lake_id', Nsegment, 'integer', Segment_lake_id)/=0 ) CALL read_error(2, 'segment_lake_id')
 
       Secondoutflow_flag = 0
       IF ( Gate_flag==1 ) THEN
@@ -992,7 +981,7 @@
           IF ( imod==0 ) THEN
             Inflow_ts(iorder) = (Inflow_ts(iorder) / Ts(iorder))
             IF ( Segment_type(iorder)==2 ) THEN
-              lakeid = Lake_id(iorder)
+              lakeid = Segment_lake_id(iorder)
               Lake_inflow(lakeid) = Lake_inflow(lakeid) + Currinsum(iorder)
 ! what about water use?
               CALL route_lake(lakeid, Lake_type(lakeid), Lake_area(lakeid))
