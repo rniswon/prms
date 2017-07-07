@@ -57,7 +57,7 @@
 !***********************************************************************
       INTEGER FUNCTION routingdecl()
       USE PRMS_ROUTING
-      USE PRMS_MODULE, ONLY: Nhru, Nsegment, Model, Strmflow_flag
+      USE PRMS_MODULE, ONLY: Nhru, Nsegment, Model, Strmflow_flag, Cascade_flag
       IMPLICIT NONE
 ! Functions
       INTEGER, EXTERNAL :: declparam, declvar
@@ -65,7 +65,7 @@
 !***********************************************************************
       routingdecl = 0
 
-      Version_routing = 'routing.f90 2017-03-22 14:08:00Z'
+      Version_routing = 'routing.f90 2017-07-07 13:56:00Z'
       CALL print_module(Version_routing, 'Routing Initialization      ', 90)
       MODNAME = 'routing'
 
@@ -144,13 +144,15 @@
      &     ' streamflow flows, for segments that do not flow to another segment enter 0', &
      &     'none')/=0 ) CALL read_error(1, 'tosegment')
 
-      ALLOCATE ( Hru_segment(Nhru) )
-      IF ( declparam(MODNAME, 'hru_segment', 'nhru', 'integer', &
-     &     '0', 'bounded', 'nsegment', &
-     &     'Segment index for HRU lateral inflows', &
-     &     'Segment index to which an HRU contributes lateral flows'// &
-     &     ' (surface runoff, interflow, and groundwater discharge)', &
-     &     'none')/=0 ) CALL read_error(1, 'hru_segment')
+      IF ( Cascade_flag==0 .OR. Model==999 ) THEN
+        ALLOCATE ( Hru_segment(Nhru) )
+        IF ( declparam(MODNAME, 'hru_segment', 'nhru', 'integer', &
+     &       '0', 'bounded', 'nsegment', &
+     &       'Segment index for HRU lateral inflows', &
+     &       'Segment index to which an HRU contributes lateral flows'// &
+     &       ' (surface runoff, interflow, and groundwater discharge)', &
+     &       'none')/=0 ) CALL read_error(1, 'hru_segment')
+      ENDIF
 
       ALLOCATE ( Obsin_segment(Nsegment) )
       IF ( declparam(MODNAME, 'obsin_segment', 'nsegment', 'integer', &
@@ -185,53 +187,55 @@
      &       'decimal fraction')/=0 ) CALL read_error(1, 'x_coef')
       ENDIF
 
-      ALLOCATE ( Seginc_potet(Nsegment) )
-      IF ( declvar(MODNAME, 'seginc_potet', 'nsegment', Nsegment, 'double', &
-     &     'Area-weighted average potential ET for each segment'// &
-     &     ' from HRUs contributing flow to the segment', &
-     &     'inches', Seginc_potet)/=0 ) CALL read_error(3, 'seginc_potet')
+      IF ( Cascade_flag==0 .OR. Model==999 ) THEN
+        ALLOCATE ( Seginc_potet(Nsegment) )
+        IF ( declvar(MODNAME, 'seginc_potet', 'nsegment', Nsegment, 'double', &
+     &       'Area-weighted average potential ET for each segment'// &
+     &       ' from HRUs contributing flow to the segment', &
+     &       'inches', Seginc_potet)/=0 ) CALL read_error(3, 'seginc_potet')
 
-      ALLOCATE ( Seginc_swrad(Nsegment) )
-      IF ( declvar(MODNAME, 'seginc_swrad', 'nsegment', Nsegment, 'double', &
-     &     'Area-weighted average solar radiation for each segment'// &
-     &     ' from HRUs contributing flow to the segment', &
-     &     'Langleys', Seginc_swrad)/=0 ) CALL read_error(3, 'seginc_swrad')
+        ALLOCATE ( Seginc_swrad(Nsegment) )
+        IF ( declvar(MODNAME, 'seginc_swrad', 'nsegment', Nsegment, 'double', &
+     &       'Area-weighted average solar radiation for each segment'// &
+     &       ' from HRUs contributing flow to the segment', &
+     &       'Langleys', Seginc_swrad)/=0 ) CALL read_error(3, 'seginc_swrad')
 
-      ALLOCATE ( Seginc_ssflow(Nsegment) )
-      IF ( declvar(MODNAME, 'seginc_ssflow', 'nsegment', Nsegment, 'double', &
-     &     'Area-weighted average interflow for each segment from'// &
-     &     ' HRUs contributing flow to the segment', &
-     &     'cfs', Seginc_ssflow)/=0 ) CALL read_error(3, 'seginc_ssflow')
+        ALLOCATE ( Seginc_ssflow(Nsegment) )
+        IF ( declvar(MODNAME, 'seginc_ssflow', 'nsegment', Nsegment, 'double', &
+     &       'Area-weighted average interflow for each segment from'// &
+     &       ' HRUs contributing flow to the segment', &
+     &       'cfs', Seginc_ssflow)/=0 ) CALL read_error(3, 'seginc_ssflow')
 
-      ALLOCATE ( Seginc_gwflow(Nsegment) )
-      IF ( declvar(MODNAME, 'seginc_gwflow', 'nsegment', Nsegment, 'double', &
-     &     'Area-weighted average groundwater discharge for each'// &
-     &     ' segment from HRUs contributing flow to the segment', &
-     &     'cfs', Seginc_gwflow)/=0 ) CALL read_error(3, 'seginc_gwflow')
+        ALLOCATE ( Seginc_gwflow(Nsegment) )
+        IF ( declvar(MODNAME, 'seginc_gwflow', 'nsegment', Nsegment, 'double', &
+     &       'Area-weighted average groundwater discharge for each'// &
+     &       ' segment from HRUs contributing flow to the segment', &
+     &       'cfs', Seginc_gwflow)/=0 ) CALL read_error(3, 'seginc_gwflow')
 
-      ALLOCATE ( Seginc_sroff(Nsegment) )
-      IF ( declvar(MODNAME, 'seginc_sroff', 'nsegment', Nsegment, 'double', &
-     &     'Area-weighted average surface runoff for each'// &
-     &     ' segment from HRUs contributing flow to the segment', &
-     &     'cfs', Seginc_sroff)/=0 ) CALL read_error(3, 'seginc_sroff')
+        ALLOCATE ( Seginc_sroff(Nsegment) )
+        IF ( declvar(MODNAME, 'seginc_sroff', 'nsegment', Nsegment, 'double', &
+     &       'Area-weighted average surface runoff for each'// &
+     &       ' segment from HRUs contributing flow to the segment', &
+     &       'cfs', Seginc_sroff)/=0 ) CALL read_error(3, 'seginc_sroff')
 
-      ALLOCATE ( Seg_ssflow(Nsegment) )
-      IF ( declvar(MODNAME, 'seg_ssflow', 'nsegment', Nsegment, 'double', &
-     &     'Area-weighted average interflow for each segment from'// &
-     &     ' HRUs contributing flow to the segment and upstream HRUs', &
-     &     'inches', Seg_ssflow)/=0 ) CALL read_error(3, 'seg_ssflow')
+        ALLOCATE ( Seg_ssflow(Nsegment) )
+        IF ( declvar(MODNAME, 'seg_ssflow', 'nsegment', Nsegment, 'double', &
+     &       'Area-weighted average interflow for each segment from'// &
+     &       ' HRUs contributing flow to the segment and upstream HRUs', &
+     &       'inches', Seg_ssflow)/=0 ) CALL read_error(3, 'seg_ssflow')
 
-      ALLOCATE ( Seg_gwflow(Nsegment) )
-      IF ( declvar(MODNAME, 'seg_gwflow', 'nsegment', Nsegment, 'double', &
-     &     'Area-weighted average groundwater discharge for each segment from'// &
-     &     ' HRUs contributing flow to the segment and upstream HRUs', &
-     &     'inches', Seg_gwflow)/=0 ) CALL read_error(3, 'seg_gwflow')
+        ALLOCATE ( Seg_gwflow(Nsegment) )
+        IF ( declvar(MODNAME, 'seg_gwflow', 'nsegment', Nsegment, 'double', &
+     &       'Area-weighted average groundwater discharge for each segment from'// &
+     &       ' HRUs contributing flow to the segment and upstream HRUs', &
+     &       'inches', Seg_gwflow)/=0 ) CALL read_error(3, 'seg_gwflow')
 
-      ALLOCATE ( Seg_sroff(Nsegment) )
-      IF ( declvar(MODNAME, 'seg_sroff', 'nsegment', Nsegment, 'double', &
-     &     'Area-weighted average surface runoff for each segment from'// &
-     &     ' HRUs contributing flow to the segment and upstream HRUs', &
-     &     'inches', Seg_sroff)/=0 ) CALL read_error(3, 'seg_sroff')
+        ALLOCATE ( Seg_sroff(Nsegment) )
+        IF ( declvar(MODNAME, 'seg_sroff', 'nsegment', Nsegment, 'double', &
+     &       'Area-weighted average surface runoff for each segment from'// &
+     &       ' HRUs contributing flow to the segment and upstream HRUs', &
+     &       'inches', Seg_sroff)/=0 ) CALL read_error(3, 'seg_sroff')
+      ENDIF
 
       IF ( declvar(MODNAME, 'basin_segment_storage', 'one', 1, 'double', &
      &     'Basin area-weighted average storage in the stream network', &
@@ -252,8 +256,8 @@
 !**********************************************************************
       INTEGER FUNCTION routinginit()
       USE PRMS_ROUTING
-      USE PRMS_MODULE, ONLY: Nsegment, Nhru, Init_vars_from_file, Strmflow_flag, &
-      &   Water_use_flag, Segment_transferON_OFF, Print_debug, Inputerror_flag, Parameter_check_flag
+      USE PRMS_MODULE, ONLY: Nsegment, Nhru, Init_vars_from_file, Strmflow_flag, Cascade_flag, &
+     &    Water_use_flag, Segment_transferON_OFF, Print_debug, Inputerror_flag, Parameter_check_flag
       USE PRMS_SET_TIME, ONLY: Timestep_seconds
       USE PRMS_BASIN, ONLY: FT2_PER_ACRE, DNEARZERO, Active_hrus, Hru_route_order, Hru_area_dble, NEARZERO !, Active_area
       IMPLICIT NONE
@@ -273,14 +277,16 @@
       IF ( Water_use_flag==1 .AND. Segment_transferON_OFF==1 ) Use_transfer_segment = 1
 
       IF ( Init_vars_from_file==0 ) THEN
-        Seginc_potet = 0.0D0
-        Seginc_gwflow = 0.0D0
-        Seginc_ssflow = 0.0D0
-        Seginc_sroff = 0.0D0
-        Seginc_swrad = 0.0D0
-        Seg_gwflow = 0.0D0
-        Seg_ssflow = 0.0D0
-        Seg_sroff = 0.0D0
+        IF ( Cascade_flag==0 ) THEN
+          Seginc_potet = 0.0D0
+          Seginc_gwflow = 0.0D0
+          Seginc_ssflow = 0.0D0
+          Seginc_sroff = 0.0D0
+          Seginc_swrad = 0.0D0
+          Seg_gwflow = 0.0D0
+          Seg_ssflow = 0.0D0
+          Seg_sroff = 0.0D0
+        ENDIF
         Hru_outflow = 0.0D0
         Basin_segment_storage = 0.0D0
         Segment_delta_flow = 0.0D0
@@ -305,7 +311,6 @@
       ENDDO
 
       IF ( getparam(MODNAME, 'tosegment', Nsegment, 'integer', Tosegment)/=0 ) CALL read_error(2, 'tosegment')
-      IF ( getparam(MODNAME, 'hru_segment', Nhru, 'integer', Hru_segment)/=0 ) CALL read_error(2, 'hru_segment')
       IF ( getparam(MODNAME, 'obsin_segment', Nsegment, 'integer', Obsin_segment)/=0 ) CALL read_error(2, 'obsin_segment')
       IF ( getparam(MODNAME, 'obsout_segment', Nsegment, 'integer', Obsout_segment)/=0 ) CALL read_error(2, 'obsout_segment')
 
@@ -315,27 +320,35 @@
         ALLOCATE ( C1(Nsegment), C2(Nsegment), C0(Nsegment), Ts(Nsegment), Ts_i(Nsegment) )
       ENDIF
 
-      Segment_hruarea = 0.0D0
-      isegerr = 0
-      DO j = 1, Active_hrus
-        i = Hru_route_order(j)
-        iseg = Hru_segment(i)
-        IF ( iseg>0 ) Segment_hruarea(iseg) = Segment_hruarea(iseg) + Hru_area_dble(i)
-      ENDDO
       Noarea_flag = 0
+      IF ( Cascade_flag==0 ) THEN
+        IF ( getparam(MODNAME, 'hru_segment', Nhru, 'integer', Hru_segment)/=0 ) CALL read_error(2, 'hru_segment')
+        Segment_hruarea = 0.0D0
+        DO j = 1, Active_hrus
+          i = Hru_route_order(j)
+          iseg = Hru_segment(i)
+          IF ( iseg>0 ) Segment_hruarea(iseg) = Segment_hruarea(iseg) + Hru_area_dble(i)
+        ENDDO
+        Segment_area = 0.0D0
+        DO j = 1, Nsegment
+          Segment_area = Segment_area + Segment_hruarea(j)
+          IF ( Segment_hruarea(j)<DNEARZERO ) THEN
+            Noarea_flag = 1
+            IF ( Print_debug>-1 ) THEN
+              WRITE ( buffer, '(I10)' ) j
+              CALL write_outfile('WARNING, No HRUs are associated with segment:'//buffer)
+              IF ( Tosegment(j)==0 ) PRINT *, 'WARNING, No HRUs and tosegment=0 for segment:', j
+            ENDIF
+          ENDIF
+        ENDDO
+!        IF ( Active_area/=Segment_area ) PRINT *, 'Not all area in model domain included with segments, basin area =', &
+!     &                                            Active_area, ' segment area = ', Segment_area
+      ENDIF
+
+      isegerr = 0
       Segment_up = 0
-      Segment_area = 0.0D0
       ! Begin the loops for ordering segments
       DO j = 1, Nsegment
-        Segment_area = Segment_area + Segment_hruarea(j)
-        IF ( Segment_hruarea(j)<DNEARZERO ) THEN
-          Noarea_flag = 1
-          IF ( Print_debug>-1 ) THEN
-            WRITE ( buffer, '(I10)' ) j
-            CALL write_outfile('WARNING, No HRUs are associated with segment:'//buffer)
-            IF ( Tosegment(j)==0 ) PRINT *, 'WARNING, No HRUs and tosegment=0 for segment:', j
-          ENDIF
-        ENDIF
         iseg = Obsin_segment(j)
         toseg = Tosegment(j)
         IF ( toseg==j ) THEN
@@ -346,8 +359,6 @@
           Segment_up(toseg) = j
         ENDIF
       ENDDO
-!      IF ( Active_area/=Segment_area ) PRINT *, 'Not all area in model domain included with segments, basin area =', &
-!     &                                          Active_area, ' segment area = ', Segment_area
 
       IF ( Print_debug>-1 ) THEN
         DO i = 1, Nsegment
@@ -541,16 +552,16 @@
 
       Cfs2acft = Timestep_seconds/FT2_PER_ACRE
 
-      ! add hru_ppt, hru_actet
-      Seginc_gwflow = 0.0D0
-      Seginc_ssflow = 0.0D0
-      Seginc_sroff = 0.0D0
-      Seginc_swrad = 0.0D0
-      Seginc_potet = 0.0D0
-      Seg_gwflow = 0.0D0
-      Seg_sroff = 0.0D0
-      Seg_ssflow = 0.0D0
       IF ( Cascade_flag==0 ) THEN
+        ! add hru_ppt, hru_actet
+        Seginc_gwflow = 0.0D0
+        Seginc_ssflow = 0.0D0
+        Seginc_sroff = 0.0D0
+        Seginc_swrad = 0.0D0
+        Seginc_potet = 0.0D0
+        Seg_gwflow = 0.0D0
+        Seg_sroff = 0.0D0
+        Seg_ssflow = 0.0D0
         Seg_lateral_inflow = 0.0D0
       ELSE
         Seg_lateral_inflow = Strm_seg_in
@@ -560,17 +571,19 @@
         j = Hru_route_order(jj)
         tocfs = DBLE( Hru_area(j) )*Cfs_conv
         Hru_outflow(j) = DBLE( (Sroff(j) + Ssres_flow(j) + Gwres_flow(j)) )*tocfs
-        i = Hru_segment(j)
-        IF ( i>0 ) THEN
-          Seg_gwflow(i) = Seg_gwflow(i) + Gwres_flow(j)
-          Seg_sroff(i) = Seg_sroff(i) + Sroff(j)
-          Seg_ssflow(i) = Seg_ssflow(i) + Ssres_flow(j)
-          IF ( Cascade_flag==0 ) Seg_lateral_inflow(i) = Seg_lateral_inflow(i) + Hru_outflow(j)
-          Seginc_sroff(i) = Seginc_sroff(i) + DBLE( Sroff(j) )*tocfs
-          Seginc_ssflow(i) = Seginc_ssflow(i) + DBLE( Ssres_flow(j) )*tocfs
-          Seginc_gwflow(i) = Seginc_gwflow(i) + DBLE( Gwres_flow(j) )*tocfs
-          Seginc_swrad(i) = Seginc_swrad(i) + DBLE( Swrad(j)*Hru_area(j) )
-          Seginc_potet(i) = Seginc_potet(i) + DBLE( Potet(j)*Hru_area(j) )
+        IF ( Cascade_flag==0 ) THEN
+          i = Hru_segment(j)
+          IF ( i>0 ) THEN
+            Seg_gwflow(i) = Seg_gwflow(i) + Gwres_flow(j)
+            Seg_sroff(i) = Seg_sroff(i) + Sroff(j)
+            Seg_ssflow(i) = Seg_ssflow(i) + Ssres_flow(j)
+            Seg_lateral_inflow(i) = Seg_lateral_inflow(i) + Hru_outflow(j)
+            Seginc_sroff(i) = Seginc_sroff(i) + DBLE( Sroff(j) )*tocfs
+            Seginc_ssflow(i) = Seginc_ssflow(i) + DBLE( Ssres_flow(j) )*tocfs
+            Seginc_gwflow(i) = Seginc_gwflow(i) + DBLE( Gwres_flow(j) )*tocfs
+            Seginc_swrad(i) = Seginc_swrad(i) + DBLE( Swrad(j)*Hru_area(j) )
+            Seginc_potet(i) = Seginc_potet(i) + DBLE( Potet(j)*Hru_area(j) )
+          ENDIF
         ENDIF
       ENDDO
 
@@ -579,6 +592,8 @@
           Seg_lateral_inflow(i) = Seg_lateral_inflow(i) + DBLE( Segment_gain(i) - Segment_transfer(i) )
         ENDDO
       ENDIF
+
+      IF ( Cascade_flag==1 ) RETURN
 
 ! Divide solar radiation and PET by sum of HRU area to get avarage
       IF ( Noarea_flag==0 ) THEN
