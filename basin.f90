@@ -67,7 +67,7 @@
       INTEGER FUNCTION basdecl()
       USE PRMS_BASIN
       USE PRMS_MODULE, ONLY: Model, Nhru, Nlake, Dprst_flag, Lake_route_flag, &
-     &    Et_flag, Precip_flag, Cascadegw_flag, Numlakes, GSFLOW_flag
+     &    Et_flag, Precip_flag, Numlakes, GSFLOW_flag, Stream_temp_flag
       IMPLICIT NONE
 ! Functions
       INTEGER, EXTERNAL :: declparam, declvar
@@ -130,9 +130,12 @@
 
       ! local arrays
       ALLOCATE ( Hru_route_order(Nhru) )
-      IF ( GSFLOW_flag==0 .OR. Cascadegw_flag>0 ) ALLOCATE ( Gwr_route_order(Nhru), Gwr_type(Nhru) )
+      IF ( GSFLOW_flag==0 ) ALLOCATE ( Gwr_route_order(Nhru), Gwr_type(Nhru) )
+      ! potet_pm, potet_pm_sta, or potet_pt
       IF ( Et_flag==5 .OR. Et_flag==11 .OR. Et_flag==6 ) ALLOCATE ( Hru_elev_feet(Nhru) )
-      IF ( Precip_flag==5 ) ALLOCATE ( Hru_elev_meters(Nhru) )
+      ! ide_dist, potet_pm, potet_pm_sta, potet_pt, or stream_temp
+      IF ( Et_flag==5 .OR. Et_flag==11 .OR. Et_flag==6 .OR. Precip_flag==5 .OR. Stream_temp_flag==1 ) &
+     &     ALLOCATE ( Hru_elev_meters(Nhru) )
 
       ! Declared Parameters
       ALLOCATE ( Hru_area(Nhru), Hru_area_dble(Nhru) )
@@ -223,9 +226,9 @@
 !**********************************************************************
       INTEGER FUNCTION basinit()
       USE PRMS_BASIN
-      USE PRMS_MODULE, ONLY: Nhru, Nlake, Dprst_flag, GSFLOW_flag, &
+      USE PRMS_MODULE, ONLY: Nhru, Nlake, Dprst_flag, GSFLOW_flag, Stream_temp_flag, &
      &    Print_debug, Model, PRMS_VERSION, Starttime, Endtime, &
-     &    Lake_route_flag, Et_flag, Precip_flag, Cascadegw_flag, Prms_output_unit, Numlakes
+     &    Lake_route_flag, Et_flag, Precip_flag, Prms_output_unit, Numlakes
       IMPLICIT NONE
 ! Functions
       INTEGER, EXTERNAL :: getparam
@@ -327,9 +330,11 @@
         Basin_lat = Basin_lat + DBLE( Hru_lat(i)*harea )
         IF ( Elev_units==0 ) THEN
           IF ( Et_flag==5 .OR. Et_flag==11 .OR. Et_flag==6 ) Hru_elev_feet(i) = Hru_elev(i)
-          IF ( Precip_flag==5 ) Hru_elev_meters(i) = Hru_elev(i)*FEET2METERS
+          IF ( Et_flag==5 .OR. Et_flag==11 .OR. Et_flag==6 .OR. Precip_flag==5 .OR. Stream_temp_flag==1 ) &
+     &         Hru_elev_meters(i) = Hru_elev(i)*FEET2METERS
         ELSE
-          IF ( Precip_flag==5 ) Hru_elev_meters(i) = Hru_elev(i)
+          IF ( Et_flag==5 .OR. Et_flag==11 .OR. Et_flag==6 .OR. Precip_flag==5 .OR. Stream_temp_flag==1 ) &
+     &         Hru_elev_meters(i) = Hru_elev(i)
           IF ( Et_flag==5 .OR. Et_flag==11 .OR. Et_flag==6 ) Hru_elev_feet(i) = Hru_elev(i)*METERS2FEET
         ENDIF
         j = j + 1
@@ -368,7 +373,7 @@
       Active_hrus = j
       Active_area = Land_area + Water_area
 
-      IF ( GSFLOW_flag==0 .OR. Cascadegw_flag>0 ) THEN
+      IF ( GSFLOW_flag==0 ) THEN
         Active_gwrs = Active_hrus
         Gwr_type = Hru_type
         Gwr_route_order = Hru_route_order
