@@ -136,8 +136,7 @@
       INTEGER, EXTERNAL :: numchars, isdeclared, getdim
       EXTERNAL :: check_parameters_declared, read_error
       ! Local Variables
-      INTEGER :: comma, ndimen, nval, nvals, nvals2, declared, numvalues, type_flag, iset, default_int
-      REAL :: default_real
+      INTEGER :: comma, ndimen, nval, nvals, nvals2, declared, numvalues, type_flag, iset
       CHARACTER(LEN=MAXCONTROL_LENGTH) dimen1, dimen2
 !***********************************************************************
       !!!!!!!!!!!! check to see if already in data structure
@@ -191,13 +190,13 @@
 
       ! could add string and double
       IF ( type_flag==1 ) THEN
-        READ ( defvalue, * ) default_int
+        READ ( defvalue, * ) Parameter_data(Num_parameters)%default_int
         ALLOCATE ( Parameter_data(Num_parameters)%int_values(numvalues) )
-        Parameter_data(Num_parameters)%int_values = default_int
+        Parameter_data(Num_parameters)%int_values = Parameter_data(Num_parameters)%default_int
       ELSEIF ( type_flag==2 ) THEN
-        READ ( defvalue, * ) default_real
+        READ ( defvalue, * ) Parameter_data(Num_parameters)%default_real
         ALLOCATE ( Parameter_data(Num_parameters)%values(numvalues) )
-        Parameter_data(Num_parameters)%values = default_real
+        Parameter_data(Num_parameters)%values = Parameter_data(Num_parameters)%default_real
       ENDIF
 
       iset = 0
@@ -211,7 +210,7 @@
         nvals = getdim(TRIM(Maxvalue))
         IF ( nvals==-1 ) CALL read_error(11, Maxvalue)
           Parameter_data(Num_parameters)%maximum_int = nvals
-          Parameter_data(Num_parameters)%minimum_int = default_int
+          Parameter_data(Num_parameters)%minimum_int = Parameter_data(Num_parameters)%default_int
         ELSE
           STOP 'ERROR, bounded parameter not real type'
         ENDIF
