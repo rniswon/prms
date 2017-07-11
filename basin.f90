@@ -228,7 +228,7 @@
 !**********************************************************************
       INTEGER FUNCTION basinit()
       USE PRMS_BASIN
-      USE PRMS_MODULE, ONLY: Nhru, Nlake, Dprst_flag, &
+      USE PRMS_MODULE, ONLY: Nhru, Nlake, Dprst_flag, Lake_route_flag, &
      &    Print_debug, Model, PRMS_VERSION, Starttime, Endtime, Et_flag, Precip_flag
       IMPLICIT NONE
 ! Functions
@@ -414,7 +414,7 @@
             basin_error = 1
           ENDIF
         ENDDO
-        IF ( Model/=0 ) THEN
+        IF ( Lake_route_flag==1 ) THEN
           IF ( Numlakes_check/=Nlake ) THEN
             PRINT *, 'ERROR, number of lakes specified in lake_hru_id'
             PRINT *, 'does not equal dimension nlake:', Nlake, ', number of lakes:', Numlakes_check
