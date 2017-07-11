@@ -229,7 +229,7 @@
       INTEGER FUNCTION basinit()
       USE PRMS_BASIN
       USE PRMS_MODULE, ONLY: Nhru, Nlake, Dprst_flag, &
-     &    Print_debug, Inputerror_flag, Model, PRMS_VERSION, Starttime, Endtime, Et_flag, Precip_flag
+     &    Print_debug, Model, PRMS_VERSION, Starttime, Endtime, Et_flag, Precip_flag
       IMPLICIT NONE
 ! Functions
       INTEGER, EXTERNAL :: getparam
