@@ -138,7 +138,7 @@
 !***********************************************************************
       muskingum_decl = 0
 
-      Version_muskingum = 'muskingum.f90 2016-07-25 12:06:00Z'
+      Version_muskingum = 'muskingum.f90 2017-07-11 11:02:00Z'
       CALL print_module(Version_muskingum, 'Streamflow Routing          ', 90)
       MODNAME = 'muskingum'
 
@@ -346,12 +346,13 @@
       INTEGER FUNCTION muskingum_run()
       USE PRMS_MUSKINGUM
       USE PRMS_MODULE, ONLY: Nsegment
-      USE PRMS_BASIN, ONLY: CFS2CMS_CONV, Basin_area_inv, Obsin_segment, Segment_order, Tosegment
+      USE PRMS_BASIN, ONLY: CFS2CMS_CONV, Basin_area_inv
       USE PRMS_FLOWVARS, ONLY: Basin_ssflow, Basin_cms, Basin_gwflow_cfs, Basin_ssflow_cfs, &
      &    Basin_stflow_out, Basin_cfs, Basin_stflow_in, Basin_sroff_cfs, Seg_inflow, Seg_outflow, Seg_upstream_inflow, &
      &    Seg_lateral_inflow, Flow_out
       USE PRMS_OBS, ONLY: Streamflow_cfs
       USE PRMS_SET_TIME, ONLY: Cfs_conv
+      USE PRMS_ROUTING, ONLY: Obsin_segment, Segment_order, Tosegment, Obsout_segment
       USE PRMS_SRUNOFF, ONLY: Basin_sroff
       USE PRMS_GWFLOW, ONLY: Basin_gwflow
       IMPLICIT NONE
@@ -432,6 +433,15 @@
             Inflow_ts(iorder) = 0.0D0
           ENDIF
 
+          IF ( Obsout_segment(iorder)>0 ) Outflow_ts(iorder) = Streamflow_cfs(Obsout_segment(iorder))
+
+          ! check for negative flow
+          IF ( Outflow_ts(iorder)<0.0 ) THEN
+            PRINT *, 'ERROR, outflow from segment:', iorder, ' is negative:', Outflow_ts(iorder)
+            PRINT *, '       routing parameters may be invalid'
+            STOP
+          ENDIF
+
           ! Seg_outflow (the mean daily flow rate for each segment) will be the average of the hourly values.
           Seg_outflow(iorder) = Seg_outflow(iorder) + Outflow_ts(iorder)
           ! pastout is equal to the Inflow_ts on the previous routed timestep
@@ -464,7 +474,7 @@
       ENDDO
 
       area_fac = Cfs_conv/Basin_area_inv
-      Basin_stflow_in = Basin_sroff + Basin_gwflow + Basin_ssflow ! not equal to stflow_out if replacement flows
+      Basin_stflow_in = Basin_sroff + Basin_gwflow + Basin_ssflow ! not equal to basin_stflow_out if replacement flows
       Basin_cfs = Flow_out
       Basin_stflow_out = Basin_cfs / area_fac
       Basin_cms = Basin_cfs*CFS2CMS_CONV
@@ -485,7 +495,7 @@
       ! Argument
       INTEGER, INTENT(IN) :: In_out
       ! Function
-      EXTERNAL check_restart
+      EXTERNAL :: check_restart
       ! Local Variable
       CHARACTER(LEN=9) :: module_name
 !***********************************************************************

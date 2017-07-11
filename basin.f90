@@ -21,9 +21,8 @@
       REAL, SAVE, ALLOCATABLE :: Dprst_frac_clos(:)
       INTEGER, SAVE, ALLOCATABLE :: Gwr_type(:), Hru_route_order(:), Gwr_route_order(:)
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Lake_area(:)
-      INTEGER, SAVE :: Noarea_flag, Weir_gate_flag
-      INTEGER, SAVE, ALLOCATABLE :: Segment_order(:), Segment_up(:)
-      DOUBLE PRECISION, SAVE, ALLOCATABLE :: Segment_hruarea(:), Hru_area_dble(:)
+      INTEGER, SAVE :: Weir_gate_flag
+      DOUBLE PRECISION, SAVE, ALLOCATABLE :: Hru_area_dble(:)
       CHARACTER(LEN=80), SAVE :: Version_basin
 !   Declared Variables
       REAL, SAVE, ALLOCATABLE :: Hru_frac_perv(:)
@@ -33,8 +32,7 @@
 !   Declared Parameters
       INTEGER, SAVE :: Elev_units
       INTEGER, SAVE, ALLOCATABLE :: Hru_type(:), Cov_type(:)
-      INTEGER, SAVE, ALLOCATABLE :: Tosegment(:), Hru_segment(:), Obsin_segment(:)
-      INTEGER, SAVE, ALLOCATABLE :: Lake_hru(:), Lake_hru_id(:) !not needed if no lakes
+      INTEGER, SAVE, ALLOCATABLE :: Lake_hru_id(:) !not needed if no lakes
       REAL, SAVE, ALLOCATABLE :: Hru_area(:), Hru_percent_imperv(:), Hru_elev(:), Hru_lat(:)
       REAL, SAVE, ALLOCATABLE :: Covden_sum(:), Covden_win(:)
       REAL, SAVE, ALLOCATABLE :: Dprst_frac_open(:), Dprst_area(:), Dprst_frac(:)
@@ -64,12 +62,11 @@
 !   Declared Parameters
 !     print_debug, hru_area, hru_percent_imperv, hru_type, hru_elev,
 !     cov_type, hru_lat, dprst_frac_open, dprst_frac_hru, dprst_area, basin_area
-!     lake_hru, lake_hru_id, tosegment, hru_segment, obsin_segment
+!     lake_hru_id
 !***********************************************************************
       INTEGER FUNCTION basdecl()
       USE PRMS_BASIN
-      USE PRMS_MODULE, ONLY: Model, Nhru, Nlake, Dprst_flag, Nsegment, Stream_order_flag, Lake_route_flag, &
-     &    Cascadegw_flag
+      USE PRMS_MODULE, ONLY: Model, Nhru, Nlake, Dprst_flag, Et_flag, Precip_flag
       IMPLICIT NONE
 ! Functions
       INTEGER, EXTERNAL :: declparam, declvar
@@ -77,7 +74,7 @@
 !***********************************************************************
       basdecl = 0
 
-      Version_basin = 'basin.f90 2017-06-29 11:15:00Z'
+      Version_basin = 'basin.f90 2017-07-11 11:22:00Z'
       CALL print_module(Version_basin, 'Basin Definition            ', 90)
       MODNAME = 'basin'
 
@@ -144,8 +141,12 @@
 
       ! local arrays
       ALLOCATE ( Hru_route_order(Nhru) )
-      IF ( Model/=0 .OR. Cascadegw_flag>0 ) ALLOCATE ( Gwr_route_order(Nhru), Gwr_type(Nhru) )
-      ALLOCATE ( Hru_elev_feet(Nhru), Hru_elev_meters(Nhru) )
+      IF ( Model/=0 ) ALLOCATE ( Gwr_route_order(Nhru), Gwr_type(Nhru) )
+      ! potet_pm, potet_pm_sta, or potet_pt
+      IF ( Et_flag==5 .OR. Et_flag==11 .OR. Et_flag==6 ) ALLOCATE ( Hru_elev_feet(Nhru) )
+      ! ide_dist, potet_pm, potet_pm_sta, or potet_pt
+      IF ( Et_flag==5 .OR. Et_flag==11 .OR. Et_flag==6 .OR. Precip_flag==5 ) &
+     &     ALLOCATE ( Hru_elev_meters(Nhru) )
 
       ! Declared Parameters
       ALLOCATE ( Hru_area(Nhru), Hru_area_dble(Nhru) )
@@ -206,34 +207,6 @@
      &     'Winter vegetation cover density for the major vegetation type in each HRU', &
      &     'decimal fraction')/=0 ) CALL read_error(1, 'covden_win')
 
-      IF ( Stream_order_flag==1 .OR. Model==99 ) THEN
-        ! local arrays
-        ALLOCATE ( Segment_order(Nsegment), Segment_up(Nsegment), Segment_hruarea(Nsegment) )
-        ! parameters
-        ALLOCATE ( Tosegment(Nsegment) )
-        IF ( declparam(MODNAME, 'tosegment', 'nsegment', 'integer', &
-     &       '0', 'bounded', 'nsegment', &
-     &       'The index of the downstream segment', &
-     &       'Index of downstream segment to which the segment'// &
-     &       ' streamflow flows, for segments that do not flow to another segment enter 0', &
-     &       'none')/=0 ) CALL read_error(1, 'tosegment')
-
-        ALLOCATE ( Hru_segment(Nhru) )
-        IF ( declparam(MODNAME, 'hru_segment', 'nhru', 'integer', &
-     &       '0', 'bounded', 'nsegment', &
-     &       'Segment index for HRU lateral inflows', &
-     &       'Segment index to which an HRU contributes lateral flows'// &
-     &       ' (surface runoff, interflow, and groundwater discharge)', &
-     &       'none')/=0 ) CALL read_error(1, 'hru_segment')
-
-        ALLOCATE ( Obsin_segment(Nsegment) )
-        IF ( declparam(MODNAME, 'obsin_segment', 'nsegment', 'integer', &
-     &       '0', 'bounded', 'nobs', &
-     &       'Index of measured streamflow station that replaces inflow to a segment', &
-     &       'Index of measured streamflow station that replaces inflow to a segment', &
-     &       'none')/=0 ) CALL read_error(1, 'obsin_segment')
-      ENDIF
-
       IF ( Nlake>0 .OR. Model==99 ) THEN
         ! Local array
         ALLOCATE ( Lake_area(Nlake) )
@@ -245,14 +218,6 @@
      &       'Identification number of the lake associated with an HRU;'// &
      &       ' more than one HRU can be associated with each lake', &
      &       'none')/=0 ) CALL read_error(1, 'lake_hru_id')
-        IF ( (Lake_route_flag==1 .AND. Model/=0) .OR. Model==99 ) THEN
-          ALLOCATE ( Lake_hru(Nlake) )
-          IF ( declparam(MODNAME, 'lake_hru', 'nlake', 'integer', &
-     &         '0', 'bounded', 'nhru', &
-     &         'Index of HRU for each lake HRU', &
-     &         'Index of HRU for each lake HRU', &
-     &         'none')/=0 ) CALL read_error(1, 'lake_hru')
-        ENDIF
       ENDIF
 
       END FUNCTION basdecl
@@ -263,9 +228,8 @@
 !**********************************************************************
       INTEGER FUNCTION basinit()
       USE PRMS_BASIN
-      USE PRMS_MODULE, ONLY: Nhru, Nlake, Nsegment, Cascade_flag, Dprst_flag, &
-     &    Print_debug, Inputerror_flag, Model, PRMS_VERSION, Starttime, Endtime, &
-     &    Stream_order_flag, Lake_route_flag, Nobs, Cascadegw_flag
+      USE PRMS_MODULE, ONLY: Nhru, Nlake, Dprst_flag, &
+     &    Print_debug, Inputerror_flag, Model, PRMS_VERSION, Starttime, Endtime, Et_flag, Precip_flag
       IMPLICIT NONE
 ! Functions
       INTEGER, EXTERNAL :: getparam
@@ -273,8 +237,7 @@
       INTRINSIC ABS, DBLE, SNGL
 ! Local Variables
       CHARACTER(LEN=69) :: buffer
-      INTEGER :: i, j, test, lval, dprst_frac_flag, iseg, toseg, lakeid, isegerr
-      INTEGER, ALLOCATABLE :: x_off(:)
+      INTEGER :: i, j, dprst_frac_flag, lakeid, basin_error
       REAL :: harea
       DOUBLE PRECISION :: basin_imperv, basin_perv, basin_dprst, harea_dble
 !**********************************************************************
@@ -301,18 +264,9 @@
         ENDIF
       ENDIF
 
-      IF ( Stream_order_flag==1 ) THEN
-        IF ( getparam(MODNAME, 'tosegment', Nsegment, 'integer', Tosegment)/=0 ) CALL read_error(2, 'tosegment')
-        IF ( getparam(MODNAME, 'hru_segment', Nhru, 'integer', Hru_segment)/=0 ) CALL read_error(2, 'hru_segment')
-        IF ( getparam(MODNAME, 'obsin_segment', Nsegment, 'integer', Obsin_segment)/=0 ) CALL read_error(2, 'obsin_segment')
-      ENDIF
-
       IF ( Nlake>0 ) THEN
         IF ( getparam(MODNAME, 'lake_hru_id', Nhru, 'integer', Lake_hru_id)/=0 ) CALL read_error(1, 'lake_hru_id')
         Lake_area = 0.0D0
-        IF ( Lake_route_flag==1 .AND. Model/=0 ) THEN
-          IF ( getparam(MODNAME, 'lake_hru', Nlake, 'integer', Lake_hru)/=0 ) CALL read_error(2, 'lake_hru')
-        ENDIF
       ENDIF
 
       IF ( Dprst_flag==1 ) THEN
@@ -322,7 +276,6 @@
         Hru_frac_dprst = 0.0
         Dprst_area_max = 0.0
       ENDIF
-      IF ( Stream_order_flag==1 ) Segment_hruarea = 0.0D0
       Dprst_clos_flag = 0
       Dprst_open_flag = 0
       basin_perv = 0.0D0
@@ -337,6 +290,7 @@
       Basin_lat = 0.0D0
       Hru_route_order = 0
       j = 0
+      basin_error = 0
       DO i = 1, Nhru
         harea = Hru_area(i)
         harea_dble = DBLE( harea )
@@ -354,44 +308,32 @@
           IF ( lakeid>Numlakes_check ) Numlakes_check = lakeid
           IF ( Nlake<1 ) THEN
             PRINT *, 'ERROR, hru_type = 2 for HRU:', i, ' and dimension nlake = 0'
-            Inputerror_flag = 1
+            basin_error = 1
           ELSEIF ( lakeid==0 ) THEN
             PRINT *, 'ERROR, hru_type = 2 for HRU:', i, ' and lake_hru_id = 0'
-            Inputerror_flag = 1
+            basin_error = 1
           ELSEIF ( lakeid>0 ) THEN
-            Lake_area(lakeid) = Lake_area(lakeid) + harea_dble
+             Lake_area(lakeid) = Lake_area(lakeid) + harea_dble
           ENDIF
         ELSE
           Land_area = Land_area + harea_dble ! swale or land
           IF ( Nlake>0 ) THEN
             IF ( Lake_hru_id(i)>0 .AND. Hru_type(i)/=2 ) THEN
               PRINT *, 'ERROR, HRU:', i, ' specifed to be a lake by lake_hru_id but hru_type not equal 2'
-              Inputerror_flag = 1
+              basin_error = 1
             ENDIF
-          ENDIF
-        ENDIF
-
-        IF ( Stream_order_flag==1 ) THEN
-          isegerr = 0
-          IF ( isegerr==0 ) THEN
-            iseg = Hru_segment(i)
-            IF ( iseg>0 ) THEN
-              Segment_hruarea(iseg) = Segment_hruarea(iseg) + harea_dble
-            ELSEIF ( Cascade_flag==0 ) THEN
-              IF ( Print_debug>-1 ) PRINT *, 'WARNING, HRU:', i, ' is not associated with a segment'
-            ENDIF
-          ELSE
-            Inputerror_flag = 1
           ENDIF
         ENDIF
 
         Basin_lat = Basin_lat + DBLE( Hru_lat(i)*harea )
         IF ( Elev_units==0 ) THEN
-          Hru_elev_feet(i) = Hru_elev(i)
-          Hru_elev_meters(i) = Hru_elev(i)*FEET2METERS
+          IF ( Et_flag==5 .OR. Et_flag==11 .OR. Et_flag==6 ) Hru_elev_feet(i) = Hru_elev(i)
+          IF ( Et_flag==5 .OR. Et_flag==11 .OR. Et_flag==6 .OR. Precip_flag==5 ) &
+     &         Hru_elev_meters(i) = Hru_elev(i)*FEET2METERS
         ELSE
-          Hru_elev_meters(i) = Hru_elev(i)
-          Hru_elev_feet(i) = Hru_elev(i)*METERS2FEET
+          IF ( Et_flag==5 .OR. Et_flag==11 .OR. Et_flag==6 .OR. Precip_flag==5 ) &
+     &         Hru_elev_meters(i) = Hru_elev(i)
+          IF ( Et_flag==5 .OR. Et_flag==11 .OR. Et_flag==6 ) Hru_elev_feet(i) = Hru_elev(i)*METERS2FEET
         ENDIF
         j = j + 1
         Hru_route_order(j) = i
@@ -405,18 +347,18 @@
           IF ( dprst_frac_flag==1 ) THEN
             IF ( Dprst_frac(i)>0.999 ) THEN
               PRINT *, 'ERROR, dprst_frac_hru > 0.999 for HRU:', i, ', value:', Dprst_frac(i)
-              Inputerror_flag = 1
+              basin_error = 1
             ENDIF
             Dprst_area_max(i) = Dprst_frac(i)*harea
           ELSE
             IF ( Dprst_area(i)>harea ) THEN
               PRINT *, 'ERROR, dprst_area > hru_area for HRU:', i, ', value:', Dprst_area(i)
               PRINT *, '       hru_area:', harea
-              Inputerror_flag = 1
+              basin_error = 1
             ELSEIF ( Dprst_area(i)>0.999*harea ) THEN
               PRINT *, 'ERROR, dprst_area > 0.999*hru_area for HRU:', i, ', value:', Dprst_area(i)
               PRINT *, '       hru_area:', harea, '; fraction', 0.999*harea
-              Inputerror_flag = 1
+              basin_error = 1
             ENDIF
             Dprst_area_max(i) = Dprst_area(i)
           ENDIF
@@ -428,7 +370,7 @@
             IF ( Hru_percent_imperv(i)+Hru_frac_dprst(i)>0.999 ) THEN
               PRINT *, 'ERROR, impervious plus depression fraction > 0.999 for HRU:', i
               PRINT *, '       value:', Hru_percent_imperv(i) + Hru_frac_dprst(i)
-              Inputerror_flag = 1
+              basin_error = 1
             ENDIF
             Hru_perv(i) = harea - Hru_imperv(i) - Dprst_area_max(i)
           ENDIF
@@ -447,7 +389,7 @@
       Active_hrus = j
       Active_area = Land_area + Water_area
 
-      IF ( Model/=0 .OR. Cascadegw_flag>0 ) THEN
+      IF ( Model/=0 ) THEN
         Active_gwrs = Active_hrus
         Gwr_type = Hru_type
         Gwr_route_order = Hru_route_order
@@ -458,133 +400,30 @@
       IF ( Model==99 ) Numlake_hrus = Nlake
       IF ( Nlake<1 .AND. Numlake_hrus>0 ) THEN
         PRINT *, 'ERROR, dimension nlake=0 and number of specified lake HRUs equals', Numlake_hrus
-        Inputerror_flag = 1
+        basin_error = 1
+      ELSEIF ( Numlake_hrus/=Nlake ) THEN
+        PRINT *, 'ERROR, number of lake HRUs specified in hru_type'
+        PRINT *, 'does not equal dimension nlake:', Nlake, ', number of lake HRUs:', Numlake_hrus
+!        PRINT *, 'For PRMS lake routing each lake must be a single HRU'
+        basin_error = 1
       ENDIF
       IF ( Nlake>0 ) THEN
         DO i = 1, Numlakes_check
           IF ( Lake_area(i)<DNEARZERO ) THEN
             PRINT *, 'ERROR, Lake:', i, ' has 0 area, thus no value of lake_hru_id is associated with the lake'
-            Inputerror_flag = 1
+            basin_error = 1
           ENDIF
         ENDDO
-        IF ( Model==0 ) THEN
+        IF ( Model/=0 ) THEN
           IF ( Numlakes_check/=Nlake ) THEN
-            PRINT *, 'ERROR, number of lakes specified in hru_type'
+            PRINT *, 'ERROR, number of lakes specified in lake_hru_id'
             PRINT *, 'does not equal dimension nlake:', Nlake, ', number of lakes:', Numlakes_check
-            Inputerror_flag = 1
-          ENDIF
-        ELSEIF ( Lake_route_flag==1 ) THEN
-          IF ( Numlake_hrus/=Nlake ) THEN
-            PRINT *, 'ERROR, number of lake HRUs specified in hru_type'
-            PRINT *, 'does not equal dimension nlake:', Nlake, ', number of lake HRUs:', Numlake_hrus
-            PRINT *, 'For PRMS lake routing each lake must be a single HRU'
-            Inputerror_flag = 1
-          ELSE
-            DO i = 1, Nlake
-              j = Lake_hru(i)
-              IF ( j>0 ) THEN
-                IF ( Lake_hru_id(j)==0 ) THEN
-                  Lake_hru_id(j) = i
-                ELSEIF ( Lake_hru_id(j)/=i ) THEN
-                  PRINT *, 'ERROR, parameter values for lake_hru and lake_hru_id in conflict for Lake:', i, ', HRU:', j
-                  Inputerror_flag = 1
-                  CYCLE
-                ENDIF
-              ELSE
-                PRINT *, 'ERROR, lake_hru=0 for lake:', i
-                Inputerror_flag = 1
-                CYCLE
-              ENDIF
-              IF ( Hru_type(j)/=2 ) THEN
-                PRINT *, 'ERROR, HRU:', j, ' specifed to be a lake by lake_hru but hru_type not equal 2'
-                Inputerror_flag = 1
-              ENDIF
-            ENDDO
+            basin_error = 1
           ENDIF
         ENDIF
       ENDIF
 
-      IF ( Stream_order_flag==1 ) THEN
-        Noarea_flag = 0
-        Segment_up = 0
-        isegerr = 0
-        ! Begin the loops for ordering segments
-        DO j = 1, Nsegment
-          IF ( Cascade_flag==0 ) THEN
-            IF ( Segment_hruarea(j)<DNEARZERO ) THEN
-              Noarea_flag = 1
-              IF ( Print_debug>-1 ) THEN
-                WRITE ( buffer, '(I10)' ) j
-                CALL write_outfile('WARNING, No HRUs are associated with segment:'//buffer(:10))
-                IF ( Tosegment(j)==0 ) PRINT *, 'WARNING, No HRUs and tosegment=0 for segment:', j
-              ENDIF
-            ENDIF
-          ENDIF
-          iseg = Obsin_segment(j)
-          IF ( iseg>Nobs .OR. iseg<0 ) THEN
-            PRINT *, 'ERROR, invalid obsin_segment value for segment:', j, ' obsin_segment value:', iseg, ' nobs value:', Nobs
-            Inputerror_flag = 1
-          ENDIF
-          toseg = Tosegment(j)
-          IF ( toseg==j ) THEN
-            PRINT *, 'ERROR, tosegment value (', toseg, ') equals itself for segment:', j
-            isegerr = 1
-          ELSEIF ( toseg>0 ) THEN
-            ! load segment_up with last stream segment that flows into a segment
-            Segment_up(toseg) = j
-          ENDIF
-        ENDDO
-
-        IF ( Print_debug>-1 ) THEN
-          DO i = 1, Nsegment
-            IF ( Segment_up(i)==0 .AND. Tosegment(i)==0 ) &
-     &           PRINT *, 'WARNING, no other segment flows into segment:',  i, ' and tosegment=0'
-          ENDDO
-        ENDIF
-
-        IF ( isegerr==0 ) THEN
-          ! Begin the loops for ordering segments
-          ALLOCATE ( x_off(Nsegment) )
-          x_off = 0
-          Segment_order = 0
-          lval = 0
-          DO WHILE ( lval<Nsegment )
-            DO i = 1, Nsegment
-              ! If segment "i" has not been crossed out consider it, else continue
-              IF ( x_off(i)==1 ) CYCLE
-              ! Test to see if segment "i" is the to segment from other segments
-              test = 1
-              DO j = 1, Nsegment
-                IF ( Tosegment(j)==i ) THEN
-                ! If segment "i" is a to segment, test to see if the originating
-                ! segment has been crossed off the list.  if all have been, then
-                ! put the segment in as an ordered segment
-                  IF ( x_off(j)==0 ) THEN
-                    test = 0
-                    EXIT
-                  ENDIF
-                ENDIF
-              ENDDO
-              IF ( test==1 ) THEN
-                lval = lval + 1
-                Segment_order(lval) = i
-                x_off(i) = 1
-              ENDIF
-            ENDDO
-          ENDDO
-!          IF ( Print_debug==20 ) THEN
-!            PRINT *, 'Stream Network Routing Order:'
-!            PRINT '(10I5)', Segment_order
-!            PRINT *, 'tosegment:'
-!            PRINT '(10I5)', Tosegment
-!          ENDIF
-          DEALLOCATE ( x_off )
-        ELSE
-          Inputerror_flag = 1
-        ENDIF
-      ENDIF
-
-      IF ( Inputerror_flag==1 ) RETURN
+      IF ( basin_error==1 ) STOP
 
       Basin_area_inv = 1.0D0/Active_area
       Basin_lat = Basin_lat*Basin_area_inv
