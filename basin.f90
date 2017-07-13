@@ -66,7 +66,7 @@
 !***********************************************************************
       INTEGER FUNCTION basdecl()
       USE PRMS_BASIN
-      USE PRMS_MODULE, ONLY: Model, Nhru, Nlake, Dprst_flag, Lake_route_flag, &
+      USE PRMS_MODULE, ONLY: Model, Nhru, Dprst_flag, Lake_route_flag, &
      &    Et_flag, Precip_flag, Numlakes, GSFLOW_flag, Stream_temp_flag
       IMPLICIT NONE
 ! Functions
@@ -75,7 +75,7 @@
 !***********************************************************************
       basdecl = 0
 
-      Version_basin = 'basin.f90 2017-07-06 11:20:00Z'
+      Version_basin = 'basin.f90 2017-07-13 10:22:00Z'
       CALL print_module(Version_basin, 'Basin Definition            ', 90)
       MODNAME = 'basin'
 
@@ -130,6 +130,8 @@
 
       ! local arrays
       ALLOCATE ( Hru_route_order(Nhru) )
+! gwflow inactive for GSFLOW mode so arrays not allocated
+! when GSFLOW can run in multi-mode will need these arrays
       IF ( GSFLOW_flag==0 ) ALLOCATE ( Gwr_route_order(Nhru), Gwr_type(Nhru) )
       ! potet_pm, potet_pm_sta, or potet_pt
       IF ( Et_flag==5 .OR. Et_flag==11 .OR. Et_flag==6 ) ALLOCATE ( Hru_elev_feet(Nhru) )
@@ -196,7 +198,7 @@
      &     'Winter vegetation cover density for the major vegetation type in each HRU', &
      &     'decimal fraction')/=0 ) CALL read_error(1, 'covden_win')
 
-      IF ( Nlake>0 .OR. Model==99 ) THEN
+      IF ( Numlakes>0 .OR. Model==99 ) THEN
         ! Local array
         ALLOCATE ( Lake_area(Numlakes) ) ! lake area is for each lake, but, nlake is number of lake HRUs
         ! parameters
@@ -227,8 +229,8 @@
       INTEGER FUNCTION basinit()
       USE PRMS_BASIN
       USE PRMS_MODULE, ONLY: Nhru, Nlake, Dprst_flag, GSFLOW_flag, Stream_temp_flag, &
-     &    Print_debug, Model, PRMS_VERSION, Starttime, Endtime, &
-     &    Lake_route_flag, Et_flag, Precip_flag, Prms_output_unit, Numlakes
+     &    Print_debug, PRMS_VERSION, Starttime, Endtime, &
+     &    Lake_route_flag, Et_flag, Precip_flag, Prms_output_unit, Numlakes, Have_lakes
       IMPLICIT NONE
 ! Functions
       INTEGER, EXTERNAL :: getparam
@@ -236,11 +238,14 @@
       INTRINSIC ABS, DBLE, SNGL, MOD
 ! Local Variables
       CHARACTER(LEN=69) :: buffer
-      INTEGER :: i, j, lakeid, basin_error
+      INTEGER :: i, j, lakeid, basin_error, need_lakes
       REAL :: harea
       DOUBLE PRECISION :: basin_imperv, basin_perv, basin_dprst, harea_dble
 !**********************************************************************
       basinit = 0
+
+      need_lakes = 0
+      IF ( Lake_route_flag==1 .OR. Have_lakes==1 ) need_lakes = 1
 
       IF ( getparam(MODNAME, 'hru_area', Nhru, 'real', Hru_area)/=0 ) CALL read_error(2, 'hru_area')
       IF ( getparam(MODNAME, 'hru_elev', Nhru, 'real', Hru_elev)/=0 ) CALL read_error(2, 'hru_elev')
@@ -257,10 +262,10 @@
         IF ( getparam(MODNAME, 'dprst_frac', Nhru, 'real', Dprst_frac)/=0 ) CALL read_error(2, 'Dprst_frac')
       ENDIF
 
-      IF ( Nlake>0 ) THEN
+      IF ( need_lakes==1 ) THEN
         IF ( getparam(MODNAME, 'lake_hru_id', Nhru, 'integer', Lake_hru_id)/=0 ) CALL read_error(1, 'lake_hru_id')
         Lake_area = 0.0D0
-        IF ( Lake_route_flag==1 .AND. GSFLOW_flag==0 ) THEN
+        IF ( Lake_route_flag==1 ) THEN
           IF ( getparam(MODNAME, 'lake_type', Numlakes, 'integer', Lake_type)/=0 ) CALL read_error(2, 'lake_type')
         ENDIF
       ENDIF
@@ -305,10 +310,15 @@
           ENDIF
           Water_area = Water_area + harea_dble
           Numlake_hrus = Numlake_hrus + 1
+          IF ( Numlakes==0 ) THEN
+            PRINT *, 'ERROR, HRU:', i, ' has hru_type=2 and numlakes = 0'
+            basin_error = 1
+            CYCLE
+          ENDIF
           lakeid = Lake_hru_id(i)
           IF ( lakeid>Numlakes_check ) Numlakes_check = lakeid
           IF ( lakeid>0 ) THEN
-             Lake_area(lakeid) = Lake_area(lakeid) + harea_dble
+            Lake_area(lakeid) = Lake_area(lakeid) + harea_dble
           ELSE
             PRINT *, 'ERROR, hru_type = 2 for HRU:', i, ' and lake_hru_id = 0'
             basin_error = 1
@@ -319,7 +329,7 @@
           ENDIF
         ELSE
           Land_area = Land_area + harea_dble ! swale or land
-          IF ( Nlake>0 ) THEN
+          IF ( Numlakes>0 ) THEN
             IF ( Lake_hru_id(i)>0 .AND. Hru_type(i)/=2 ) THEN
               PRINT *, 'ERROR, HRU:', i, ' specifed to be a lake by lake_hru_id but hru_type not equal 2'
               basin_error = 1
@@ -380,9 +390,13 @@
       ENDIF
 
       Weir_gate_flag = 0
-! ????????? need to fix for lakes with multiple HRUs and PRMS lake routing ????????
-      IF ( Model==99 ) Numlake_hrus = Nlake
-      IF ( Nlake<1 .AND. Numlake_hrus>0 ) THEN
+      IF ( Lake_route_flag==1 ) THEN ! Lake_route_flag set to 0 for GSFLOW mode and if muskingum_lake and nlake > 0
+        DO i = 1, Numlakes
+          IF ( Lake_type(i)==4 .OR. Lake_type(i)==5 ) Weir_gate_flag = 1
+        ENDDO
+      ENDIF
+
+      IF ( Nlake==0 .AND. Numlake_hrus>0 ) THEN
         PRINT *, 'ERROR, dimension nlake=0 and number of specified lake HRUs equals', Numlake_hrus
         basin_error = 1
       ELSEIF ( Numlake_hrus/=Nlake ) THEN
@@ -390,25 +404,18 @@
         PRINT *, 'does not equal dimension nlake:', Nlake, ', number of lake HRUs:', Numlake_hrus
         basin_error = 1
       ENDIF
-      IF ( Nlake>0 ) THEN
+      IF ( Numlakes>0 ) THEN
         DO i = 1, Numlakes
           IF ( Lake_area(i)<DNEARZERO ) THEN
             PRINT *, 'ERROR, Lake:', i, ' has 0 area, thus no value of lake_hru_id is associated with the lake'
             basin_error = 1
           ENDIF
         ENDDO
-        IF ( GSFLOW_flag==0 ) THEN
-          IF ( Lake_route_flag==1 ) THEN
-            DO i = 1, Numlakes
-              IF ( Lake_type(i)==4 .OR. Lake_type(i)==5 ) Weir_gate_flag = 1
-            ENDDO
-          ENDIF
-          IF ( Numlakes_check/=Numlakes ) THEN
-            PRINT *, 'ERROR, number of lakes specified in lake_hru_id'
-            PRINT *, 'does not equal dimension numlakes:', Numlakes, ', number of lakes:', Numlakes_check
-            basin_error = 1
-          ENDIF
-        ENDIF
+      ENDIF
+      IF ( Numlakes_check/=Numlakes ) THEN
+        PRINT *, 'ERROR, number of lakes specified in lake_hru_id'
+        PRINT *, 'does not equal dimension numlakes:', Numlakes, ', number of lakes:', Numlakes_check
+        basin_error = 1
       ENDIF
       IF ( basin_error==1 ) STOP
 

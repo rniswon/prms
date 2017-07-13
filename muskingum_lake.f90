@@ -107,7 +107,8 @@
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Lake_seep_in(:), Lake_evap(:), Lake_2gw(:), Lake_outq2(:)
 !   Declared Parameters
       REAL, SAVE, ALLOCATABLE :: Segment_flow_init(:)
-      INTEGER, SAVE, ALLOCATABLE :: Obsout_lake(:), Lake_out2(:), Nsos(:), Ratetbl_lake(:), Segment_lake_id(:)
+      ! lake_segment_id only required if cascades are active, otherwise use hru_segment
+      INTEGER, SAVE, ALLOCATABLE :: Obsout_lake(:), Lake_out2(:), Nsos(:), Ratetbl_lake(:), Lake_segment_id(:)
       REAL, SAVE, ALLOCATABLE :: Lake_qro(:), Lake_coef(:), Elev_outflow(:), Weir_coef(:), Weir_len(:)
       REAL, SAVE, ALLOCATABLE :: Lake_out2_a(:), Lake_out2_b(:), O2(:, :), S2(:, :)
       REAL, SAVE, ALLOCATABLE :: Lake_din1(:), Lake_init(:), Lake_vol_init(:)
@@ -189,7 +190,7 @@
 !     muskingum_lake_decl - Declare parameters and variables and allocate arrays
 !   Declared Parameters
 !     tosegment, hru_segment, obsin_segment, K_coef, x_coef, segment_type
-!     lake_type, lake_init, lake_qro, lake_din1, lake_coef, o2, s2, nsos, hru_area, segment_lake_id
+!     lake_type, lake_init, lake_qro, lake_din1, lake_coef, o2, s2, nsos, hru_area, lake_segment_id
 !     tbl_stage, tbl_gate, lake_vol_init, rate_table, weir_coef, weir_len, elev_outflow, elevlake_init
 !     lake_out2, lake_out2_a, lake_out2_b
 !***********************************************************************
@@ -390,12 +391,12 @@
       ENDIF
 
 ! Declared Parameters
-      ALLOCATE ( Segment_lake_id(Nsegment) )
-      IF ( declparam(MODNAME, 'segment_lake_id', 'nsegment', 'integer', &
+      ALLOCATE ( Lake_segment_id(Nsegment) )
+      IF ( declparam(MODNAME, 'lake_segment_id', 'nsegment', 'integer', &
      &     '0', 'bounded', 'numlakes', &
-     &     'Index of lake for each segment', &
-     &     'Index of lake for each segment', &
-     &     'none')/=0 ) CALL read_error(1, 'segment_lake_id')
+     &     'Index of lake associated with a segment', &
+     &     'Index of lake associated with a segment', &
+     &     'none')/=0 ) CALL read_error(1, 'lake_segment_id')
 
       IF ( Init_vars_from_file==0 ) THEN
         ALLOCATE ( Lake_qro(Numlakes) )
@@ -693,11 +694,11 @@
         ENDIF
       ENDIF
 
-      IF ( getparam(MODNAME, 'segment_lake_id', Nsegment, 'integer', Segment_lake_id)/=0 ) CALL read_error(2, 'segment_lake_id')
+      IF ( getparam(MODNAME, 'lake_segment_id', Nsegment, 'integer', Lake_segment_id)/=0 ) CALL read_error(2, 'lake_segment_id')
       DO j = 1, Nsegment
-        IF ( Segment_lake_id(j)>0 .AND. Segment_type(j)/=2 ) THEN
+        IF ( Lake_segment_id(j)>0 .AND. Segment_type(j)/=2 ) THEN
           PRINT *, 'ERROR, segment_type not equal to 2 when the segment is associated with a lake'
-          PRINT *, '       segment:', j, ' lake:', Segment_lake_id(j)
+          PRINT *, '       segment:', j, ' lake:', Lake_segment_id(j)
           Inputerror_flag = 1
         ENDIF
       ENDDO
@@ -987,7 +988,7 @@
           IF ( imod==0 ) THEN
             Inflow_ts(iorder) = (Inflow_ts(iorder) / Ts(iorder))
             IF ( Segment_type(iorder)==2 ) THEN
-              lakeid = Segment_lake_id(iorder)
+              lakeid = Lake_segment_id(iorder)
               Lake_inflow(lakeid) = Lake_inflow(lakeid) + Currinsum(iorder)
 ! what about water use?
               CALL route_lake(lakeid, Lake_type(lakeid), Lake_area(lakeid))
