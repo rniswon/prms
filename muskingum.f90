@@ -133,7 +133,7 @@
 !***********************************************************************
       muskingum_decl = 0
 
-      Version_muskingum = 'muskingum.f90 2017-03-24 09:22:00Z'
+      Version_muskingum = 'muskingum.f90 2017-07-12 14:03:00Z'
       CALL print_module(Version_muskingum, 'Streamflow Routing          ', 90)
       MODNAME = 'muskingum'
 
@@ -163,6 +163,7 @@
       USE PRMS_SET_TIME, ONLY: Cfs_conv
       USE PRMS_ROUTING, ONLY: Basin_segment_storage
       IMPLICIT NONE
+! Functions
       EXTERNAL :: read_error
       INTEGER, EXTERNAL :: getparam
 ! Local Variables
@@ -362,11 +363,7 @@
         ELSEIF ( segtype==11 ) THEN
           Flow_to_great_lakes = Flow_to_great_lakes + segout
         ENDIF
-        IF ( Tosegment(i)==0 ) THEN
-          Flow_out = Flow_out + segout
-        ELSE
-          Seg_upstream_inflow(Tosegment(i)) = Seg_upstream_inflow(Tosegment(i)) + segout
-        ENDIF
+        IF ( Tosegment(i)==0 ) Flow_out = Flow_out + segout
         Segment_delta_flow(i) = Segment_delta_flow(i) + Seg_inflow(i) - segout
 !        IF ( Segment_delta_flow(i) < 0.0D0 ) PRINT *, 'negative delta flow', Segment_delta_flow(i)
         Basin_segment_storage = Basin_segment_storage + Segment_delta_flow(i)

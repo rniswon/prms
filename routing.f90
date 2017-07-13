@@ -65,7 +65,7 @@
 !***********************************************************************
       routingdecl = 0
 
-      Version_routing = 'routing.f90 2017-07-07 13:56:00Z'
+      Version_routing = 'routing.f90 2017-07-12 14:16:00Z'
       CALL print_module(Version_routing, 'Routing Initialization      ', 90)
       MODNAME = 'routing'
 
@@ -144,7 +144,7 @@
      &     ' streamflow flows, for segments that do not flow to another segment enter 0', &
      &     'none')/=0 ) CALL read_error(1, 'tosegment')
 
-      IF ( Cascade_flag==0 .OR. Model==999 ) THEN
+      IF ( Cascade_flag==0 .OR. Model==99 ) THEN
         ALLOCATE ( Hru_segment(Nhru) )
         IF ( declparam(MODNAME, 'hru_segment', 'nhru', 'integer', &
      &       '0', 'bounded', 'nsegment', &
@@ -187,7 +187,7 @@
      &       'decimal fraction')/=0 ) CALL read_error(1, 'x_coef')
       ENDIF
 
-      IF ( Cascade_flag==0 .OR. Model==999 ) THEN
+      IF ( Cascade_flag==0 .OR. Model==99 ) THEN
         ALLOCATE ( Seginc_potet(Nsegment) )
         IF ( declvar(MODNAME, 'seginc_potet', 'nsegment', Nsegment, 'double', &
      &       'Area-weighted average potential ET for each segment'// &
@@ -320,6 +320,7 @@
         ALLOCATE ( C1(Nsegment), C2(Nsegment), C0(Nsegment), Ts(Nsegment), Ts_i(Nsegment) )
       ENDIF
 
+! if cascades are active then ignore hru_segment
       Noarea_flag = 0
       IF ( Cascade_flag==0 ) THEN
         IF ( getparam(MODNAME, 'hru_segment', Nhru, 'integer', Hru_segment)/=0 ) CALL read_error(2, 'hru_segment')
@@ -552,6 +553,7 @@
 
       Cfs2acft = Timestep_seconds/FT2_PER_ACRE
 
+! seg variables are not computed if cascades are active as hru_segment is ignored
       IF ( Cascade_flag==0 ) THEN
         ! add hru_ppt, hru_actet
         Seginc_gwflow = 0.0D0

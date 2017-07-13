@@ -205,7 +205,7 @@
 !***********************************************************************
       muskingum_lake_decl = 0
 
-      Version_muskingum_lake = 'muskingum_lake.f90 2017-07-07 13:57:00Z'
+      Version_muskingum_lake = 'muskingum_lake.f90 2017-07-13 12:30:00Z'
       CALL print_module(Version_muskingum_lake, 'Streamflow Routing          ', 90)
       MODNAME = 'muskingum_lake'
 
@@ -616,7 +616,7 @@
      &    CFS2CMS_CONV, Lake_hru_id, Weir_gate_flag, Lake_type
       USE PRMS_FLOWVARS, ONLY: Seg_inflow, Seg_outflow, Basin_lake_stor
       USE PRMS_SET_TIME, ONLY: Cfs_conv
-      USE PRMS_ROUTING, ONLY: Basin_segment_storage
+      USE PRMS_ROUTING, ONLY: Basin_segment_storage, Segment_type
       IMPLICIT NONE
 ! Functions
       INTRINSIC ABS, NINT, DBLE, DABS
@@ -645,6 +645,29 @@
       ENDDO
       Basin_segment_storage = Basin_segment_storage*Basin_area_inv/Cfs_conv
 
+! Weir_gate_flag set in call_modules as needed in gwflow module
+      Puls_lin_flag = 0
+      Obs_flag = 0
+      Linear_flag = 0
+      Weir_flag = 0
+      Gate_flag = 0
+      Puls_flag = 0
+      DO i = 1, Numlakes
+        IF ( Lake_type(i)==1 .OR. Lake_type(i)==2 ) THEN
+          Puls_lin_flag = 1
+          IF ( Lake_type(i)==2 ) Linear_flag = 1
+          IF ( Lake_type(i)==1 ) Puls_flag = 1
+        ELSEIF ( Lake_type(i)==4 .OR. Lake_type(i)==5 ) THEN
+          IF ( Lake_type(i)==4 ) Weir_flag = 1
+          IF ( Lake_type(i)==5 ) Gate_flag = 1
+        ELSEIF ( Lake_type(i)==6 ) THEN
+          Obs_flag = 1
+        ELSEIF ( Lake_type(i)/=3 ) THEN
+          PRINT *, 'ERROR, invalid lake_type for lake:', i, Lake_type(i)
+          Inputerror_flag = 1
+        ENDIF
+      ENDDO
+
       IF ( Init_vars_from_file==0 ) THEN
         IF ( getparam(MODNAME, 'lake_qro', Numlakes, 'real', Lake_qro)/=0 ) CALL read_error(2, 'lake_qro')
         DO j = 1, Numlakes
@@ -671,6 +694,13 @@
       ENDIF
 
       IF ( getparam(MODNAME, 'segment_lake_id', Nsegment, 'integer', Segment_lake_id)/=0 ) CALL read_error(2, 'segment_lake_id')
+      DO j = 1, Nsegment
+        IF ( Segment_lake_id(j)>0 .AND. Segment_type(j)/=2 ) THEN
+          PRINT *, 'ERROR, segment_type not equal to 2 when the segment is associated with a lake'
+          PRINT *, '       segment:', j, ' lake:', Segment_lake_id(j)
+          Inputerror_flag = 1
+        ENDIF
+      ENDDO
 
       Secondoutflow_flag = 0
       IF ( Gate_flag==1 ) THEN
@@ -710,28 +740,6 @@
           ENDIF
         ENDIF
       ENDIF
-
-      Puls_lin_flag = 0
-      Obs_flag = 0
-      Linear_flag = 0
-      Weir_flag = 0
-      Gate_flag = 0
-      Puls_flag = 0
-      DO i = 1, Numlakes
-        IF ( Lake_type(i)==1 .OR. Lake_type(i)==2 ) THEN
-          Puls_lin_flag = 1
-          IF ( Lake_type(i)==2 ) Linear_flag = 1
-          IF ( Lake_type(i)==1 ) Puls_flag = 1
-        ELSEIF ( Lake_type(i)==4 .OR. Lake_type(i)==5 ) THEN
-          IF ( Lake_type(i)==4 ) Weir_flag = 1
-          IF ( Lake_type(i)==5 ) Gate_flag = 1
-        ELSEIF ( Lake_type(i)==6 ) THEN
-          Obs_flag = 1
-        ELSEIF ( Lake_type(i)/=3 ) THEN
-          PRINT *, 'ERROR, invalid lake_type for lake:', i, Lake_type(i)
-          Inputerror_flag = 1
-        ENDIF
-      ENDDO
 
       IF ( Puls_lin_flag==1 ) THEN
         IF ( Init_vars_from_file==0 ) THEN
@@ -909,55 +917,53 @@
       Inflow_ts = 0.0D0
       Currinsum = 0.0D0
 
-      IF ( Numlakes>0 ) THEN
-        IF ( Secondoutflow_flag==1 ) THEN
-          Basin_2ndstflow = 0.0D0
-          Lake_outq2 = 0.0D0
-        ENDIF
-        Basin_lake_stor = 0.0D0
-        Lake_inflow = 0.0D0
-        Lake_outflow = 0.0D0
-        Lake_stream_in = 0.0D0
-        Lake_precip = 0.0D0
-        IF ( Cascade_flag==1 ) THEN
-          Lake_lateral_inflow = 0.0D0
-          Lake_sroff = 0.0D0
-          Lake_interflow = 0.0D0
-        ENDIF
-        IF ( Weir_gate_flag==1 ) THEN
-          Lake_seep_in = 0.0D0
-          Lake_2gw = 0.0D0
-        ENDIF
-        Lake_evap = 0.0D0
-        ! shouldn't have snowpack, all precipitation should be added directly to lake
-        ! units of lake_inflow = cfs
-        DO jj = 1, Active_hrus
-          k = Hru_route_order(jj)
-          IF ( Hru_type(k)/=2 ) CYCLE
-          tocfs = Hru_area_dble(k)*Cfs_conv
-          lakeid = Lake_hru_id(k)
-          Lake_precip(lakeid) = Lake_precip(lakeid) + tocfs*DBLE(Hru_ppt(k))
-          IF ( Cascade_flag==1 ) THEN
-            Lake_sroff(lakeid) = Lake_sroff(lakeid) + tocfs*(Hortonian_lakes(k)+Upslope_dunnianflow(k))
-            Lake_interflow(lakeid) = Lake_interflow(lakeid) + tocfs*Upslope_interflow(k)
-          ENDIF
-          Lake_evap(lakeid) = Lake_evap(lakeid) + tocfs*Hru_actet(k)
-        ENDDO
-        DO lakeid = 1, Numlakes
-          Lake_inflow(lakeid) = Lake_precip(lakeid)
-          IF ( Cascade_flag==1 ) THEN
-            Lake_lateral_inflow(lakeid) = Lake_sroff(lakeid) + Lake_interflow(lakeid)
-            Lake_inflow(lakeid) = Lake_inflow(lakeid) + Lake_lateral_inflow(lakeid)
-          ENDIF
-          Lake_outflow(lakeid) = Lake_evap(lakeid)
-          IF ( Weir_gate_flag==1 ) THEN
-            Lake_seep_in(lakeid) = tocfs*Gw_seep_lakein(lakeid)
-            Lake_2gw(lakeid) = tocfs*Lake_seepage(lakeid)
-            Lake_inflow(lakeid) = Lake_inflow(lakeid) + Lake_seep_in(lakeid)
-            Lake_outflow(lakeid) = Lake_outflow(lakeid) + Lake_2gw(lakeid)
-          ENDIF
-        ENDDO
+      IF ( Secondoutflow_flag==1 ) THEN
+        Basin_2ndstflow = 0.0D0
+        Lake_outq2 = 0.0D0
       ENDIF
+      Basin_lake_stor = 0.0D0
+      Lake_inflow = 0.0D0
+      Lake_outflow = 0.0D0
+      Lake_stream_in = 0.0D0
+      Lake_precip = 0.0D0
+      IF ( Cascade_flag==1 ) THEN
+        Lake_lateral_inflow = 0.0D0
+        Lake_sroff = 0.0D0
+        Lake_interflow = 0.0D0
+      ENDIF
+      IF ( Weir_gate_flag==1 ) THEN
+        Lake_seep_in = 0.0D0
+        Lake_2gw = 0.0D0
+      ENDIF
+      Lake_evap = 0.0D0
+      ! shouldn't have snowpack, all precipitation should be added directly to lake
+      ! units of lake_inflow = cfs
+      DO jj = 1, Active_hrus
+        k = Hru_route_order(jj)
+        IF ( Hru_type(k)/=2 ) CYCLE
+        tocfs = Hru_area_dble(k)*Cfs_conv
+        lakeid = Lake_hru_id(k)
+        Lake_precip(lakeid) = Lake_precip(lakeid) + tocfs*DBLE(Hru_ppt(k))
+        IF ( Cascade_flag==1 ) THEN
+          Lake_sroff(lakeid) = Lake_sroff(lakeid) + tocfs*(Hortonian_lakes(k)+Upslope_dunnianflow(k))
+          Lake_interflow(lakeid) = Lake_interflow(lakeid) + tocfs*Upslope_interflow(k)
+        ENDIF
+        Lake_evap(lakeid) = Lake_evap(lakeid) + tocfs*Hru_actet(k)
+      ENDDO
+      DO lakeid = 1, Numlakes
+        Lake_inflow(lakeid) = Lake_precip(lakeid)
+        IF ( Cascade_flag==1 ) THEN
+          Lake_lateral_inflow(lakeid) = Lake_sroff(lakeid) + Lake_interflow(lakeid)
+          Lake_inflow(lakeid) = Lake_inflow(lakeid) + Lake_lateral_inflow(lakeid)
+        ENDIF
+        Lake_outflow(lakeid) = Lake_evap(lakeid)
+        IF ( Weir_gate_flag==1 ) THEN
+          Lake_seep_in(lakeid) = tocfs*Gw_seep_lakein(lakeid)
+          Lake_2gw(lakeid) = tocfs*Lake_seepage(lakeid)
+          Lake_inflow(lakeid) = Lake_inflow(lakeid) + Lake_seep_in(lakeid)
+          Lake_outflow(lakeid) = Lake_outflow(lakeid) + Lake_2gw(lakeid)
+        ENDIF
+      ENDDO
 
 ! 24 hourly timesteps per day
       DO j = 1, 24
@@ -1086,16 +1092,11 @@
         ELSEIF ( segtype==11 ) THEN
           Flow_to_great_lakes = Flow_to_great_lakes + segout
         ENDIF
-        IF ( Tosegment(iorder)==0 ) THEN
-          Flow_out = Flow_out + segout
-        ELSE
-          Seg_upstream_inflow(Tosegment(iorder)) = Seg_upstream_inflow(Tosegment(iorder)) + segout
-        ENDIF
+        IF ( Tosegment(i)==0 ) Flow_out = Flow_out + segout
         Segment_delta_flow(i) = Segment_delta_flow(i) + Seg_inflow(i) - segout
 !        IF ( Segment_delta_flow(i) < 0.0D0 ) PRINT *, 'negative delta flow', Segment_delta_flow(i)
         Basin_segment_storage = Basin_segment_storage + Segment_delta_flow(i)
       ENDDO
-
 
       area_fac = Cfs_conv/Basin_area_inv
       Basin_stflow_in = Basin_sroff + Basin_gwflow + Basin_ssflow ! not equal to basin_stflow_out if replacement flows
