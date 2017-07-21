@@ -206,7 +206,7 @@
 !***********************************************************************
       muskingum_lake_decl = 0
 
-      Version_muskingum_lake = 'muskingum_lake.f90 2017-07-13 12:30:00Z'
+      Version_muskingum_lake = 'muskingum_lake.f90 2017-07-21 11:30:00Z'
       CALL print_module(Version_muskingum_lake, 'Streamflow Routing          ', 90)
       MODNAME = 'muskingum_lake'
 
@@ -698,6 +698,11 @@
       DO j = 1, Nsegment
         IF ( Lake_segment_id(j)>0 .AND. Segment_type(j)/=2 ) THEN
           PRINT *, 'ERROR, segment_type not equal to 2 when the segment is associated with a lake'
+          PRINT *, '       segment:', j, ' lake:', Lake_segment_id(j)
+          Inputerror_flag = 1
+        ENDIF
+        IF ( Lake_segment_id(j)==0 .AND. Segment_type(j)==2 ) THEN
+          PRINT *, 'ERROR, segment_type equals 2 when the segment is not associated with a lake'
           PRINT *, '       segment:', j, ' lake:', Lake_segment_id(j)
           Inputerror_flag = 1
         ENDIF
