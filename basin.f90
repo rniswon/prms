@@ -67,7 +67,7 @@
       INTEGER FUNCTION basdecl()
       USE PRMS_BASIN
       USE PRMS_MODULE, ONLY: Model, Nhru, Dprst_flag, Lake_route_flag, &
-     &    Et_flag, Precip_flag, Numlakes, GSFLOW_flag, Stream_temp_flag
+     &    Et_flag, Precip_flag, Numlakes, GSFLOW_flag, Stream_temp_flag, Nlake
       IMPLICIT NONE
 ! Functions
       INTEGER, EXTERNAL :: declparam, declvar
@@ -75,7 +75,7 @@
 !***********************************************************************
       basdecl = 0
 
-      Version_basin = 'basin.f90 2017-07-13 10:22:00Z'
+      Version_basin = 'basin.f90 2017-07-25 12:24:00Z'
       CALL print_module(Version_basin, 'Basin Definition            ', 90)
       MODNAME = 'basin'
 
@@ -198,13 +198,14 @@
      &     'Winter vegetation cover density for the major vegetation type in each HRU', &
      &     'decimal fraction')/=0 ) CALL read_error(1, 'covden_win')
 
-      IF ( Numlakes>0 .OR. Model==99 ) THEN
+      IF ( Nlake>0 .OR. Model==99 ) THEN
+        IF ( Numlakes==0 ) STOP 'ERROR, nlake > 0 and numlakes = 0'
         ! Local array
         ALLOCATE ( Lake_area(Numlakes) ) ! lake area is for each lake, but, nlake is number of lake HRUs
         ! parameters
         ALLOCATE ( Lake_hru_id(Nhru) )
         IF ( declparam(MODNAME, 'lake_hru_id', 'nhru', 'integer', &
-     &       '0', 'bounded', 'numlakes', &
+     &       '1', 'bounded', 'numlakes', &
      &       'Identification number of the lake associated with an HRU', &
      &       'Identification number of the lake associated with an HRU;'// &
      &       ' more than one HRU can be associated with each lake', &
