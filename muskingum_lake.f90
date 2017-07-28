@@ -206,7 +206,7 @@
 !***********************************************************************
       muskingum_lake_decl = 0
 
-      Version_muskingum_lake = 'muskingum_lake.f90 2017-07-21 11:30:00Z'
+      Version_muskingum_lake = 'muskingum_lake.f90 2017-07-13 12:30:00Z'
       CALL print_module(Version_muskingum_lake, 'Streamflow Routing          ', 90)
       MODNAME = 'muskingum_lake'
 
@@ -1201,6 +1201,7 @@
 !   Compute using lake surface elevation and broad crested weir
         IF ( Laketype==4 ) THEN
           head = elevold - Elev_outflow(Lakeid)
+          IF ( head<0.0 ) head = 0.0
           q1 = (head**1.5) * Weir_coef(Lakeid) * Weir_len(Lakeid)
           lake_out1 = DBLE(q1)*Cfs2acft
 
@@ -1208,6 +1209,7 @@
           new_elevlake = elevold + SNGL( (diff_vol-lake_out1)/Lake_area )
 
           head2 = (new_elevlake+elevold)*0.5 - Elev_outflow(Lakeid)
+          IF ( head2<0.0 ) head2 = 0.0
           q3 = (head2**1.5) * Weir_coef(Lakeid) * Weir_len(Lakeid)
 
 !  Compute using a rating table of lake surface elevation & gate opening
