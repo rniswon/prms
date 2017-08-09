@@ -6,6 +6,9 @@
 ! going to stream segment associated with the lake, which would be a
 ! problem
 !
+! in future this module may be used for muskingum only, so would need to 
+! check lake_route_flag = 1 in a bunch of places
+!
 !   The Muskingum equation is described in 'Hydrology for Engineers', 3rd ed.
 !   by Linsley, R.K, Kohler, M.A., and Paulhus, J.L.H., 1982 p. 275 and in
 !   'Water in Environmental Planning' by Dunne, T., and Leopold, L.B. 1978
@@ -206,7 +209,7 @@
 !***********************************************************************
       muskingum_lake_decl = 0
 
-      Version_muskingum_lake = 'muskingum_lake.f90 2017-07-13 12:30:00Z'
+      Version_muskingum_lake = 'muskingum_lake.f90 2017-08-03 13:30:00Z'
       CALL print_module(Version_muskingum_lake, 'Streamflow Routing          ', 90)
       MODNAME = 'muskingum_lake'
 
@@ -392,11 +395,13 @@
 
 ! Declared Parameters
       ALLOCATE ( Lake_segment_id(Nsegment) )
-      IF ( declparam(MODNAME, 'lake_segment_id', 'nsegment', 'integer', &
-     &     '0', 'bounded', 'numlakes', &
-     &     'Index of lake associated with a segment', &
-     &     'Index of lake associated with a segment', &
-     &     'none')/=0 ) CALL read_error(1, 'lake_segment_id')
+      IF ( Cascade_flag==1 ) THEN
+        IF ( declparam(MODNAME, 'lake_segment_id', 'nsegment', 'integer', &
+     &       '0', 'bounded', 'numlakes', &
+     &       'Index of lake associated with a segment', &
+     &       'Index of lake associated with a segment', &
+     &       'none')/=0 ) CALL read_error(1, 'lake_segment_id')
+      ENDIF
 
       IF ( Init_vars_from_file==0 ) THEN
         ALLOCATE ( Lake_qro(Numlakes) )
@@ -613,11 +618,11 @@
       INTEGER FUNCTION muskingum_lake_init()
       USE PRMS_MUSKINGUM_LAKE
       USE PRMS_MODULE, ONLY: Nsegment, Inputerror_flag, Init_vars_from_file, Nratetbl, Nhru, Cascade_flag, Numlakes
-      USE PRMS_BASIN, ONLY: NEARZERO, Basin_area_inv, DNEARZERO, Gwr_type, &
+      USE PRMS_BASIN, ONLY: NEARZERO, Basin_area_inv, DNEARZERO, Active_hrus, Hru_route_order, Gwr_type, &
      &    CFS2CMS_CONV, Lake_hru_id, Weir_gate_flag, Lake_type
       USE PRMS_FLOWVARS, ONLY: Seg_inflow, Seg_outflow, Basin_lake_stor
       USE PRMS_SET_TIME, ONLY: Cfs_conv
-      USE PRMS_ROUTING, ONLY: Basin_segment_storage, Segment_type
+      USE PRMS_ROUTING, ONLY: Basin_segment_storage, Segment_type, Hru_segment
       IMPLICIT NONE
 ! Functions
       INTRINSIC ABS, NINT, DBLE, DABS
@@ -694,7 +699,19 @@
         ENDIF
       ENDIF
 
-      IF ( getparam(MODNAME, 'lake_segment_id', Nsegment, 'integer', Lake_segment_id)/=0 ) CALL read_error(2, 'lake_segment_id')
+      IF ( Cascade_flag==0 ) THEN ! when cascades are active, hru_segment is not used
+        Lake_segment_id = 0
+        DO jjj = 1, Active_hrus
+          j = Hru_route_order(jjj)
+          i = Hru_segment(j)
+          IF ( i>0 ) THEN
+            IF ( Segment_type(i)==2 ) Lake_segment_id(i) = Lake_hru_id(j)
+          ENDIF
+        ENDDO
+      ELSE
+        ! if cascades are active, must input new parameter lake_segment_id
+        IF ( getparam(MODNAME, 'lake_segment_id', Nsegment, 'integer', Lake_segment_id)/=0 ) CALL read_error(2, 'lake_segment_id')
+      ENDIF
       DO j = 1, Nsegment
         IF ( Lake_segment_id(j)>0 .AND. Segment_type(j)/=2 ) THEN
           PRINT *, 'ERROR, segment_type not equal to 2 when the segment is associated with a lake'
