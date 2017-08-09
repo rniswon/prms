@@ -75,7 +75,7 @@
 !***********************************************************************
       basdecl = 0
 
-      Version_basin = 'basin.f90 2017-08-03 13:52:00Z'
+      Version_basin = 'basin.f90 2017-08-09 11:52:00Z'
       CALL print_module(Version_basin, 'Basin Definition            ', 90)
       MODNAME = 'basin'
 
@@ -264,7 +264,7 @@
       Weir_gate_flag = 0
       Water_area = 0.0D0
       need_lakes = 0
-      IF ( Lake_route_flag==1 .OR. Have_lakes==1 ) need_lakes = 1
+      IF ( Numlakes>0 ) need_lakes = 1
       IF ( need_lakes==1 ) THEN
         IF ( getparam(MODNAME, 'lake_hru_id', Nhru, 'integer', Lake_hru_id)/=0 ) CALL read_error(1, 'lake_hru_id')
         Lake_area = 0.0D0
