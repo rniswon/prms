@@ -106,7 +106,7 @@
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Lake_outcfs(:), Lake_outcms(:), Lake_outvol(:), Lake_invol(:)
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Lake_vol(:), Lake_sto(:), Lake_inflow(:), Lake_outflow(:)
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Lake_stream_in(:), Lake_lateral_inflow(:)
-      DOUBLE PRECISION, SAVE, ALLOCATABLE :: Lake_precip(:), Lake_sroff(:), Lake_interflow(:)
+      DOUBLE PRECISION, SAVE, ALLOCATABLE :: Lake_precip(:), Lake_sroff(:), Lake_interflow(:), Lake_outvol_ts(:)
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Lake_seep_in(:), Lake_evap(:), Lake_2gw(:), Lake_outq2(:)
 !   Declared Parameters
       REAL, SAVE, ALLOCATABLE :: Segment_flow_init(:)
@@ -381,6 +381,11 @@
       IF ( declvar(MODNAME, 'lake_outvol', 'numlakes', Numlakes, 'double', &
      &     'Outflow from each lake using broad-crested weir or gate opening routing', &
      &     'acre-inches', Lake_outvol)/=0 ) CALL read_error(3, 'lake_outvol')
+
+      ALLOCATE ( Lake_outvol_ts(Numlakes) )
+      IF ( declvar(MODNAME, 'lake_outvol_ts', 'numlakes', Numlakes, 'double', &
+     &     'Outflow from each lake using broad-crested weir or gate opening routing for the time step', &
+     &     'acre-inches', Lake_outvol_ts)/=0 ) CALL read_error(3, 'lake_outvol_ts')
 
 ! Declared Variables for lakes with a second outlet and gate opening routing
       IF ( Nratetbl>0 .OR. Model==99 ) THEN
@@ -681,6 +686,7 @@
           Lake_outcms(j) = Lake_qro(j)*CFS2CMS_CONV
         ENDDO
         Lake_outvol = 0.0D0
+        Lake_outvol_ts = 0.0D0
         Lake_invol = 0.0D0
         Lake_precip = 0.0D0
         Lake_seep_in = 0.0D0
@@ -907,7 +913,7 @@
       EXTERNAL route_lake
 ! Local Variables
       INTEGER :: i, j, iorder, toseg, imod, tspd, segtype, lakeid, k, jj
-      DOUBLE PRECISION :: area_fac, segout, currin, tocfs
+      DOUBLE PRECISION :: area_fac, segout, currin, tocfs, lake_in_ts, lake_outflow_ts
 !***********************************************************************
       muskingum_lake_run = 0
 
@@ -1011,12 +1017,12 @@
             Inflow_ts(iorder) = (Inflow_ts(iorder) / Ts(iorder))
             IF ( Segment_type(iorder)==2 ) THEN
               lakeid = Lake_segment_id(iorder)
-              Lake_inflow(lakeid) = Lake_inflow(lakeid) + Currinsum(iorder)
+              lake_in_ts = Lake_inflow(lakeid)/Ts(iorder) + Inflow_ts(iorder)
 ! what about water use?
-              CALL route_lake(lakeid, Lake_type(lakeid), Lake_area(lakeid))
-              Lake_outcms(lakeid) = Lake_outcfs(lakeid)*CFS2CMS_CONV
-              Outflow_ts(iorder) = Lake_outcfs(lakeid) * 24.0
-              Lake_stream_in(lakeid) = Seg_upstream_inflow(iorder)
+              CALL route_lake(lakeid, Lake_type(lakeid), Lake_area(lakeid), lake_in_ts, lake_outflow_ts)
+              Outflow_ts(iorder) = lake_outflow_ts
+              Lake_outcfs(lakeid) = Lake_outcfs(lakeid) + lake_outflow_ts
+              Lake_stream_in(lakeid) = Lake_stream_in(lakeid) + Seg_upstream_inflow(iorder)
             ELSE
 ! Compute routed streamflow
               IF ( Ts_i(iorder)>0 ) THEN
@@ -1084,6 +1090,7 @@
       Flow_headwater = 0.0D0
       Flow_in_great_lakes = 0.0D0
       Flow_replacement = 0.0D0
+      ! add water balance check
       DO i = 1, Nsegment
         Seg_outflow(i) = Seg_outflow(i) * ONE_24TH
         segout = Seg_outflow(i)
@@ -1096,6 +1103,12 @@
           Flow_headwater = Flow_headwater + segout
         ELSEIF ( segtype==2 ) THEN
           Flow_to_lakes = Flow_to_lakes + segout
+          lakeid = Lake_segment_id(i)
+          Lake_stream_in(lakeid) = Lake_stream_in(lakeid) * ONE_24TH
+          Lake_outvol(lakeid) = Lake_outvol(lakeid) * ONE_24TH
+          Lake_outcfs(lakeid) = Lake_outcfs(lakeid) * ONE_24TH
+          Lake_outcms(lakeid) = Lake_outcfs(lakeid)*CFS2CMS_CONV
+          Basin_lake_stor = Basin_lake_stor + Lake_vol(Lakeid)*12.0D0
         ELSEIF ( segtype==3 ) THEN
           Flow_replacement = Flow_replacement + segout
         ELSEIF ( segtype==4 ) THEN
@@ -1138,11 +1151,10 @@
 !     ***********************************
 !     * Route Lake
 !     ***********************************
-      SUBROUTINE route_lake(Lakeid, Laketype, Lake_area)
+      SUBROUTINE route_lake(Lakeid, Laketype, Lake_area, Lake_in_ts, Lake_out_ts)
       USE PRMS_MUSKINGUM_LAKE
       USE PRMS_MODULE, ONLY: Nratetbl
       USE PRMS_OBS, ONLY: Gate_ht, Streamflow_cfs
-      USE PRMS_FLOWVARS, ONLY: Basin_lake_stor
       USE PRMS_ROUTING, ONLY: Cfs2acft
       USE PRMS_GWFLOW, ONLY: Elevlake
       IMPLICIT NONE
@@ -1151,12 +1163,13 @@
       EXTERNAL table_comp
 ! Arguments
       INTEGER, INTENT(IN) :: Lakeid, Laketype
-      DOUBLE PRECISION, INTENT(IN) :: Lake_area
+      DOUBLE PRECISION, INTENT(IN) :: Lake_area, Lake_in_ts
+      DOUBLE PRECISION, INTENT(INOUT) :: Lake_out_ts
 ! Local Variables
       INTEGER :: n, jjj, i
       REAL :: q1, q3, elevold, head, new_elevlake, head2, scnd_cfs1, scnd_cfs2
       DOUBLE PRECISION :: avin, s2o2, q2, lake_out, diff_vol, lake_out1
-      DOUBLE PRECISION :: xkt, coef2, lake_storage, lakeoutvol
+      DOUBLE PRECISION :: xkt, coef2, lake_storage
 !***********************************************************************
       ! q2 = lake out in cfs
       q2 = 0.0D0
@@ -1166,7 +1179,7 @@
       IF ( Laketype==1 ) THEN
         !rsr, why half of current in and last in???
         avin = (Lake_inflow(Lakeid)+Din1(Lakeid))*0.5D0
-        s2o2 = lake_storage - (Lake_outflow(Lakeid)+Lake_outcfs(Lakeid))*0.5D0
+        s2o2 = lake_storage - (Lake_outflow(Lakeid)+Lake_outcfs(Lakeid))*0.5D0 ! ???
         s2o2 = s2o2 + avin
         n = Nsos(Lakeid)
         DO jjj = 2, n
@@ -1180,7 +1193,7 @@
         lake_storage = s2o2 - q2*0.5D0
         Lake_sto(Lakeid) = lake_storage
 
-!   Compute outflow using linear reservoir method
+!   Compute outflow using linear reservoir method, ?? need to fix for hourly loop
       ELSEIF ( Laketype==2 ) THEN
         !rsr, why half of current in and last in???
         avin = (Lake_inflow(Lakeid)+Din1(Lakeid)-Lake_outflow(Lakeid))*0.5D0
@@ -1207,10 +1220,10 @@
         elevold = Elevlake(Lakeid)
 
         ! units lake_invol = acft
-        Lake_invol(Lakeid) = Lake_inflow(Lakeid)*Cfs2acft
+        Lake_invol(Lakeid) = Lake_in_ts * Cfs2acft
 
         ! units lake_out = acft
-        lake_out = (Lake_outflow(Lakeid)/12.0D0)*Lake_area
+        lake_out = Lake_outflow(Lakeid) * Cfs2acft
         diff_vol = Lake_invol(Lakeid) - lake_out
         q1 = 0.0
         q3 = 0.0
@@ -1294,25 +1307,24 @@
 !       !sanity check, rsr
         IF ( q2<0.0D0 ) PRINT *, 'q2<0', q2, ' lake:', Lakeid
 
-        lakeoutvol = q2*Cfs2acft + lake_out
-        IF ( Secondoutflow_flag==1 ) Lake_outvol = Lake_outvol + Lake_outq2(Lakeid)
+        Lake_out_ts = q2*Cfs2acft + lake_out
+        IF ( Secondoutflow_flag==1 ) Lake_out_ts = Lake_out_ts + Lake_outq2(Lakeid)
 
-        ! adjust lake storage
-        lake_storage = Lake_vol(Lakeid) + Lake_invol(Lakeid) - lakeoutvol
+        ! ??? in 1, 24 loop
+        ! adjust lake storage, think the real vol needs to be adjusted
+        Lake_vol(Lakeid) = Lake_vol(Lakeid) + Lake_invol(Lakeid) - Lake_out_ts
 
         ! adjust lake elevation with stream and lateral inflows
         ! and streamflow, any second outlet, GWR, and evaporation outflows
-        Elevlake(Lakeid) = Elevlake(Lakeid) + SNGL( (Lake_invol(Lakeid)-lakeoutvol)/Lake_area )
-        Basin_lake_stor = Basin_lake_stor + lake_storage*12.0D0
-        Lake_vol(Lakeid) = lake_storage
-        Lake_outvol(Lakeid) = lakeoutvol
+        Elevlake(Lakeid) = Elevlake(Lakeid) + SNGL( (Lake_invol(Lakeid)-Lake_out_ts)/Lake_area )
+        Lake_outvol_ts(Lakeid) = Lake_outvol_ts(Lakeid) + Lake_out_ts
       ENDIF
       IF ( lake_storage<0.0D0 ) THEN
         PRINT *, 'ERROR: lake storage < 0 lake:', Lakeid, '; storage:', lake_storage
         STOP
       ENDIF
 
-      Lake_outcfs(Lakeid) = q2
+      Lake_outcfs(Lakeid) = Lake_outcfs(Lakeid) + q2
 
       END SUBROUTINE route_lake
 

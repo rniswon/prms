@@ -429,12 +429,12 @@
               seepage = DBLE( (Elevlake(jjj)-Lake_seep_elev(jjj))*12.0*Gw_seep_coef(j) )
               IF ( seepage<0.0D0 ) THEN
                 IF ( DABS(seepage)>Gwres_stor(j) ) THEN
-                  PRINT *, 'WARNING, GWR storage insufficient for discharge to lake:', jjj, ' GWR:', j
-                  CALL print_date(1)
-                  PRINT *, 'GWR storage:', Gwres_stor(j), ', computed discharge:', seepage
-                  PRINT *, 'Discharge set to available GWR storage'
+!                  PRINT *, 'WARNING, GWR storage insufficient for discharge to lake:', jjj, ' GWR:', j
+!                  CALL print_date(1)
+!                  PRINT *, 'GWR storage:', Gwres_stor(j), ', computed discharge:', seepage
+!                  PRINT *, 'Discharge set to available GWR storage'
 !?? adjust lake storage and elevation
-                  PRINT *, 'Lake elevation, storage, and water balance not adjusted'
+!                  PRINT *, 'Lake elevation, storage, and water balance not adjusted'
                   seepage = -Gwres_stor(j)
                 ENDIF
                 Gw_seep_lakein(jjj) = Gw_seep_lakein(jjj) - seepage
