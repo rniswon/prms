@@ -13,7 +13,7 @@
       REAL, PARAMETER :: FEET2METERS = 0.3048
       REAL, PARAMETER :: METERS2FEET = 1.0/FEET2METERS
       CHARACTER(LEN=5), SAVE :: MODNAME
-      INTEGER, SAVE :: Numlake_hrus, Active_hrus, Active_gwrs, Numlakes_check
+      INTEGER, SAVE :: Active_hrus, Active_gwrs, Numlakes_check, Numlake_hrus
       INTEGER, SAVE :: Hemisphere, Dprst_clos_flag, Dprst_open_flag
       DOUBLE PRECISION, SAVE :: Land_area, Water_area
       DOUBLE PRECISION, SAVE :: Basin_area_inv, Basin_lat, Totarea, Active_area
@@ -74,7 +74,7 @@
 !***********************************************************************
       basdecl = 0
 
-      Version_basin = 'basin.f90 2017-07-11 11:22:00Z'
+      Version_basin = 'basin.f90 2017-08-16 09:15:00Z'
       CALL print_module(Version_basin, 'Basin Definition            ', 90)
       MODNAME = 'basin'
 
@@ -228,7 +228,7 @@
 !**********************************************************************
       INTEGER FUNCTION basinit()
       USE PRMS_BASIN
-      USE PRMS_MODULE, ONLY: Nhru, Nlake, Dprst_flag, Lake_route_flag, &
+      USE PRMS_MODULE, ONLY: Nhru, Nlake, Nlake_hrus, Dprst_flag, Lake_route_flag, &
      &    Print_debug, Model, PRMS_VERSION, Starttime, Endtime, Et_flag, Precip_flag
       IMPLICIT NONE
 ! Functions
@@ -401,11 +401,20 @@
       IF ( Nlake<1 .AND. Numlake_hrus>0 ) THEN
         PRINT *, 'ERROR, dimension nlake=0 and number of specified lake HRUs equals', Numlake_hrus
         basin_error = 1
-      ELSEIF ( Numlake_hrus/=Nlake ) THEN
-        PRINT *, 'ERROR, number of lake HRUs specified in hru_type'
-        PRINT *, 'does not equal dimension nlake:', Nlake, ', number of lake HRUs:', Numlake_hrus
-!        PRINT *, 'For PRMS lake routing each lake must be a single HRU'
-        basin_error = 1
+      ENDIF
+      IF ( Lake_route_flag==1 ) THEN
+        IF ( Numlake_hrus/=Nlake_hrus ) THEN
+          PRINT *, 'ERROR, number of lake HRUs specified in hru_type'
+          PRINT *, 'does not equal dimension nlake:', Nlake, ', number of lake HRUs:', Numlake_hrus
+          PRINT *, 'For PRMS lake routing each lake must be a single HRU'
+          basin_error = 1
+        ENDIF
+        IF ( Numlakes_check/=Nlake ) THEN
+          PRINT *, 'ERROR, number of lakes specified in lake_hru_id'
+          PRINT *, 'does not equal dimension nlake:', Nlake, ', number of lakes:', Numlakes_check
+          PRINT *, 'For PRMS lake routing each lake must be a single HRU'
+          basin_error = 1
+        ENDIF
       ENDIF
       IF ( Nlake>0 ) THEN
         DO i = 1, Numlakes_check
@@ -414,13 +423,6 @@
             basin_error = 1
           ENDIF
         ENDDO
-        IF ( Lake_route_flag==1 ) THEN
-          IF ( Numlakes_check/=Nlake ) THEN
-            PRINT *, 'ERROR, number of lakes specified in lake_hru_id'
-            PRINT *, 'does not equal dimension nlake:', Nlake, ', number of lakes:', Numlakes_check
-            basin_error = 1
-          ENDIF
-        ENDIF
       ENDIF
 
       IF ( basin_error==1 ) STOP
