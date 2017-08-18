@@ -232,7 +232,7 @@
       USE PRMS_BASIN
       USE PRMS_MODULE, ONLY: Nhru, Nlake, Dprst_flag, &
      &    Print_debug, Model, PRMS_VERSION, Starttime, Endtime, &
-     &    Lake_route_flag, Et_flag, Precip_flag, Prms_output_unit
+     &    Et_flag, Precip_flag, Prms_output_unit
       IMPLICIT NONE
 ! Functions
       INTEGER, EXTERNAL :: getparam
@@ -404,12 +404,12 @@
       ENDIF
 
       IF ( Nlake>0 ) THEN
-        IF ( Numlake_hrus/=Nlake ) THEN
-          PRINT *, 'ERROR, number of lake HRUs specified in hru_type'
-          PRINT *, 'does not equal dimension nlake:', Nlake, ', number of lake HRUs:', Numlake_hrus
-          PRINT *, 'For PRMS lake routing each lake must be a single HRU'
-          basinit = 1
-        ENDIF
+!        IF ( Numlake_hrus/=Nlake_hrus ) THEN
+!          PRINT *, 'ERROR, number of lake HRUs specified in hru_type'
+!          PRINT *, 'does not equal dimension nlake:', Nlake, ', number of lake HRUs:', Numlake_hrus
+!          PRINT *, 'For PRMS lake routing each lake must be a single HRU'
+!          basinit = 1
+!        ENDIF
         IF ( Numlakes_check/=Nlake ) THEN
           PRINT *, 'ERROR, number of lakes specified in lake_hru_id'
           PRINT *, 'does not equal dimension nlake:', Nlake, ', number of lakes:', Numlakes_check
