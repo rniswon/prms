@@ -220,6 +220,8 @@
      &       'Identification number of the lake associated with an HRU;'// &
      &       ' more than one HRU can be associated with each lake', &
      &       'none')/=0 ) CALL read_error(1, 'lake_hru_id')
+      ELSE
+        ALLOCATE ( Lake_area(1) )
       ENDIF
 
       END FUNCTION basdecl
