@@ -71,7 +71,7 @@
       INTEGER FUNCTION gwflowdecl()
       USE PRMS_GWFLOW
       USE PRMS_MODULE, ONLY: Nhru, Ngw, Model, Dprst_flag, &
-     &    Cascadegw_flag, Init_vars_from_file, Numlakes, Lake_route_flag
+     &    Cascadegw_flag, Init_vars_from_file, Nlake, Lake_route_flag
       IMPLICIT NONE
 ! Functions
       INTRINSIC INDEX
@@ -165,13 +165,13 @@
      &       'Basin area-weighted average of lake-bed seepage to GWRs', &
      &       'acre-inches', Basin_lake_seep)/=0 ) CALL read_error(3, 'basin_lake_seep')
 
-        ALLOCATE ( Lake_seepage(Numlakes) )
-        IF ( declvar(MODNAME, 'lake_seepage', 'numlakes', Numlakes, 'double', &
+        ALLOCATE ( Lake_seepage(Nlake) )
+        IF ( declvar(MODNAME, 'lake_seepage', 'nlake', Nlake, 'double', &
      &       'Lake-bed seepage from each lake to associated GWRs', &
      &       'inches', Lake_seepage)/=0 ) CALL read_error(3, 'lake_seepage')
 
-        ALLOCATE ( Gw_seep_lakein(Numlakes) )
-        IF ( declvar(MODNAME, 'gw_seep_lakein', 'numlakes', Numlakes, 'double', &
+        ALLOCATE ( Gw_seep_lakein(Nlake) )
+        IF ( declvar(MODNAME, 'gw_seep_lakein', 'nlake', Nlake, 'double', &
      &       'Groundwater discharge to any associated lake for each GWR', &
      &       'inches', Gw_seep_lakein)/=0 ) CALL read_error(3, 'gw_seep_lakein')
 
@@ -180,8 +180,8 @@
      &       'Net lake-bed seepage to associated GWRs', &
      &       'inches', Lake_seepage_gwr)/=0 ) CALL read_error(3, 'lake_seepage_gwr')
 
-        ALLOCATE ( Elevlake(Numlakes) )
-        IF ( declvar(MODNAME, 'elevlake', 'numlakes', Numlakes, 'real', &
+        ALLOCATE ( Elevlake(Nlake) )
+        IF ( declvar(MODNAME, 'elevlake', 'nlake', Nlake, 'real', &
      &       'Surface elevation of each lake', &
      &       'inches', Elevlake)/=0 ) CALL read_error(3, 'elevlake')
       ENDIF
@@ -210,8 +210,8 @@
      &     'fraction/day')/=0 ) CALL read_error(1, 'gwsink_coef')
 
       IF ( Lake_route_flag==1 .OR. Model==99 ) THEN
-        ALLOCATE ( Lake_seep_elev(Numlakes) )
-        IF ( declparam(MODNAME, 'lake_seep_elev', 'numlakes', 'real', &
+        ALLOCATE ( Lake_seep_elev(Nlake) )
+        IF ( declparam(MODNAME, 'lake_seep_elev', 'nlake', 'real', &
      &       '1.0', '-300.0', '10000.0', &
      &       'Elevation over which lakebed seepage to the GWR occurs', &
      &       'Elevation over which lakebed seepage to the GWR occurs for lake HRUs using broad-crested weir'// &
@@ -219,8 +219,8 @@
      &       'feet')/=0 ) CALL read_error(1, 'lake_seep_elev')
 
         IF ( Init_vars_from_file==0 ) THEN
-          ALLOCATE ( Elevlake_init(Numlakes) )
-          IF ( declparam(MODNAME, 'elevlake_init', 'numlakes', 'real', &
+          ALLOCATE ( Elevlake_init(Nlake) )
+          IF ( declparam(MODNAME, 'elevlake_init', 'nlake', 'real', &
      &         '1.0', '-300.0', '10000.0', &
      &         'Initial lake surface elevation', &
      &         'Initial lake surface elevation for each lake using broad-crested weir or gate opening routing', &
@@ -265,7 +265,7 @@
       INTEGER FUNCTION gwflowinit()
       USE PRMS_GWFLOW
       USE PRMS_MODULE, ONLY: Ngw, Dprst_flag, Print_debug, Inputerror_flag, &
-     &                       Cascadegw_flag, Init_vars_from_file, Numlakes, Gwr_swale_flag
+     &                       Cascadegw_flag, Init_vars_from_file, Nlake, Gwr_swale_flag
       USE PRMS_BASIN, ONLY: Gwr_type, Hru_area, Basin_area_inv, Active_gwrs, Gwr_route_order, &
      &                      Lake_hru_id, Weir_gate_flag
       USE PRMS_FLOWVARS, ONLY: Gwres_stor, Pkwater_equiv
@@ -336,9 +336,9 @@
 
       IF ( Weir_gate_flag==1 ) THEN
         IF ( getparam(MODNAME, 'gw_seep_coef', Ngw, 'real', Gw_seep_coef)/=0 ) CALL read_error(2, 'gw_seep_coef')
-        IF ( getparam(MODNAME, 'lake_seep_elev', Numlakes, 'real', Lake_seep_elev)/=0 ) CALL read_error(2, 'lake_seep_elev')
+        IF ( getparam(MODNAME, 'lake_seep_elev', Nlake, 'real', Lake_seep_elev)/=0 ) CALL read_error(2, 'lake_seep_elev')
         IF ( Init_vars_from_file==0 ) THEN
-          IF ( getparam(MODNAME, 'elevlake_init', Numlakes, 'real', Elevlake_init)/=0 ) CALL read_error(2, 'elevlake_init')
+          IF ( getparam(MODNAME, 'elevlake_init', Nlake, 'real', Elevlake_init)/=0 ) CALL read_error(2, 'elevlake_init')
           Elevlake = Elevlake_init
           Lake_seepage_gwr = 0.0D0
           Lake_seepage = 0.0D0
@@ -429,12 +429,12 @@
               seepage = DBLE( (Elevlake(jjj)-Lake_seep_elev(jjj))*12.0*Gw_seep_coef(j) )
               IF ( seepage<0.0D0 ) THEN
                 IF ( DABS(seepage)>Gwres_stor(j) ) THEN
-                  PRINT *, 'WARNING, GWR storage insufficient for discharge to lake:', jjj, ' GWR:', j
-                  CALL print_date(1)
-                  PRINT *, 'GWR storage:', Gwres_stor(j), ', computed discharge:', seepage
-                  PRINT *, 'Discharge set to available GWR storage'
+!                  PRINT *, 'WARNING, GWR storage insufficient for discharge to lake:', jjj, ' GWR:', j
+!                  CALL print_date(1)
+!                  PRINT *, 'GWR storage:', Gwres_stor(j), ', computed discharge:', seepage
+!                  PRINT *, 'Discharge set to available GWR storage'
 !?? adjust lake storage and elevation
-                  PRINT *, 'Lake elevation, storage, and water balance not adjusted'
+!                  PRINT *, 'Lake elevation, storage, and water balance not adjusted'
                   seepage = -Gwres_stor(j)
                 ENDIF
                 Gw_seep_lakein(jjj) = Gw_seep_lakein(jjj) - seepage

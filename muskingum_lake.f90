@@ -6,6 +6,9 @@
 ! going to stream segment associated with the lake, which would be a
 ! problem
 !
+! in future this module may be used for muskingum only, so would need to 
+! check lake_route_flag = 1 in a bunch of places
+!
 !   The Muskingum equation is described in 'Hydrology for Engineers', 3rd ed.
 !   by Linsley, R.K, Kohler, M.A., and Paulhus, J.L.H., 1982 p. 275 and in
 !   'Water in Environmental Planning' by Dunne, T., and Leopold, L.B. 1978
@@ -103,11 +106,12 @@
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Lake_outcfs(:), Lake_outcms(:), Lake_outvol(:), Lake_invol(:)
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Lake_vol(:), Lake_sto(:), Lake_inflow(:), Lake_outflow(:)
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Lake_stream_in(:), Lake_lateral_inflow(:)
-      DOUBLE PRECISION, SAVE, ALLOCATABLE :: Lake_precip(:), Lake_sroff(:), Lake_interflow(:)
+      DOUBLE PRECISION, SAVE, ALLOCATABLE :: Lake_precip(:), Lake_sroff(:), Lake_interflow(:), Lake_outvol_ts(:)
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Lake_seep_in(:), Lake_evap(:), Lake_2gw(:), Lake_outq2(:)
 !   Declared Parameters
       REAL, SAVE, ALLOCATABLE :: Segment_flow_init(:)
-      INTEGER, SAVE, ALLOCATABLE :: Obsout_lake(:), Lake_out2(:), Nsos(:), Ratetbl_lake(:), Segment_lake_id(:)
+      ! lake_segment_id only required if cascades are active, otherwise use hru_segment
+      INTEGER, SAVE, ALLOCATABLE :: Obsout_lake(:), Lake_out2(:), Nsos(:), Ratetbl_lake(:), Lake_segment_id(:)
       REAL, SAVE, ALLOCATABLE :: Lake_qro(:), Lake_coef(:), Elev_outflow(:), Weir_coef(:), Weir_len(:)
       REAL, SAVE, ALLOCATABLE :: Lake_out2_a(:), Lake_out2_b(:), O2(:, :), S2(:, :)
       REAL, SAVE, ALLOCATABLE :: Lake_din1(:), Lake_init(:), Lake_vol_init(:)
@@ -189,13 +193,13 @@
 !     muskingum_lake_decl - Declare parameters and variables and allocate arrays
 !   Declared Parameters
 !     tosegment, hru_segment, obsin_segment, K_coef, x_coef, segment_type
-!     lake_type, lake_init, lake_qro, lake_din1, lake_coef, o2, s2, nsos, hru_area, segment_lake_id
+!     lake_type, lake_init, lake_qro, lake_din1, lake_coef, o2, s2, nsos, hru_area, lake_segment_id
 !     tbl_stage, tbl_gate, lake_vol_init, rate_table, weir_coef, weir_len, elev_outflow, elevlake_init
 !     lake_out2, lake_out2_a, lake_out2_b
 !***********************************************************************
       INTEGER FUNCTION muskingum_lake_decl()
       USE PRMS_MUSKINGUM_LAKE
-      USE PRMS_MODULE, ONLY: Model, Nsegment, Init_vars_from_file, Nratetbl, Cascade_flag, Numlakes
+      USE PRMS_MODULE, ONLY: Model, Nsegment, Init_vars_from_file, Nratetbl, Cascade_flag, Nlake
       IMPLICIT NONE
 ! Functions
       INTEGER, EXTERNAL :: declparam, declvar, getdim
@@ -205,7 +209,7 @@
 !***********************************************************************
       muskingum_lake_decl = 0
 
-      Version_muskingum_lake = 'muskingum_lake.f90 2017-07-07 13:57:00Z'
+      Version_muskingum_lake = 'muskingum_lake.f90 2017-08-03 13:30:00Z'
       CALL print_module(Version_muskingum_lake, 'Streamflow Routing          ', 90)
       MODNAME = 'muskingum_lake'
 
@@ -214,7 +218,7 @@
       IF ( Mxnsos==-1 ) CALL read_error(1, 'mxnsos')
       IF ( Model==99 .AND. Mxnsos<1 ) Mxnsos = 1
 
-      IF ( Mxnsos>0 ) ALLOCATE ( Wvd(Mxnsos, Numlakes), S24(Mxnsos, Numlakes), C24(Mxnsos, Numlakes) )
+      IF ( Mxnsos>0 ) ALLOCATE ( Wvd(Mxnsos, Nlake), S24(Mxnsos, Nlake), C24(Mxnsos, Nlake) )
 
       Ngate = 0
       Nstage = 0
@@ -290,131 +294,138 @@
       ENDIF
 
       ! Lake declared variables
-      ALLOCATE ( Lake_inflow(Numlakes) )
-      IF ( declvar(MODNAME, 'lake_inflow', 'numlakes', Numlakes, 'double', &
+      ALLOCATE ( Lake_inflow(Nlake) )
+      IF ( declvar(MODNAME, 'lake_inflow', 'nlake', Nlake, 'double', &
      &     'Total inflow to each lake', &
      &     'cfs', Lake_inflow)/=0 ) CALL read_error(3, 'lake_inflow')
 
-      ALLOCATE ( Lake_outflow(Numlakes) )
-      IF ( declvar(MODNAME, 'lake_outflow', 'numlakes', Numlakes, 'double', &
+      ALLOCATE ( Lake_outflow(Nlake) )
+      IF ( declvar(MODNAME, 'lake_outflow', 'nlake', Nlake, 'double', &
      &     'Evaporation and seepage from each lake', &
      &     'cfs', Lake_outflow)/=0 ) CALL read_error(3, 'lake_outflow')
 
-      ALLOCATE ( Lake_outcfs(Numlakes) )
-      IF ( declvar(MODNAME, 'lake_outcfs', 'numlakes', Numlakes, 'double', &
+      ALLOCATE ( Lake_outcfs(Nlake) )
+      IF ( declvar(MODNAME, 'lake_outcfs', 'nlake', Nlake, 'double', &
      &     'Streamflow leaving each lake, includes any second outlet flow', &
      &     'cfs', Lake_outcfs)/=0 ) CALL read_error(3, 'lake_outcfs')
 
-      ALLOCATE ( Lake_outcms(Numlakes) )
-      IF ( declvar(MODNAME, 'lake_outcms', 'numlakes', Numlakes, 'double', &
+      ALLOCATE ( Lake_outcms(Nlake) )
+      IF ( declvar(MODNAME, 'lake_outcms', 'nlake', Nlake, 'double', &
      &     'Streamflow leaving each lake, includes any second outlet flow', &
      &     'cms', Lake_outcms)/=0 ) CALL read_error(3, 'lake_outcms')
 
 ! Declared Variables for Puls or linear routing
-      ALLOCATE ( Lake_sto(Numlakes) )
-      IF ( declvar(MODNAME, 'lake_sto', 'numlakes', Numlakes, 'double', &
+      ALLOCATE ( Lake_sto(Nlake) )
+      IF ( declvar(MODNAME, 'lake_sto', 'nlake', Nlake, 'double', &
      &     'Storage in each lake using Puls or linear storage routing', &
      &     'cfs-days', Lake_sto)/=0 ) CALL read_error(3, 'lake_sto')
 
-      ALLOCATE ( Din1(Numlakes) )
-      IF ( declvar(MODNAME, 'din1', 'numlakes', Numlakes, 'double', &
+      ALLOCATE ( Din1(Nlake) )
+      IF ( declvar(MODNAME, 'din1', 'nlake', Nlake, 'double', &
      &     'Inflow from the previous time step to each lake using Puls or linear storage routing', &
      &     'cfs', Din1)/=0 ) CALL read_error(3, 'din1')
 
-      ALLOCATE ( Lake_stream_in(Numlakes) )
-      IF ( declvar(MODNAME, 'lake_stream_in', 'numlakes', Numlakes, 'double', &
+      ALLOCATE ( Lake_stream_in(Nlake) )
+      IF ( declvar(MODNAME, 'lake_stream_in', 'nlake', Nlake, 'double', &
      &     'Total streamflow into each lake', &
      &     'cfs', Lake_stream_in)/=0 ) CALL read_error(3, 'lake_stream_in')
 
-      ALLOCATE ( Lake_precip(Numlakes) )
-      IF ( declvar(MODNAME, 'lake_precip', 'numlakes', Numlakes, 'double', &
+      ALLOCATE ( Lake_precip(Nlake) )
+      IF ( declvar(MODNAME, 'lake_precip', 'nlake', Nlake, 'double', &
      &     'Total precipitation into each lake', &
      &     'cfs', Lake_precip)/=0 ) CALL read_error(3, 'lake_precip')
 
       IF ( Cascade_flag==1 .OR. Model==99 ) THEN
-        ALLOCATE ( Lake_lateral_inflow(Numlakes) )
-        IF ( declvar(MODNAME, 'lake_lateral_inflow', 'numlakes', Numlakes, 'double', &
+        ALLOCATE ( Lake_lateral_inflow(Nlake) )
+        IF ( declvar(MODNAME, 'lake_lateral_inflow', 'nlake', Nlake, 'double', &
      &       'Lateral inflow to each lake', &
      &       'cfs', Lake_lateral_inflow)/=0 ) CALL read_error(3, 'lake_lateral_inflow')
-        ALLOCATE ( Lake_sroff(Numlakes) )
-        IF ( declvar(MODNAME, 'lake_sroff', 'numlakes', Numlakes, 'double', &
+        ALLOCATE ( Lake_sroff(Nlake) )
+        IF ( declvar(MODNAME, 'lake_sroff', 'nlake', Nlake, 'double', &
      &       'Total surface runoff into each lake', &
      &       'cfs', Lake_sroff)/=0 ) CALL read_error(3, 'lake_sroff')
-        ALLOCATE ( Lake_interflow(Numlakes) )
-        IF ( declvar(MODNAME, 'lake_interflow', 'numlakes', Numlakes,'double', &
+        ALLOCATE ( Lake_interflow(Nlake) )
+        IF ( declvar(MODNAME, 'lake_interflow', 'nlake', Nlake,'double', &
      &       'Total interflow into each lake', &
      &       'cfs', Lake_interflow)/=0 ) CALL read_error(3, 'lake_interflow')
       ENDIF
 
-      ALLOCATE ( Lake_evap(Numlakes) )
-      IF ( declvar(MODNAME, 'lake_evap', 'numlakes', Numlakes, 'double', &
+      ALLOCATE ( Lake_evap(Nlake) )
+      IF ( declvar(MODNAME, 'lake_evap', 'nlake', Nlake, 'double', &
      &     'Total evaporation from each lake', &
      &     'cfs', Lake_evap)/=0 ) CALL read_error(3, 'lake_evap')
 
 ! Declared Variables for broad-crested weir or gate opening routing
-      ALLOCATE ( Lake_2gw(Numlakes) )
-      IF ( declvar(MODNAME, 'lake_2gw', 'numlakes', Numlakes, 'double', &
+      ALLOCATE ( Lake_2gw(Nlake) )
+      IF ( declvar(MODNAME, 'lake_2gw', 'nlake', Nlake, 'double', &
      &     'Total seepage from each lake using broad-crested weir or gate opening routing', &
      &     'cfs', Lake_2gw)/=0 ) CALL read_error(3, 'lake_2gw')
 
-      ALLOCATE ( Lake_seep_in(Numlakes) )
-      IF ( declvar(MODNAME, 'lake_seep_in', 'numlakes', Numlakes, 'double', &
+      ALLOCATE ( Lake_seep_in(Nlake) )
+      IF ( declvar(MODNAME, 'lake_seep_in', 'nlake', Nlake, 'double', &
      &     'Total seepage into each lake using broad-crested weir or gate opening routing', &
      &     'cfs', Lake_seep_in)/=0 ) CALL read_error(3, 'lake_seep_in')
 
-      ALLOCATE ( Lake_vol(Numlakes) )
-      IF ( declvar(MODNAME, 'lake_vol', 'numlakes', Numlakes, 'double', &
+      ALLOCATE ( Lake_vol(Nlake) )
+      IF ( declvar(MODNAME, 'lake_vol', 'nlake', Nlake, 'double', &
      &     'Storage in each lake using broad-crested weir or gate opening routing', &
      &     'acre-feet', Lake_vol)/=0 ) CALL read_error(3, 'lake_vol')
 
-      ALLOCATE ( Lake_invol(Numlakes) )
-      IF ( declvar(MODNAME, 'lake_invol', 'numlakes', Numlakes, 'double', &
+      ALLOCATE ( Lake_invol(Nlake) )
+      IF ( declvar(MODNAME, 'lake_invol', 'nlake', Nlake, 'double', &
      &     'Inflow to each lake using broad-crested weir or gate opening routing', &
      &     'acre-feet', Lake_invol)/=0 ) CALL read_error(3, 'lake_invol')
 
 ! Declared Variables for gate opening routing
-      ALLOCATE ( Lake_outvol(Numlakes) )
-      IF ( declvar(MODNAME, 'lake_outvol', 'numlakes', Numlakes, 'double', &
+      ALLOCATE ( Lake_outvol(Nlake) )
+      IF ( declvar(MODNAME, 'lake_outvol', 'nlake', Nlake, 'double', &
      &     'Outflow from each lake using broad-crested weir or gate opening routing', &
      &     'acre-inches', Lake_outvol)/=0 ) CALL read_error(3, 'lake_outvol')
+
+      ALLOCATE ( Lake_outvol_ts(Nlake) )
+      IF ( declvar(MODNAME, 'lake_outvol_ts', 'nlake', Nlake, 'double', &
+     &     'Outflow from each lake using broad-crested weir or gate opening routing for the time step', &
+     &     'acre-inches', Lake_outvol_ts)/=0 ) CALL read_error(3, 'lake_outvol_ts')
 
 ! Declared Variables for lakes with a second outlet and gate opening routing
       IF ( Nratetbl>0 .OR. Model==99 ) THEN
         IF ( declvar(MODNAME, 'basin_2ndstflow', 'one', 1, 'double', &
      &       'Basin volume-weighted average streamflow from each lake with a second outlet', &
      &       'inches', Basin_2ndstflow)/=0 ) CALL read_error(3, 'basin_2ndstflow')
-        ALLOCATE ( Lake_outq2(Numlakes) )
-        IF ( declvar(MODNAME, 'lake_outq2', 'numlakes', Numlakes, 'double', &
+        ALLOCATE ( Lake_outq2(Nlake) )
+        IF ( declvar(MODNAME, 'lake_outq2', 'nlake', Nlake, 'double', &
      &       'Streamflow from second outlet for each lake with a second outlet', &
      &       'cfs', Lake_outq2)/=0 ) CALL read_error(3, 'lake_outq2')
       ENDIF
 
 ! Declared Parameters
-      ALLOCATE ( Segment_lake_id(Nsegment) )
-      IF ( declparam(MODNAME, 'segment_lake_id', 'nsegment', 'integer', &
-     &     '0', 'bounded', 'numlakes', &
-     &     'Index of lake for each segment', &
-     &     'Index of lake for each segment', &
-     &     'none')/=0 ) CALL read_error(1, 'segment_lake_id')
+      ALLOCATE ( Lake_segment_id(Nsegment) )
+      IF ( Cascade_flag==1 ) THEN
+        IF ( declparam(MODNAME, 'lake_segment_id', 'nsegment', 'integer', &
+     &       '0', 'bounded', 'nlake', &
+     &       'Index of lake associated with a segment', &
+     &       'Index of lake associated with a segment', &
+     &       'none')/=0 ) CALL read_error(1, 'lake_segment_id')
+      ENDIF
 
       IF ( Init_vars_from_file==0 ) THEN
-        ALLOCATE ( Lake_qro(Numlakes) )
-        IF ( declparam(MODNAME, 'lake_qro', 'numlakes', 'real', &
+        ALLOCATE ( Lake_qro(Nlake) )
+        IF ( declparam(MODNAME, 'lake_qro', 'nlake', 'real', &
      &       '0.1', '0.0', '1.0E7', &
      &       'Initial daily mean outflow from each lake', &
      &       'Initial daily mean outflow from each lake', &
      &       'cfs')/=0 ) CALL read_error(1, 'lake_qro')
 
 ! Declared Parameters for Puls or linear routing
-        ALLOCATE ( Lake_init(Numlakes) )
-        IF ( declparam(MODNAME, 'lake_init', 'numlakes', 'real', &
+        ALLOCATE ( Lake_init(Nlake) )
+        IF ( declparam(MODNAME, 'lake_init', 'nlake', 'real', &
      &       '0.0', '0.0', '1.0E7', &
      &       'Initial storage in each lake', &
      &       'Initial storage in each lake using Puls or linear storage routing', &
      &       'cfs-days')/=0 ) CALL read_error(1, 'lake_init')
 
-        ALLOCATE ( Lake_din1(Numlakes) )
-        IF ( declparam(MODNAME, 'lake_din1', 'numlakes', 'real', &
+        ALLOCATE ( Lake_din1(Nlake) )
+        IF ( declparam(MODNAME, 'lake_din1', 'nlake', 'real', &
      &       '0.1', '0.0', '1.0E7', &
      &       'Initial inflow to each lake', &
      &       'Initial inflow to each lake using Puls or linear storage routing', &
@@ -422,8 +433,8 @@
       ENDIF
 
 ! Declared Parameters for linear routing
-      ALLOCATE ( Lake_coef(Numlakes) )
-      IF ( declparam(MODNAME, 'lake_coef', 'numlakes', 'real', &
+      ALLOCATE ( Lake_coef(Nlake) )
+      IF ( declparam(MODNAME, 'lake_coef', 'nlake', 'real', &
      &     '0.1', '0.0001', '1.0', &
      &     'Linear lake routing coefficient', &
      &     'Coefficient in equation to route storage to streamflow for each lake using linear routing', &
@@ -431,22 +442,22 @@
 
 ! Declared Parameters for Puls routing
       IF ( Mxnsos>0 ) THEN
-        ALLOCATE ( O2(Mxnsos, Numlakes) )
-        IF ( declparam(MODNAME, 'o2', 'mxnsos,numlakes', 'real', &
+        ALLOCATE ( O2(Mxnsos, Nlake) )
+        IF ( declparam(MODNAME, 'o2', 'mxnsos,nlake', 'real', &
      &       '0.0', '0.0', '1.0E7', &
      &       'Outflow values in outflow/storage tables for Puls routing', &
      &       'Outflow values in outflow/storage tables for each lake using Puls routing', &
      &       'cfs')/=0 ) CALL read_error(1, 'o2')
 
-        ALLOCATE ( S2(Mxnsos, Numlakes) )
-        IF ( declparam(MODNAME, 's2', 'mxnsos,numlakes', 'real', &
+        ALLOCATE ( S2(Mxnsos, Nlake) )
+        IF ( declparam(MODNAME, 's2', 'mxnsos,nlake', 'real', &
      &       '0.0', '0.0', '1.0E7', &
      &       'Storage values in outflow/storage tables for Puls routing', &
      &       'Storage values in outflow/storage table for each lake using Puls routing', &
      &       'cfs-days')/=0 ) CALL read_error(1, 's2')
 
-        ALLOCATE ( Nsos(Numlakes) )
-        IF ( declparam(MODNAME, 'nsos', 'numlakes', 'integer', &
+        ALLOCATE ( Nsos(Nlake) )
+        IF ( declparam(MODNAME, 'nsos', 'nlake', 'integer', &
      &       '0', 'bounded', 'mxnsos', &
      &       'Number of storage/outflow values in table for Puls routing', &
      &       'Number of storage/outflow values in table for each lake using Puls routing', &
@@ -455,8 +466,8 @@
 
 ! Declared Parameters for broad-crested weir or gate opening routing
       IF ( Init_vars_from_file==0 .OR. Model==99 ) THEN
-        ALLOCATE ( Lake_vol_init(Numlakes) )
-        IF ( declparam(MODNAME, 'lake_vol_init', 'numlakes', 'real', &
+        ALLOCATE ( Lake_vol_init(Nlake) )
+        IF ( declparam(MODNAME, 'lake_vol_init', 'nlake', 'real', &
      &       '0.0', '0.0', '1.0E7', &
      &       'Initial lake volume', &
      &       'Initial lake volume for each lake using broad-crested weir or gate opening routing', &
@@ -464,22 +475,22 @@
       ENDIF
 
 ! Declared Parameters for broad-crested weir routing
-      ALLOCATE ( Weir_coef(Numlakes) )
-      IF ( declparam(MODNAME, 'weir_coef', 'numlakes', 'real', &
+      ALLOCATE ( Weir_coef(Nlake) )
+      IF ( declparam(MODNAME, 'weir_coef', 'nlake', 'real', &
      &     '2.7', '2.0', '3.0', &
      &     'Broad-crested weir coefficent', &
      &     'Coefficient for lakes using broad-crested weir routing', &
      &     'none')/=0 ) CALL read_error(1, 'weir_coef')
 
-      ALLOCATE ( Weir_len(Numlakes) )
-      IF ( declparam(MODNAME, 'weir_len', 'numlakes', 'real', &
+      ALLOCATE ( Weir_len(Nlake) )
+      IF ( declparam(MODNAME, 'weir_len', 'nlake', 'real', &
      &     '5.0', '1.0', '1000.0', &
      &     'Broad-crested weir length', &
      &     'Weir length for lakes using broad-crested weir routing', &
      &     'feet')/=0 ) CALL read_error(1, 'weir_len')
 
-      ALLOCATE ( Elev_outflow(Numlakes) )
-      IF ( declparam(MODNAME, 'elev_outflow', 'numlakes', 'real', &
+      ALLOCATE ( Elev_outflow(Nlake) )
+      IF ( declparam(MODNAME, 'elev_outflow', 'nlake', 'real', &
      &     '0.0', '-300.0', '10000.0', &
      &     'Elevation of the main outflow point', &
      &     'Elevation of the main outflow point for each lake using broad-crested weir routing', &
@@ -489,7 +500,7 @@
       IF ( Nratetbl>0 ) THEN
         ALLOCATE ( Ratetbl_lake(Nratetbl), Rate_table(Nstage,Ngate), Tbl_stage(Nstage), Tbl_gate(Ngate) )
         IF ( declparam(MODNAME, 'ratetbl_lake', 'nratetbl', 'integer', &
-     &       '0', 'bounded', 'numlakes', &
+     &       '0', 'bounded', 'nlake', &
      &       'Index of lake associated with each rating table', &
      &       'Index of lake associated with each rating table for'// &
      &       ' each lake using gate opening routing', &
@@ -573,8 +584,8 @@
       ENDIF
 
 ! Declared Parameters for lakes with lake outflow set to measured streamflow
-      ALLOCATE ( Obsout_lake(Numlakes) )
-      IF ( declparam(MODNAME, 'obsout_lake', 'numlakes', 'integer', &
+      ALLOCATE ( Obsout_lake(Nlake) )
+      IF ( declparam(MODNAME, 'obsout_lake', 'nlake', 'integer', &
      &     '0', 'bounded', 'nobs', &
      &     'Index of streamflow measurement station that specifies outflow from a lake', &
      &     'Index of streamflow measurement station that specifies outflow from each lake using measured flow replacement', &
@@ -582,22 +593,22 @@
 
       IF ( Nratetbl>0 ) THEN
 ! Declared Parameters for lakes with a second outlet and gate opening routing
-        ALLOCATE ( Lake_out2(Numlakes) )
-        IF ( declparam(MODNAME, 'lake_out2', 'numlakes', 'integer', &
+        ALLOCATE ( Lake_out2(Nlake) )
+        IF ( declparam(MODNAME, 'lake_out2', 'nlake', 'integer', &
      &       '0', '0', '1', &
      &       'Switch to specify a second outlet from a lake', &
      &       'Switch to specify a second outlet from each lake using gate opening routing (0=no; 1=yes)', &
      &       'none')/=0 ) CALL read_error(1, 'lake_out2')
 
-        ALLOCATE ( Lake_out2_a(Numlakes) )
-        IF ( declparam(MODNAME, 'lake_out2_a', 'numlakes', 'real', &
+        ALLOCATE ( Lake_out2_a(Nlake) )
+        IF ( declparam(MODNAME, 'lake_out2_a', 'nlake', 'real', &
      &       '1.0', '0.0', '10000.0', &
      &       'Outflow coefficient A for each lake with second outlet', &
      &       'Coefficient A in outflow equation for each lake with a second outlet using gate opening routing', &
      &       'cfs/ft')/=0 ) CALL read_error(1, 'lake_out2_a')
 
-        ALLOCATE ( Lake_out2_b(Numlakes) )
-        IF ( declparam(MODNAME, 'lake_out2_b', 'numlakes', 'real', &
+        ALLOCATE ( Lake_out2_b(Nlake) )
+        IF ( declparam(MODNAME, 'lake_out2_b', 'nlake', 'real', &
      &       '100.0', '0.0', '10000.0', &
      &       'Outflow coefficient A for each lake with second outlet', &
      &       'Coefficient B in outflow equation for each lake with a second outlet using gate opening routing', &
@@ -611,12 +622,12 @@
 !***********************************************************************
       INTEGER FUNCTION muskingum_lake_init()
       USE PRMS_MUSKINGUM_LAKE
-      USE PRMS_MODULE, ONLY: Nsegment, Inputerror_flag, Init_vars_from_file, Nratetbl, Nhru, Cascade_flag, Numlakes
-      USE PRMS_BASIN, ONLY: NEARZERO, Basin_area_inv, DNEARZERO, Gwr_type, &
+      USE PRMS_MODULE, ONLY: Nsegment, Inputerror_flag, Init_vars_from_file, Nratetbl, Nhru, Cascade_flag, Nlake
+      USE PRMS_BASIN, ONLY: NEARZERO, Basin_area_inv, DNEARZERO, Active_hrus, Hru_route_order, Gwr_type, &
      &    CFS2CMS_CONV, Lake_hru_id, Weir_gate_flag, Lake_type
       USE PRMS_FLOWVARS, ONLY: Seg_inflow, Seg_outflow, Basin_lake_stor
       USE PRMS_SET_TIME, ONLY: Cfs_conv
-      USE PRMS_ROUTING, ONLY: Basin_segment_storage
+      USE PRMS_ROUTING, ONLY: Basin_segment_storage, Segment_type, Hru_segment
       IMPLICIT NONE
 ! Functions
       INTRINSIC ABS, NINT, DBLE, DABS
@@ -645,13 +656,37 @@
       ENDDO
       Basin_segment_storage = Basin_segment_storage*Basin_area_inv/Cfs_conv
 
+! Weir_gate_flag set in call_modules as needed in gwflow module
+      Puls_lin_flag = 0
+      Obs_flag = 0
+      Linear_flag = 0
+      Weir_flag = 0
+      Gate_flag = 0
+      Puls_flag = 0
+      DO i = 1, Nlake
+        IF ( Lake_type(i)==1 .OR. Lake_type(i)==2 ) THEN
+          Puls_lin_flag = 1
+          IF ( Lake_type(i)==2 ) Linear_flag = 1
+          IF ( Lake_type(i)==1 ) Puls_flag = 1
+        ELSEIF ( Lake_type(i)==4 .OR. Lake_type(i)==5 ) THEN
+          IF ( Lake_type(i)==4 ) Weir_flag = 1
+          IF ( Lake_type(i)==5 ) Gate_flag = 1
+        ELSEIF ( Lake_type(i)==6 ) THEN
+          Obs_flag = 1
+        ELSEIF ( Lake_type(i)/=3 ) THEN
+          PRINT *, 'ERROR, invalid lake_type for lake:', i, Lake_type(i)
+          Inputerror_flag = 1
+        ENDIF
+      ENDDO
+
       IF ( Init_vars_from_file==0 ) THEN
-        IF ( getparam(MODNAME, 'lake_qro', Numlakes, 'real', Lake_qro)/=0 ) CALL read_error(2, 'lake_qro')
-        DO j = 1, Numlakes
+        IF ( getparam(MODNAME, 'lake_qro', Nlake, 'real', Lake_qro)/=0 ) CALL read_error(2, 'lake_qro')
+        DO j = 1, Nlake
           Lake_outcfs(j) = Lake_qro(j)
           Lake_outcms(j) = Lake_qro(j)*CFS2CMS_CONV
         ENDDO
         Lake_outvol = 0.0D0
+        Lake_outvol_ts = 0.0D0
         Lake_invol = 0.0D0
         Lake_precip = 0.0D0
         Lake_seep_in = 0.0D0
@@ -670,7 +705,31 @@
         ENDIF
       ENDIF
 
-      IF ( getparam(MODNAME, 'segment_lake_id', Nsegment, 'integer', Segment_lake_id)/=0 ) CALL read_error(2, 'segment_lake_id')
+      IF ( Cascade_flag==0 ) THEN ! when cascades are active, hru_segment is not used
+        Lake_segment_id = 0
+        DO jjj = 1, Active_hrus
+          j = Hru_route_order(jjj)
+          i = Hru_segment(j)
+          IF ( i>0 ) THEN
+            IF ( Segment_type(i)==2 ) Lake_segment_id(i) = Lake_hru_id(j)
+          ENDIF
+        ENDDO
+      ELSE
+        ! if cascades are active, must input new parameter lake_segment_id
+        IF ( getparam(MODNAME, 'lake_segment_id', Nsegment, 'integer', Lake_segment_id)/=0 ) CALL read_error(2, 'lake_segment_id')
+      ENDIF
+      DO j = 1, Nsegment
+        IF ( Lake_segment_id(j)>0 .AND. Segment_type(j)/=2 ) THEN
+          PRINT *, 'ERROR, segment_type not equal to 2 when the segment is associated with a lake'
+          PRINT *, '       segment:', j, ' lake:', Lake_segment_id(j)
+          Inputerror_flag = 1
+        ENDIF
+        IF ( Lake_segment_id(j)==0 .AND. Segment_type(j)==2 ) THEN
+          PRINT *, 'ERROR, segment_type equals 2 when the segment is not associated with a lake'
+          PRINT *, '       segment:', j, ' lake:', Lake_segment_id(j)
+          Inputerror_flag = 1
+        ENDIF
+      ENDDO
 
       Secondoutflow_flag = 0
       IF ( Gate_flag==1 ) THEN
@@ -680,13 +739,13 @@
         IF ( getparam(MODNAME, 'tbl_gate', Ngate, 'real', Tbl_gate)/=0 ) CALL read_error(2, 'tbl_gate')
         IF ( getparam(MODNAME, 'ratetbl_lake', Nratetbl, 'integer', Ratetbl_lake)/=0 ) CALL read_error(2, 'ratetbl_lake')
         IF ( Gate_flag==1 ) THEN
-          IF ( getparam(MODNAME, 'lake_out2', Numlakes, 'integer', Lake_out2)/=0  ) CALL read_error(2, 'lake_out2')
-          DO j = 1, Numlakes
+          IF ( getparam(MODNAME, 'lake_out2', Nlake, 'integer', Lake_out2)/=0  ) CALL read_error(2, 'lake_out2')
+          DO j = 1, Nlake
             IF ( Lake_out2(j)==1 ) Secondoutflow_flag = 1
           ENDDO
           IF ( Secondoutflow_flag==1 ) THEN
-            IF ( getparam(MODNAME, 'lake_out2_a', Numlakes, 'real', Lake_out2_a)/=0 ) CALL read_error(2, 'lake_out2_a')
-            IF ( getparam(MODNAME, 'lake_out2_b', Numlakes, 'real', Lake_out2_b)/=0 ) CALL read_error(2, 'lake_out2_b')
+            IF ( getparam(MODNAME, 'lake_out2_a', Nlake, 'real', Lake_out2_a)/=0 ) CALL read_error(2, 'lake_out2_a')
+            IF ( getparam(MODNAME, 'lake_out2_b', Nlake, 'real', Lake_out2_b)/=0 ) CALL read_error(2, 'lake_out2_b')
           ENDIF
         ENDIF
 
@@ -711,38 +770,16 @@
         ENDIF
       ENDIF
 
-      Puls_lin_flag = 0
-      Obs_flag = 0
-      Linear_flag = 0
-      Weir_flag = 0
-      Gate_flag = 0
-      Puls_flag = 0
-      DO i = 1, Numlakes
-        IF ( Lake_type(i)==1 .OR. Lake_type(i)==2 ) THEN
-          Puls_lin_flag = 1
-          IF ( Lake_type(i)==2 ) Linear_flag = 1
-          IF ( Lake_type(i)==1 ) Puls_flag = 1
-        ELSEIF ( Lake_type(i)==4 .OR. Lake_type(i)==5 ) THEN
-          IF ( Lake_type(i)==4 ) Weir_flag = 1
-          IF ( Lake_type(i)==5 ) Gate_flag = 1
-        ELSEIF ( Lake_type(i)==6 ) THEN
-          Obs_flag = 1
-        ELSEIF ( Lake_type(i)/=3 ) THEN
-          PRINT *, 'ERROR, invalid lake_type for lake:', i, Lake_type(i)
-          Inputerror_flag = 1
-        ENDIF
-      ENDDO
-
       IF ( Puls_lin_flag==1 ) THEN
         IF ( Init_vars_from_file==0 ) THEN
-          IF ( getparam(MODNAME, 'lake_init', Numlakes, 'real', Lake_init)/=0 ) CALL read_error(2, 'lake_init')
-          IF ( getparam(MODNAME, 'lake_din1', Numlakes, 'real', Lake_din1)/=0 ) CALL read_error(2, 'lake_din1')
-          DO i = 1, Numlakes
+          IF ( getparam(MODNAME, 'lake_init', Nlake, 'real', Lake_init)/=0 ) CALL read_error(2, 'lake_init')
+          IF ( getparam(MODNAME, 'lake_din1', Nlake, 'real', Lake_din1)/=0 ) CALL read_error(2, 'lake_din1')
+          DO i = 1, Nlake
             Lake_sto(i) = DBLE( Lake_init(i) )
             Din1(i) = DBLE( Lake_din1(i) )
           ENDDO
         ENDIF
-        DO i = 1, Numlakes
+        DO i = 1, Nlake
           IF ( Lake_type(i)==1 ) THEN
             kk = Nsos(i)
             IF ( kk<1 ) THEN
@@ -755,19 +792,19 @@
 
       IF ( Puls_flag==1 ) THEN
         IF ( Mxnsos==0 ) STOP 'ERROR, dimension mxnsos = 0 and Puls routing requested'
-        IF ( getparam(MODNAME, 'o2', Mxnsos*Numlakes, 'real', O2)/=0 ) CALL read_error(2, 'o2')
-        IF ( getparam(MODNAME, 's2', Mxnsos*Numlakes, 'real', S2)/=0 ) CALL read_error(2, 's2')
-        IF ( getparam(MODNAME, 'nsos', Numlakes, 'integer', Nsos)/=0 ) CALL read_error(2, 'nsos')
+        IF ( getparam(MODNAME, 'o2', Mxnsos*Nlake, 'real', O2)/=0 ) CALL read_error(2, 'o2')
+        IF ( getparam(MODNAME, 's2', Mxnsos*Nlake, 'real', S2)/=0 ) CALL read_error(2, 's2')
+        IF ( getparam(MODNAME, 'nsos', Nlake, 'integer', Nsos)/=0 ) CALL read_error(2, 'nsos')
       ENDIF
 
       IF ( Linear_flag==1 ) THEN
-        IF ( getparam(MODNAME, 'lake_coef', Numlakes, 'real', Lake_coef)/=0 ) CALL read_error(2, 'lake_coef')
+        IF ( getparam(MODNAME, 'lake_coef', Nlake, 'real', Lake_coef)/=0 ) CALL read_error(2, 'lake_coef')
       ENDIF
 
       IF ( Weir_gate_flag==1 ) THEN
         IF ( Init_vars_from_file==0 ) THEN
-          IF ( getparam(MODNAME, 'lake_vol_init', Numlakes, 'real', Lake_vol_init)/=0 ) CALL read_error(2, 'lake_vol_init')
-          DO i = 1, Numlakes
+          IF ( getparam(MODNAME, 'lake_vol_init', Nlake, 'real', Lake_vol_init)/=0 ) CALL read_error(2, 'lake_vol_init')
+          DO i = 1, Nlake
             Lake_vol(i) = DBLE( Lake_vol_init(i) )
           ENDDO
         ENDIF
@@ -787,18 +824,18 @@
       ENDDO
 
       IF ( Weir_flag==1 ) THEN
-        IF ( getparam(MODNAME, 'weir_coef', Numlakes, 'real', Weir_coef)/=0 ) CALL read_error(2, 'weir_coef')
-        IF ( getparam(MODNAME, 'weir_len', Numlakes, 'real', Weir_len)/=0 ) CALL read_error(2, 'weir_len')
-        IF ( getparam(MODNAME, 'elev_outflow', Numlakes, 'real', Elev_outflow)/=0 ) CALL read_error(2, 'elev_outflow')
+        IF ( getparam(MODNAME, 'weir_coef', Nlake, 'real', Weir_coef)/=0 ) CALL read_error(2, 'weir_coef')
+        IF ( getparam(MODNAME, 'weir_len', Nlake, 'real', Weir_len)/=0 ) CALL read_error(2, 'weir_len')
+        IF ( getparam(MODNAME, 'elev_outflow', Nlake, 'real', Elev_outflow)/=0 ) CALL read_error(2, 'elev_outflow')
       ENDIF
 
       IF ( Obs_flag==1 ) THEN
-        IF ( getparam(MODNAME, 'obsout_lake', Numlakes, 'integer', Obsout_lake)/=0 ) CALL read_error(2, 'obsout_lake')
+        IF ( getparam(MODNAME, 'obsout_lake', Nlake, 'integer', Obsout_lake)/=0 ) CALL read_error(2, 'obsout_lake')
       ELSE
         Obsout_lake = 1
       ENDIF
 
-      DO j = 1, Numlakes
+      DO j = 1, Nlake
         ierr = 0
         IF ( Lake_type(j)==1 .OR. Lake_type(j)==2 ) THEN
           IF ( Lake_type(j)==1 ) THEN
@@ -853,7 +890,7 @@
 !***********************************************************************
       INTEGER FUNCTION muskingum_lake_run()
       USE PRMS_MUSKINGUM_LAKE
-      USE PRMS_MODULE, ONLY: Nsegment, Cascade_flag, Numlakes
+      USE PRMS_MODULE, ONLY: Nsegment, Cascade_flag, Nlake
       USE PRMS_BASIN, ONLY: CFS2CMS_CONV, Basin_area_inv, &
      &    Lake_area, Lake_type, Hru_area_dble, Lake_hru_id, Hru_type, Weir_gate_flag, &
      &    Hru_route_order, Active_hrus
@@ -876,7 +913,7 @@
       EXTERNAL route_lake
 ! Local Variables
       INTEGER :: i, j, iorder, toseg, imod, tspd, segtype, lakeid, k, jj
-      DOUBLE PRECISION :: area_fac, segout, currin, tocfs
+      DOUBLE PRECISION :: area_fac, segout, currin, tocfs, lake_in_ts, lake_outflow_ts
 !***********************************************************************
       muskingum_lake_run = 0
 
@@ -909,55 +946,53 @@
       Inflow_ts = 0.0D0
       Currinsum = 0.0D0
 
-      IF ( Numlakes>0 ) THEN
-        IF ( Secondoutflow_flag==1 ) THEN
-          Basin_2ndstflow = 0.0D0
-          Lake_outq2 = 0.0D0
-        ENDIF
-        Basin_lake_stor = 0.0D0
-        Lake_inflow = 0.0D0
-        Lake_outflow = 0.0D0
-        Lake_stream_in = 0.0D0
-        Lake_precip = 0.0D0
-        IF ( Cascade_flag==1 ) THEN
-          Lake_lateral_inflow = 0.0D0
-          Lake_sroff = 0.0D0
-          Lake_interflow = 0.0D0
-        ENDIF
-        IF ( Weir_gate_flag==1 ) THEN
-          Lake_seep_in = 0.0D0
-          Lake_2gw = 0.0D0
-        ENDIF
-        Lake_evap = 0.0D0
-        ! shouldn't have snowpack, all precipitation should be added directly to lake
-        ! units of lake_inflow = cfs
-        DO jj = 1, Active_hrus
-          k = Hru_route_order(jj)
-          IF ( Hru_type(k)/=2 ) CYCLE
-          tocfs = Hru_area_dble(k)*Cfs_conv
-          lakeid = Lake_hru_id(k)
-          Lake_precip(lakeid) = Lake_precip(lakeid) + tocfs*DBLE(Hru_ppt(k))
-          IF ( Cascade_flag==1 ) THEN
-            Lake_sroff(lakeid) = Lake_sroff(lakeid) + tocfs*(Hortonian_lakes(k)+Upslope_dunnianflow(k))
-            Lake_interflow(lakeid) = Lake_interflow(lakeid) + tocfs*Upslope_interflow(k)
-          ENDIF
-          Lake_evap(lakeid) = Lake_evap(lakeid) + tocfs*Hru_actet(k)
-        ENDDO
-        DO lakeid = 1, Numlakes
-          Lake_inflow(lakeid) = Lake_precip(lakeid)
-          IF ( Cascade_flag==1 ) THEN
-            Lake_lateral_inflow(lakeid) = Lake_sroff(lakeid) + Lake_interflow(lakeid)
-            Lake_inflow(lakeid) = Lake_inflow(lakeid) + Lake_lateral_inflow(lakeid)
-          ENDIF
-          Lake_outflow(lakeid) = Lake_evap(lakeid)
-          IF ( Weir_gate_flag==1 ) THEN
-            Lake_seep_in(lakeid) = tocfs*Gw_seep_lakein(lakeid)
-            Lake_2gw(lakeid) = tocfs*Lake_seepage(lakeid)
-            Lake_inflow(lakeid) = Lake_inflow(lakeid) + Lake_seep_in(lakeid)
-            Lake_outflow(lakeid) = Lake_outflow(lakeid) + Lake_2gw(lakeid)
-          ENDIF
-        ENDDO
+      IF ( Secondoutflow_flag==1 ) THEN
+        Basin_2ndstflow = 0.0D0
+        Lake_outq2 = 0.0D0
       ENDIF
+      Basin_lake_stor = 0.0D0
+      Lake_inflow = 0.0D0
+      Lake_outflow = 0.0D0
+      Lake_stream_in = 0.0D0
+      Lake_precip = 0.0D0
+      IF ( Cascade_flag==1 ) THEN
+        Lake_lateral_inflow = 0.0D0
+        Lake_sroff = 0.0D0
+        Lake_interflow = 0.0D0
+      ENDIF
+      IF ( Weir_gate_flag==1 ) THEN
+        Lake_seep_in = 0.0D0
+        Lake_2gw = 0.0D0
+      ENDIF
+      Lake_evap = 0.0D0
+      ! shouldn't have snowpack, all precipitation should be added directly to lake
+      ! units of lake_inflow = cfs
+      DO jj = 1, Active_hrus
+        k = Hru_route_order(jj)
+        IF ( Hru_type(k)/=2 ) CYCLE
+        tocfs = Hru_area_dble(k)*Cfs_conv
+        lakeid = Lake_hru_id(k)
+        Lake_precip(lakeid) = Lake_precip(lakeid) + tocfs*DBLE(Hru_ppt(k))
+        IF ( Cascade_flag==1 ) THEN
+          Lake_sroff(lakeid) = Lake_sroff(lakeid) + tocfs*(Hortonian_lakes(k)+Upslope_dunnianflow(k))
+          Lake_interflow(lakeid) = Lake_interflow(lakeid) + tocfs*Upslope_interflow(k)
+        ENDIF
+        Lake_evap(lakeid) = Lake_evap(lakeid) + tocfs*Hru_actet(k)
+      ENDDO
+      DO lakeid = 1, Nlake
+        Lake_inflow(lakeid) = Lake_precip(lakeid)
+        IF ( Cascade_flag==1 ) THEN
+          Lake_lateral_inflow(lakeid) = Lake_sroff(lakeid) + Lake_interflow(lakeid)
+          Lake_inflow(lakeid) = Lake_inflow(lakeid) + Lake_lateral_inflow(lakeid)
+        ENDIF
+        Lake_outflow(lakeid) = Lake_evap(lakeid)
+        IF ( Weir_gate_flag==1 ) THEN
+          Lake_seep_in(lakeid) = tocfs*Gw_seep_lakein(lakeid)
+          Lake_2gw(lakeid) = tocfs*Lake_seepage(lakeid)
+          Lake_inflow(lakeid) = Lake_inflow(lakeid) + Lake_seep_in(lakeid)
+          Lake_outflow(lakeid) = Lake_outflow(lakeid) + Lake_2gw(lakeid)
+        ENDIF
+      ENDDO
 
 ! 24 hourly timesteps per day
       DO j = 1, 24
@@ -981,13 +1016,13 @@
           IF ( imod==0 ) THEN
             Inflow_ts(iorder) = (Inflow_ts(iorder) / Ts(iorder))
             IF ( Segment_type(iorder)==2 ) THEN
-              lakeid = Segment_lake_id(iorder)
-              Lake_inflow(lakeid) = Lake_inflow(lakeid) + Currinsum(iorder)
+              lakeid = Lake_segment_id(iorder)
+              lake_in_ts = Lake_inflow(lakeid)/Ts(iorder) + Inflow_ts(iorder)
 ! what about water use?
-              CALL route_lake(lakeid, Lake_type(lakeid), Lake_area(lakeid))
-              Lake_outcms(lakeid) = Lake_outcfs(lakeid)*CFS2CMS_CONV
-              Outflow_ts(iorder) = Lake_outcfs(lakeid) * 24.0
-              Lake_stream_in(lakeid) = Seg_upstream_inflow(iorder)
+              CALL route_lake(lakeid, Lake_type(lakeid), Lake_area(lakeid), lake_in_ts, lake_outflow_ts)
+              Outflow_ts(iorder) = lake_outflow_ts
+              Lake_outcfs(lakeid) = Lake_outcfs(lakeid) + lake_outflow_ts
+              Lake_stream_in(lakeid) = Lake_stream_in(lakeid) + Seg_upstream_inflow(iorder)
             ELSE
 ! Compute routed streamflow
               IF ( Ts_i(iorder)>0 ) THEN
@@ -1055,6 +1090,7 @@
       Flow_headwater = 0.0D0
       Flow_in_great_lakes = 0.0D0
       Flow_replacement = 0.0D0
+      ! add water balance check
       DO i = 1, Nsegment
         Seg_outflow(i) = Seg_outflow(i) * ONE_24TH
         segout = Seg_outflow(i)
@@ -1067,6 +1103,12 @@
           Flow_headwater = Flow_headwater + segout
         ELSEIF ( segtype==2 ) THEN
           Flow_to_lakes = Flow_to_lakes + segout
+          lakeid = Lake_segment_id(i)
+          Lake_stream_in(lakeid) = Lake_stream_in(lakeid) * ONE_24TH
+          Lake_outvol(lakeid) = Lake_outvol(lakeid) * ONE_24TH
+          Lake_outcfs(lakeid) = Lake_outcfs(lakeid) * ONE_24TH
+          Lake_outcms(lakeid) = Lake_outcfs(lakeid)*CFS2CMS_CONV
+          Basin_lake_stor = Basin_lake_stor + Lake_vol(Lakeid)*12.0D0
         ELSEIF ( segtype==3 ) THEN
           Flow_replacement = Flow_replacement + segout
         ELSEIF ( segtype==4 ) THEN
@@ -1086,16 +1128,11 @@
         ELSEIF ( segtype==11 ) THEN
           Flow_to_great_lakes = Flow_to_great_lakes + segout
         ENDIF
-        IF ( Tosegment(iorder)==0 ) THEN
-          Flow_out = Flow_out + segout
-        ELSE
-          Seg_upstream_inflow(Tosegment(iorder)) = Seg_upstream_inflow(Tosegment(iorder)) + segout
-        ENDIF
+        IF ( Tosegment(i)==0 ) Flow_out = Flow_out + segout
         Segment_delta_flow(i) = Segment_delta_flow(i) + Seg_inflow(i) - segout
 !        IF ( Segment_delta_flow(i) < 0.0D0 ) PRINT *, 'negative delta flow', Segment_delta_flow(i)
         Basin_segment_storage = Basin_segment_storage + Segment_delta_flow(i)
       ENDDO
-
 
       area_fac = Cfs_conv/Basin_area_inv
       Basin_stflow_in = Basin_sroff + Basin_gwflow + Basin_ssflow ! not equal to basin_stflow_out if replacement flows
@@ -1114,11 +1151,10 @@
 !     ***********************************
 !     * Route Lake
 !     ***********************************
-      SUBROUTINE route_lake(Lakeid, Laketype, Lake_area)
+      SUBROUTINE route_lake(Lakeid, Laketype, Lake_area, Lake_in_ts, Lake_out_ts)
       USE PRMS_MUSKINGUM_LAKE
       USE PRMS_MODULE, ONLY: Nratetbl
       USE PRMS_OBS, ONLY: Gate_ht, Streamflow_cfs
-      USE PRMS_FLOWVARS, ONLY: Basin_lake_stor
       USE PRMS_ROUTING, ONLY: Cfs2acft
       USE PRMS_GWFLOW, ONLY: Elevlake
       IMPLICIT NONE
@@ -1127,12 +1163,13 @@
       EXTERNAL table_comp
 ! Arguments
       INTEGER, INTENT(IN) :: Lakeid, Laketype
-      DOUBLE PRECISION, INTENT(IN) :: Lake_area
+      DOUBLE PRECISION, INTENT(IN) :: Lake_area, Lake_in_ts
+      DOUBLE PRECISION, INTENT(INOUT) :: Lake_out_ts
 ! Local Variables
       INTEGER :: n, jjj, i
       REAL :: q1, q3, elevold, head, new_elevlake, head2, scnd_cfs1, scnd_cfs2
       DOUBLE PRECISION :: avin, s2o2, q2, lake_out, diff_vol, lake_out1
-      DOUBLE PRECISION :: xkt, coef2, lake_storage, lakeoutvol
+      DOUBLE PRECISION :: xkt, coef2, lake_storage
 !***********************************************************************
       ! q2 = lake out in cfs
       q2 = 0.0D0
@@ -1142,7 +1179,7 @@
       IF ( Laketype==1 ) THEN
         !rsr, why half of current in and last in???
         avin = (Lake_inflow(Lakeid)+Din1(Lakeid))*0.5D0
-        s2o2 = lake_storage - (Lake_outflow(Lakeid)+Lake_outcfs(Lakeid))*0.5D0
+        s2o2 = lake_storage - (Lake_outflow(Lakeid)+Lake_outcfs(Lakeid))*0.5D0 ! ???
         s2o2 = s2o2 + avin
         n = Nsos(Lakeid)
         DO jjj = 2, n
@@ -1156,7 +1193,7 @@
         lake_storage = s2o2 - q2*0.5D0
         Lake_sto(Lakeid) = lake_storage
 
-!   Compute outflow using linear reservoir method
+!   Compute outflow using linear reservoir method, ?? need to fix for hourly loop
       ELSEIF ( Laketype==2 ) THEN
         !rsr, why half of current in and last in???
         avin = (Lake_inflow(Lakeid)+Din1(Lakeid)-Lake_outflow(Lakeid))*0.5D0
@@ -1183,10 +1220,10 @@
         elevold = Elevlake(Lakeid)
 
         ! units lake_invol = acft
-        Lake_invol(Lakeid) = Lake_inflow(Lakeid)*Cfs2acft
+        Lake_invol(Lakeid) = Lake_in_ts * Cfs2acft
 
         ! units lake_out = acft
-        lake_out = (Lake_outflow(Lakeid)/12.0D0)*Lake_area
+        lake_out = Lake_outflow(Lakeid) * Cfs2acft
         diff_vol = Lake_invol(Lakeid) - lake_out
         q1 = 0.0
         q3 = 0.0
@@ -1194,6 +1231,7 @@
 !   Compute using lake surface elevation and broad crested weir
         IF ( Laketype==4 ) THEN
           head = elevold - Elev_outflow(Lakeid)
+          IF ( head<0.0 ) head = 0.0
           q1 = (head**1.5) * Weir_coef(Lakeid) * Weir_len(Lakeid)
           lake_out1 = DBLE(q1)*Cfs2acft
 
@@ -1201,6 +1239,7 @@
           new_elevlake = elevold + SNGL( (diff_vol-lake_out1)/Lake_area )
 
           head2 = (new_elevlake+elevold)*0.5 - Elev_outflow(Lakeid)
+          IF ( head2<0.0 ) head2 = 0.0
           q3 = (head2**1.5) * Weir_coef(Lakeid) * Weir_len(Lakeid)
 
 !  Compute using a rating table of lake surface elevation & gate opening
@@ -1268,25 +1307,24 @@
 !       !sanity check, rsr
         IF ( q2<0.0D0 ) PRINT *, 'q2<0', q2, ' lake:', Lakeid
 
-        lakeoutvol = q2*Cfs2acft + lake_out
-        IF ( Secondoutflow_flag==1 ) Lake_outvol = Lake_outvol + Lake_outq2(Lakeid)
+        Lake_out_ts = q2*Cfs2acft + lake_out
+        IF ( Secondoutflow_flag==1 ) Lake_out_ts = Lake_out_ts + Lake_outq2(Lakeid)
 
-        ! adjust lake storage
-        lake_storage = Lake_vol(Lakeid) + Lake_invol(Lakeid) - lakeoutvol
+        ! ??? in 1, 24 loop
+        ! adjust lake storage, think the real vol needs to be adjusted
+        Lake_vol(Lakeid) = Lake_vol(Lakeid) + Lake_invol(Lakeid) - Lake_out_ts
 
         ! adjust lake elevation with stream and lateral inflows
         ! and streamflow, any second outlet, GWR, and evaporation outflows
-        Elevlake(Lakeid) = Elevlake(Lakeid) + SNGL( (Lake_invol(Lakeid)-lakeoutvol)/Lake_area )
-        Basin_lake_stor = Basin_lake_stor + lake_storage*12.0D0
-        Lake_vol(Lakeid) = lake_storage
-        Lake_outvol(Lakeid) = lakeoutvol
+        Elevlake(Lakeid) = Elevlake(Lakeid) + SNGL( (Lake_invol(Lakeid)-Lake_out_ts)/Lake_area )
+        Lake_outvol_ts(Lakeid) = Lake_outvol_ts(Lakeid) + Lake_out_ts
       ENDIF
       IF ( lake_storage<0.0D0 ) THEN
         PRINT *, 'ERROR: lake storage < 0 lake:', Lakeid, '; storage:', lake_storage
         STOP
       ENDIF
 
-      Lake_outcfs(Lakeid) = q2
+      Lake_outcfs(Lakeid) = Lake_outcfs(Lakeid) + q2
 
       END SUBROUTINE route_lake
 

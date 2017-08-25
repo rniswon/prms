@@ -27,7 +27,7 @@
       INTEGER, SAVE, ALLOCATABLE :: Gvr_hru_id(:)
       REAL, SAVE, ALLOCATABLE :: Gvr_map_frac(:)
 ! Control Parameters
-      INTEGER, SAVE :: NmapOutVars, Prms_warmup
+      INTEGER, SAVE :: NmapOutVars
       CHARACTER(LEN=36), SAVE, ALLOCATABLE :: MapOutVar_names(:)
       END MODULE PRMS_MAP_RESULTS
 
@@ -72,11 +72,10 @@
 !***********************************************************************
       map_resultsdecl = 0
 
-      Version_map_results = 'map_results.f90 2017-06-28 12:09:00Z'
+      Version_map_results = 'map_results.f90 2017-08-03 13:48:00Z'
       CALL print_module(Version_map_results, 'Output Summary              ', 90)
       MODNAME = 'map_results'
 
-      IF ( control_integer(Prms_warmup, 'prms_warmup')/=0 ) prms_warmup = 0
       IF ( control_integer(NmapOutVars, 'nmapOutVars')/=0 ) NmapOutVars = 0
       IF ( NmapOutVars==0 ) THEN
         IF ( Model/=99 ) THEN
@@ -160,7 +159,7 @@
       INTEGER FUNCTION map_resultsinit()
       USE PRMS_MAP_RESULTS
       USE PRMS_MODULE, ONLY: Nhru, Print_debug, Nhrucell, Ngwcell, Inputerror_flag, MapOutON_OFF, &
-     &                       Start_year, Start_month, Start_day, End_year, Parameter_check_flag, Gvr_cell_id
+     &                       Start_year, Start_month, Start_day, Parameter_check_flag, Prms_warmup, Gvr_cell_id
       USE PRMS_BASIN, ONLY: NEARZERO
       IMPLICIT NONE
       INTRINSIC ABS, DBLE
@@ -185,10 +184,6 @@
       IF ( getparam(MODNAME, 'mapvars_units', 1, 'integer', Mapvars_units)/=0 ) CALL read_error(2, 'Mapvars_units')
       IF ( Prms_warmup>0 ) Begin_results = 0
       Begyr = Begyr + Prms_warmup
-      IF ( Begyr>End_year ) THEN
-        PRINT *, 'ERROR, prms_warmup > than simulation time period:', Prms_warmup
-        Inputerror_flag = 1
-      ENDIF
 
       WRITE ( Mapfmt, 9001 ) Ncol
 
