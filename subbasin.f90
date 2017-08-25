@@ -70,7 +70,7 @@
 !***********************************************************************
       subdecl = 0
 
-      Version_subbasin = 'subbasin.f90 2017-03-24 10:39:00Z'
+      Version_subbasin = 'subbasin.f90 2017-07-17 09:30:00Z'
       CALL print_module(Version_subbasin, 'Output Summary              ', 90)
       MODNAME = 'subbasin'
 
@@ -86,7 +86,7 @@
      &     ' associated HRUs and from upstream subbasins', &
      &     'cfs', Sub_interflow)/=0 ) CALL read_error(3, 'sub_interflow')
 
-      IF ( GSFLOW_flag==0 ) THEN
+      IF ( GSFLOW_flag==0 .OR. Model==99 ) THEN
         ALLOCATE ( Sub_gwflow(Nsub) )
         IF ( declvar(MODNAME, 'sub_gwflow', 'nsub', Nsub, 'double', &
      &       'Area-weighted average groundwater discharge from'// &
