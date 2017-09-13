@@ -209,7 +209,7 @@
 !***********************************************************************
       muskingum_lake_decl = 0
 
-      Version_muskingum_lake = 'muskingum_lake.f90 2017-08-03 13:30:00Z'
+      Version_muskingum_lake = 'muskingum_lake.f90 2017-09-13 13:13:00Z'
       CALL print_module(Version_muskingum_lake, 'Streamflow Routing          ', 90)
       MODNAME = 'muskingum_lake'
 
@@ -987,6 +987,7 @@
         ENDIF
         Lake_outflow(lakeid) = Lake_evap(lakeid)
         IF ( Weir_gate_flag==1 ) THEN
+          tocfs = Lake_area(lakeid)*Cfs_conv
           Lake_seep_in(lakeid) = tocfs*Gw_seep_lakein(lakeid)
           Lake_2gw(lakeid) = tocfs*Lake_seepage(lakeid)
           Lake_inflow(lakeid) = Lake_inflow(lakeid) + Lake_seep_in(lakeid)

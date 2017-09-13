@@ -82,7 +82,7 @@
 !***********************************************************************
       gwflowdecl = 0
 
-      Version_gwflow = 'gwflow.f90 2017-07-05 10:25:00Z'
+      Version_gwflow = 'gwflow.f90 2017-09-13 09:26:00Z'
       CALL print_module(Version_gwflow, 'Groundwater                 ', 90)
       MODNAME = 'gwflow'
 
@@ -206,7 +206,8 @@
       IF ( declparam(MODNAME, 'gwsink_coef', 'ngw', 'real', &
      &     '0.0', '0.0', '1.0', &
      &     'Groundwater sink coefficient', &
-     &     'Linear coefficient in the equation to compute outflow to the groundwater sink for each GWR', &
+     &     'Linear coefficient in the equation to compute outflow'// &
+     &     ' to the groundwater sink for each GWR', &
      &     'fraction/day')/=0 ) CALL read_error(1, 'gwsink_coef')
 
       IF ( Lake_route_flag==1 .OR. Model==99 ) THEN
@@ -388,7 +389,7 @@
       INTEGER FUNCTION gwflowrun()
       USE PRMS_GWFLOW
       USE PRMS_MODULE, ONLY: Dprst_flag, Print_debug, Cascadegw_flag, Gwr_swale_flag
-      USE PRMS_BASIN, ONLY: Active_gwrs, Gwr_route_order, &
+      USE PRMS_BASIN, ONLY: Active_gwrs, Gwr_route_order, DNEARZERO, &
      &    Basin_area_inv, Hru_area, Gwr_type, Lake_hru_id, Weir_gate_flag, Hru_area_dble
       USE PRMS_FLOWVARS, ONLY: Soil_to_gw, Ssr_to_gw, Sroff, Ssres_flow, Gwres_stor, Pkwater_equiv
       USE PRMS_CASCADE, ONLY: Ncascade_gwr
@@ -496,19 +497,15 @@
           ENDIF
         ENDIF
 
-        IF ( gwstor<0.0D0 ) THEN ! could happen with water use
-          IF ( Print_debug>-1 ) PRINT *, 'Warning, groundwater reservoir for HRU:', i, ' is < 0.0', gwstor
-          gwflow = 0.0D0
-          gwsink = 0.0D0
-        ELSE
-
+        gwflow = 0.0D0
+        gwsink = 0.0D0
+        IF ( gwstor>DNEARZERO ) THEN
 ! Compute groundwater discharge
           gwflow = gwstor*DBLE( Gwflow_coef(i) )
 
 ! Reduce storage by outflow
           gwstor = gwstor - gwflow
 
-          gwsink = 0.0D0
           IF ( Gwsink_coef(i)>0.0 ) THEN
             gwsink = gwstor*DBLE( Gwsink_coef(i) )
             gwstor = gwstor - gwsink
@@ -522,6 +519,8 @@
             ENDIF
           ENDIF
           Basin_gwsink = Basin_gwsink + gwsink
+        ELSEIF ( gwstor<0.0D0 ) THEN ! could happen with water use
+          IF ( Print_debug>-1 ) PRINT *, 'Warning, groundwater reservoir for HRU:', i, ' is < 0.0', gwstor
         ENDIF
         Gwres_sink(i) = SNGL( gwsink/gwarea )
         Basin_gwstor = Basin_gwstor + gwstor
