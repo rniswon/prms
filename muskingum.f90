@@ -81,8 +81,8 @@
 !
 !***********************************************************************
       MODULE PRMS_MUSKINGUM
-      IMPLICIT NONE
-!   Local Variables
+      IMPLICIT NONE 
+!   Local Variables 
       DOUBLE PRECISION, PARAMETER :: ONE_24TH = 1.0D0 / 24.0D0
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Currinsum(:), Pastin(:), Pastout(:)
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Outflow_ts(:), Inflow_ts(:)

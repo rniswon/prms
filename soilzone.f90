@@ -81,11 +81,11 @@
 !***********************************************************************
 !     Main soilzone routine
 !***********************************************************************
-      INTEGER FUNCTION soilzone(MS_GSF_converge)
+      INTEGER FUNCTION soilzone(AFR)
       USE PRMS_MODULE, ONLY: Process, Save_vars_to_file, Init_vars_from_file
       IMPLICIT NONE
 ! Arguments
-      LOGICAL, INTENT(IN) :: MS_GSF_converge
+      LOGICAL, INTENT(IN) :: AFR
 ! Functions
       INTEGER, EXTERNAL :: szdecl, szinit, szrun
       EXTERNAL :: soilzone_restart
@@ -93,7 +93,7 @@
       soilzone = 0
 
       IF ( Process(:3)=='run' ) THEN
-        soilzone = szrun(MS_GSF_converge)
+        soilzone = szrun(AFR)
       ELSEIF ( Process(:4)=='decl' ) THEN
         soilzone = szdecl()
       ELSEIF ( Process(:4)=='init' ) THEN
@@ -859,7 +859,7 @@
 !             interflow, excess routed to stream,
 !             and groundwater reservoirs
 !***********************************************************************
-      INTEGER FUNCTION szrun(MS_GSF_converge)
+      INTEGER FUNCTION szrun(AFR)
       USE PRMS_SOILZONE
       USE PRMS_MODULE, ONLY: Dprst_flag, Print_debug, Kkiter, &
      &    Nlake, Nhrucell, Cascade_flag, Dprst_flag, Frozen_flag, GSFLOW_flag
@@ -881,7 +881,7 @@
       USE PRMS_SRUNOFF, ONLY: Basin_sroff, Hru_impervevap, Strm_seg_in, Dprst_evap_hru, Dprst_seep_hru, Frozen
       IMPLICIT NONE
 ! Arguments
-      LOGICAL, INTENT(IN) :: MS_GSF_converge
+      LOGICAL, INTENT(IN) :: AFR
 ! Functions
       INTRINSIC MIN, ABS, MAX, SNGL, DBLE
       EXTERNAL compute_soilmoist, compute_szactet, compute_cascades, compute_gravflow
@@ -902,7 +902,7 @@
       IF ( GSFLOW_flag==1 ) THEN
         IF ( Kkiter==0 ) STOP 'ERROR, problem with KKITER, equals 0'
 
-        IF ( Kkiter==1 .AND. .NOT. MS_GSF_converge ) THEN
+        IF ( Kkiter==1 .AND. AFR ) THEN
 ! It0 variables used with MODFLOW integration to save iteration states.
           DO k = 1, Active_hrus
             i = Hru_route_order(k)
