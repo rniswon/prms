@@ -81,9 +81,11 @@
 !***********************************************************************
 !     Main soilzone routine
 !***********************************************************************
-      INTEGER FUNCTION soilzone()
+      INTEGER FUNCTION soilzone(MS_GSF_converge)
       USE PRMS_MODULE, ONLY: Process, Save_vars_to_file, Init_vars_from_file
       IMPLICIT NONE
+! Arguments
+      LOGICAL, INTENT(IN) :: MS_GSF_converge
 ! Functions
       INTEGER, EXTERNAL :: szdecl, szinit, szrun
       EXTERNAL :: soilzone_restart
@@ -91,7 +93,7 @@
       soilzone = 0
 
       IF ( Process(:3)=='run' ) THEN
-        soilzone = szrun()
+        soilzone = szrun(MS_GSF_converge)
       ELSEIF ( Process(:4)=='decl' ) THEN
         soilzone = szdecl()
       ELSEIF ( Process(:4)=='init' ) THEN
@@ -124,7 +126,7 @@
 !***********************************************************************
       szdecl = 0
 
-      Version_soilzone = 'soilzone.f90 2017-02-15 12:42:00Z'
+      Version_soilzone = 'soilzone.f90 2017-09-15 14:58:00Z'
       CALL print_module(Version_soilzone, 'Soil Zone Computations      ', 90 )
       MODNAME = 'soilzone'
 
@@ -857,7 +859,7 @@
 !             interflow, excess routed to stream,
 !             and groundwater reservoirs
 !***********************************************************************
-      INTEGER FUNCTION szrun()
+      INTEGER FUNCTION szrun(MS_GSF_converge)
       USE PRMS_SOILZONE
       USE PRMS_MODULE, ONLY: Dprst_flag, Print_debug, Kkiter, &
      &    Nlake, Nhrucell, Cascade_flag, Dprst_flag, Frozen_flag, GSFLOW_flag
@@ -878,6 +880,8 @@
       USE PRMS_SNOW, ONLY: Snowcov_area, Snow_evap
       USE PRMS_SRUNOFF, ONLY: Basin_sroff, Hru_impervevap, Strm_seg_in, Dprst_evap_hru, Dprst_seep_hru, Frozen
       IMPLICIT NONE
+! Arguments
+      LOGICAL, INTENT(IN) :: MS_GSF_converge
 ! Functions
       INTRINSIC MIN, ABS, MAX, SNGL, DBLE
       EXTERNAL compute_soilmoist, compute_szactet, compute_cascades, compute_gravflow
@@ -898,7 +902,7 @@
       IF ( GSFLOW_flag==1 ) THEN
         IF ( Kkiter==0 ) STOP 'ERROR, problem with KKITER, equals 0'
 
-        IF ( Kkiter==1 ) THEN
+        IF ( Kkiter==1 .AND. .NOT. MS_GSF_converge ) THEN
 ! It0 variables used with MODFLOW integration to save iteration states.
           DO k = 1, Active_hrus
             i = Hru_route_order(k)
