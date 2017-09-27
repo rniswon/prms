@@ -48,34 +48,33 @@
       USE PRMS_SRUNOFF, ONLY: MODNAME
       IMPLICIT NONE
 ! Functions
-      INTEGER, EXTERNAL :: declvar
-      EXTERNAL :: read_error, print_module, PRMS_open_module_file
+      EXTERNAL :: read_error, print_module, PRMS_open_module_file, declvar_dble
 ! Local Variables
       CHARACTER(LEN=80), SAVE :: Version_water_balance
 !***********************************************************************
-      Version_water_balance = 'water_balance.f90 2017-05-15 15:38:00Z'
+      Version_water_balance = 'water_balance.f90 2017-09-27 14:05:00Z'
       CALL print_module(Version_water_balance, 'Water Balance Computations  ', 90 )
       MODNAME_WB = 'water_balance'
 
 ! Declare Variables
-      IF ( declvar(MODNAME_WB, 'basin_capillary_wb', 'one', 1, 'double', &
+      CALL declvar_dble(MODNAME_WB, 'basin_capillary_wb', 'one', 1, 'double', &
      &     'Basin area-weighted average capillary reservoir storage', &
-     &     'inches', Basin_capillary_wb)/=0 ) CALL read_error(3, 'basin_capillary_wb')
+     &     'inches', Basin_capillary_wb)
 
-      IF ( declvar(MODNAME_WB, 'basin_gravity_wb', 'one', 1, 'double', &
+      CALL declvar_dble(MODNAME_WB, 'basin_gravity_wb', 'one', 1, 'double', &
      &     'Basin area-weighted average gravity reservoir storage', &
-     &     'inches', Basin_gravity_wb)/=0 ) CALL read_error(3, 'basin_gravity_wb')
+     &     'inches', Basin_gravity_wb)
 
-      IF ( declvar(MODNAME_WB, 'basin_soilzone_wb', 'one', 1, 'double', &
+      CALL declvar_dble(MODNAME_WB, 'basin_soilzone_wb', 'one', 1, 'double', &
      &     'Basin area-weighted average storage in soilzone reservoirs', &
-     &     'inches', Basin_soilzone_wb)/=0 ) CALL read_error(3, 'basin_soilzone_wb')
+     &     'inches', Basin_soilzone_wb)
 
       ALLOCATE ( Hru_storage_ante(Nhru) )
 
       IF ( Dprst_flag==1 ) THEN
-        IF ( declvar(MODNAME_WB, 'basin_dprst_wb', 'one', 1, 'double', &
+        CALL declvar_dble(MODNAME_WB, 'basin_dprst_wb', 'one', 1, 'double', &
      &       'Basin area-weighted average surface-depression storage water balance', &
-     &       'inches', Basin_dprst_wb)/=0 ) CALL read_error(3, 'basin_dprst_wb')
+     &       'inches', Basin_dprst_wb)
       ENDIF
 
       ALLOCATE ( Gwstor_ante(Nhru) )

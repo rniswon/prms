@@ -31,7 +31,7 @@
       INTEGER FUNCTION temp_1sta_laps()
       USE PRMS_TEMP_1STA_LAPS
       USE PRMS_MODULE, ONLY: Process, Nhru, Ntemp, Save_vars_to_file, &
-     &    Inputerror_flag, Temp_flag, Init_vars_from_file, Model, Start_month, Print_debug
+     &    Temp_flag, Init_vars_from_file, Model, Start_month, Print_debug
       USE PRMS_BASIN, ONLY: Hru_elev, Hru_area, MAXTEMP, MINTEMP, &
      &    Active_hrus, Hru_route_order, Basin_area_inv, NEARZERO
       USE PRMS_CLIMATEVARS, ONLY: Tmax_aspect_adjust, Tmin_aspect_adjust, Tsta_elev, &
@@ -43,9 +43,9 @@
 ! Functions
       INTRINSIC INDEX, ABS
       INTEGER, EXTERNAL :: declparam, getparam
-      EXTERNAL read_error, temp_set, print_module, temp_1sta_laps_restart, print_date, checkdim_param_limits
+      EXTERNAL read_error, temp_set, print_module, temp_1sta_laps_restart, print_date
 ! Local Variables
-      INTEGER :: j, k, jj, i, kk, kkk, l, ierr
+      INTEGER :: j, k, jj, i, kk, kkk, l
       REAL :: tmx, tmn, tdiff
       CHARACTER(LEN=80), SAVE :: Version_temp
 !***********************************************************************
@@ -150,7 +150,7 @@
         ENDIF
 
       ELSEIF ( Process(:4)=='decl' ) THEN
-        Version_temp = 'temp_1sta_laps.f90 2017-07-12 13:37:00Z'
+        Version_temp = 'temp_1sta_laps.f90 2017-09-27 12:13:00Z'
         IF ( Temp_flag==1 ) THEN
           MODNAME = 'temp_1sta'
         ELSE
@@ -227,21 +227,14 @@
             Tcrn(j) = Tmin_lapse(j, Start_month)*Elfac(j) - Tmin_aspect_adjust(j, Start_month)
           ENDDO
         ELSE
-          ierr = 0
           DO i = 1, Active_hrus
             j = Hru_route_order(i)
-            CALL checkdim_param_limits(j, 'hru_tlaps', 'ntemp', Hru_tlaps(j), 1, Ntemp, ierr)
-            IF ( ierr==1 ) CYCLE ! if one error found no need to compute values
             k = Hru_tsta(j)
             Nuse_tsta(k) = 1
             tdiff = Tsta_elev(Hru_tlaps(j)) - Tsta_elev(k)
             IF ( ABS(tdiff)<NEARZERO ) tdiff = 1.0
             Elfac(j) = (Hru_elev(j)-Tsta_elev(k))/tdiff
           ENDDO
-          IF ( ierr==1 ) THEN
-            Inputerror_flag = 1
-            RETURN
-          ENDIF
         ENDIF
 
         IF ( Init_vars_from_file==0 ) THEN

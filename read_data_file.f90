@@ -26,7 +26,7 @@
       REAL, ALLOCATABLE :: var(:)
       CHARACTER(LEN=80), SAVE :: Version_read_data_file
 !***********************************************************************
-      Version_read_data_file = 'read_data_file.f90 2017-07-07 13:53:00Z'
+      Version_read_data_file = 'read_data_file.f90 2017-09-27 14:20:00Z'
       CALL print_module(Version_read_data_file, 'Read Data File              ', 90)
 
       IF ( control_string(data_filename, 'data_file')/=0 ) CALL read_error(5, 'data_file')
@@ -195,13 +195,16 @@
       USE PRMS_MODULE, ONLY: Ntemp, Nrain, Nsol, Nobs, Nevap
       USE PRMS_OBS, ONLY: Nsnow, Nlakeelev, Nwind, Nhumid, &
      &    Tmin, Tmax, Precip, Snowdepth, Runoff, Pan_evap, Wind_speed, Humidity, Solrad, &
-     &    Gate_ht, Lake_elev, Rain_day
+     &    Gate_ht, Lake_elev, Rain_day, Runoff_units, Streamflow_cfs, Streamflow_cms
+      USE PRMS_BASIN, ONLY: CFS2CMS_CONV
       IMPLICIT NONE
       ! Arguments
       CHARACTER(LEN=*), INTENT(IN) :: Varname
       INTEGER, INTENT(IN) :: Numvalues, Iflag
       INTEGER, INTENT(OUT) :: Iret
       REAL, INTENT(IN) :: Values(Numvalues)
+      ! Functions
+      INTRINSIC DBLE
       ! Local Variables
       INTEGER ndim, i
 !***********************************************************************
@@ -260,6 +263,17 @@
           DO i = 1, Numvalues
             Runoff(i) = Values(i)
           ENDDO
+          IF ( Runoff_units==1 ) THEN
+            DO i = 1, Nobs
+              Streamflow_cms(i) = DBLE( Runoff(i) )
+              Streamflow_cfs(i) = Streamflow_cms(i)/CFS2CMS_CONV
+            ENDDO
+          ELSE
+            DO i = 1, Nobs
+              Streamflow_cfs(i) = DBLE( Runoff(i) )
+              Streamflow_cms(i) = Streamflow_cfs(i)*CFS2CMS_CONV
+            ENDDO
+          ENDIF
         ENDIF
       ELSEIF ( Varname(:6)=='solrad' ) THEN
         IF ( Iflag==0 ) THEN

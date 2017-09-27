@@ -2,19 +2,6 @@
 ! DONE:
 !  getdim, declfix, declmodule, decldim, declparam, getparam
 !  control_string, control_integer, control_string_array, getvartype
-!  declpri - removed
-!  read Control File
-!  read Parameter File dimension section
-!
-! Place holders:
-!  getstep - need (current time step, initially 0, restart last)
-!  deltim - need (need time step increment in hours, hard-coded to 24)
-!  declvar - need variable data structure, need cast type
-!  getparamstring - need parameter data structure
-!  dattim - need function, or just compute the current date and time
-!
-! TO DO:
-! get rid of getvar
 !***********************************************************************
       MODULE PRMS_MMFAPI
         USE PRMS_MODULE, ONLY: MAXCONTROL_LENGTH, MAXFILE_LENGTH
@@ -291,18 +278,16 @@
         ENDIF
       ENDDO
       END SUBROUTINE check_parameters_declared
-     
+
 !***********************************************************************
 ! declvar - set up memory for variables
 !***********************************************************************
-      INTEGER FUNCTION declvar(Modname, Varname, Dimenname, Numvalues, Data_type, Desc, Units, Values)
-      USE PRMS_MMFAPI
+      SUBROUTINE declvar(Modname, Varname, Dimenname, Numvalues, Data_type, Desc, Units)
+      USE PRMS_MMFAPI, ONLY: Variable_data, Num_variables
       IMPLICIT NONE
       ! Arguments
       CHARACTER(LEN=*), INTENT(IN) :: Modname, Varname, Dimenname, Data_type, Desc, Units
       INTEGER, INTENT(IN) :: Numvalues
-      ! values could be any data type
-      DOUBLE PRECISION, TARGET :: Values(*)
       ! Functions
       INTEGER, EXTERNAL :: numchars
       EXTERNAL set_data_type
@@ -338,19 +323,99 @@
       ENDIF
       Variable_data(Num_variables)%data_flag = type_flag
 
-      IF ( type_flag==1 ) THEN
-        ALLOCATE ( Variable_data(Num_variables)%values_int(Numvalues) )
-!        Variable_data(Num_variables)%values_int => Values(:Numvalues)
-      ELSEIF (type_flag==2 ) THEN
-        ALLOCATE ( Variable_data(Num_variables)%values_real(Numvalues) )
-!        Variable_data(Num_variables)%values_real => Values(:Numvalues)
-      ELSEIF (type_flag==3 ) THEN
-        ALLOCATE ( Variable_data(Num_variables)%values_dble(Numvalues) )
-        Variable_data(Num_variables)%values_dble => Values(:Numvalues)
-      ENDIF
+      END SUBROUTINE declvar
 
-      declvar = 0
-      END FUNCTION declvar
+!***********************************************************************
+! declvar_dble - set up memory for double precision variables
+!***********************************************************************
+      SUBROUTINE declvar_dble(Modname, Varname, Dimenname, Numvalues, Data_type, Desc, Units, Values)
+      USE PRMS_MMFAPI, ONLY: Num_variables, Variable_data
+      IMPLICIT NONE
+      ! Arguments
+      CHARACTER(LEN=*), INTENT(IN) :: Modname, Varname, Dimenname, Data_type, Desc, Units
+      INTEGER, INTENT(IN) :: Numvalues
+      DOUBLE PRECISION, TARGET :: Values(*)
+      ! Functions
+      EXTERNAL declvar
+!***********************************************************************
+      CALL declvar( Modname, Varname, Dimenname, Numvalues, Data_type, Desc, Units )
+      ALLOCATE ( Variable_data(Num_variables)%values_dble(Numvalues) )
+      Variable_data(Num_variables)%values_dble => Values(:Numvalues)
+      END SUBROUTINE declvar_dble
+
+!***********************************************************************
+! declvar_real - set up memory for real variables
+!***********************************************************************
+      SUBROUTINE declvar_real(Modname, Varname, Dimenname, Numvalues, Data_type, Desc, Units, Values)
+      USE PRMS_MMFAPI, ONLY: Num_variables, Variable_data
+      IMPLICIT NONE
+      ! Arguments
+      CHARACTER(LEN=*), INTENT(IN) :: Modname, Varname, Dimenname, Data_type, Desc, Units
+      INTEGER, INTENT(IN) :: Numvalues
+      REAL, TARGET :: Values(*)
+      ! Functions
+      EXTERNAL declvar
+!***********************************************************************
+      CALL declvar( Modname, Varname, Dimenname, Numvalues, Data_type, Desc, Units )
+      ALLOCATE ( Variable_data(Num_variables)%values_real(Numvalues) )
+      Variable_data(Num_variables)%values_real => Values(:Numvalues)
+      END SUBROUTINE declvar_real
+
+!***********************************************************************
+! declvar_int - set up memory for integer variables
+!***********************************************************************
+      SUBROUTINE declvar_int(Modname, Varname, Dimenname, Numvalues, Data_type, Desc, Units, Values)
+      USE PRMS_MMFAPI, ONLY: Num_variables, Variable_data
+      IMPLICIT NONE
+      ! Arguments
+      CHARACTER(LEN=*), INTENT(IN) :: Modname, Varname, Dimenname, Data_type, Desc, Units
+      INTEGER, INTENT(IN) :: Numvalues
+      INTEGER, TARGET :: Values(*)
+      ! Functions
+      EXTERNAL declvar
+!***********************************************************************
+      CALL declvar( Modname, Varname, Dimenname, Numvalues, Data_type, Desc, Units )
+      ALLOCATE ( Variable_data(Num_variables)%values_int(Numvalues) )
+      Variable_data(Num_variables)%values_int => Values(:Numvalues)
+      END SUBROUTINE declvar_int
+
+!***********************************************************************
+! getvar_dble - get double precision variable values
+!***********************************************************************
+      SUBROUTINE getvar_dble(Modname, Varname, Numvalues, Values)
+      USE PRMS_MMFAPI
+      IMPLICIT NONE
+      ! Arguments
+      CHARACTER(LEN=*), INTENT(IN) :: Modname, Varname
+      INTEGER, INTENT(IN) :: Numvalues
+      DOUBLE PRECISION, INTENT(OUT) :: Values(Numvalues)
+      ! Functions
+      INTEGER, EXTERNAL :: find_variable
+      ! Local Variables
+      INTEGER :: var_id
+!***********************************************************************
+      var_id = find_variable(Modname, Varname, Numvalues, 'double')
+      Values = Variable_data(var_id)%values_dble
+      END SUBROUTINE getvar_dble
+
+!***********************************************************************
+! getvar_dble - get double precision variable values
+!***********************************************************************
+      SUBROUTINE getvar_real(Modname, Varname, Numvalues, Values)
+      USE PRMS_MMFAPI
+      IMPLICIT NONE
+      ! Arguments
+      CHARACTER(LEN=*), INTENT(IN) :: Modname, Varname
+      INTEGER, INTENT(IN) :: Numvalues
+      REAL, INTENT(OUT) :: Values(Numvalues)
+      ! Functions
+      INTEGER, EXTERNAL :: find_variable
+      ! Local Variables
+      INTEGER :: var_id
+!***********************************************************************
+      var_id = find_variable(Modname, Varname, Numvalues, 'real')
+      Values = Variable_data(var_id)%values_real
+      END SUBROUTINE getvar_real
 
 !***********************************************************************
 ! getvar - get variable values
@@ -404,54 +469,6 @@
 
       getvar = 0
       END FUNCTION getvar
-
-!***********************************************************************
-! getvar_int - get variable values
-!***********************************************************************
-      INTEGER FUNCTION getvar_int(Modname, Varname, Numvalues, Data_type, Values)
-      USE PRMS_MMFAPI
-      IMPLICIT NONE
-      ! Arguments
-      CHARACTER(LEN=*), INTENT(IN) :: Modname, Varname, Data_type
-      INTEGER, INTENT(IN) :: Numvalues
-      ! values could be any data type
-      INTEGER, INTENT(INOUT) :: Values(Numvalues)
-      ! Functions
-      INTRINSIC TRANSFER
-      INTEGER, EXTERNAL :: find_variable
-      ! Local Variables
-      INTEGER :: var_id
-!***********************************************************************
-      var_id = find_variable(Modname, Varname, Numvalues, Data_type)
-
-      Values = TRANSFER(Variable_data(var_id)%values_dble,Values)
-
-      getvar_int = 0
-      END FUNCTION getvar_int
-
-!***********************************************************************
-! getvar_dble - get variable values
-!***********************************************************************
-      INTEGER FUNCTION getvar_dble(Modname, Varname, Numvalues, Data_type, Values)
-      USE PRMS_MMFAPI
-      IMPLICIT NONE
-      ! Arguments
-      CHARACTER(LEN=*), INTENT(IN) :: Modname, Varname, Data_type
-      INTEGER, INTENT(IN) :: Numvalues
-      ! values could be any data type
-      DOUBLE PRECISION, TARGET, INTENT(INOUT) :: Values(Numvalues)
-      ! Functions
-      INTEGER, EXTERNAL :: find_variable
-      ! Local Variables
-      INTEGER :: var_id
-!***********************************************************************
-      var_id = find_variable(Modname, Varname, Numvalues, Data_type)
-
-      !Values = Variable_data(var_id)%values_dble
-      Values = TRANSFER(Variable_data(var_id)%values_dble,Values)
-
-      getvar_dble = 0
-      END FUNCTION getvar_dble
 
 !***********************************************************************
 ! find_variable - find variable in data structure
@@ -692,17 +709,6 @@
       END SUBROUTINE getvalues_dbl
 
 !***********************************************************************
-! readvar - get variable from Data File
-!***********************************************************************
-      INTEGER FUNCTION readvar(Modname, Varname)
-      IMPLICIT NONE
-      ! Arguments
-      CHARACTER(LEN=*), INTENT(IN) :: Modname, Varname
-!***********************************************************************
-      readvar = 0
-      END FUNCTION readvar
-
-!***********************************************************************
 ! timestep_hours - time step increment in hours
 !***********************************************************************
       DOUBLE PRECISION FUNCTION deltim()
@@ -714,27 +720,10 @@
       END FUNCTION deltim
 
 !***********************************************************************
-! getstep - current time step
-! declare and init, time step is 0
-! however, for a restart execution this value needs to be the last timestep from the previous simulation
-!***********************************************************************
-      INTEGER FUNCTION getstep()
-      IMPLICIT NONE
-      ! Local Variable
-      INTEGER, SAVE :: time_step
-      DATA time_step/-1/ ! set to -1 so declare and init start with 0
-      !need to save the value in restart file
-!***********************************************************************
-      !getstep = ! need to get LIS time step number and/or restart value
-      time_step = time_step + 1
-      getstep = time_step
-      END FUNCTION getstep
-
-!***********************************************************************
 ! dattim - get start, end, or current date and time
 !***********************************************************************
       SUBROUTINE dattim(String, Datetime)
-      USE PRMS_MODULE, ONLY: Timestep, Endtime, Starttime
+      USE PRMS_MODULE, ONLY: Endtime, Starttime
       USE PRMS_SET_TIME, ONLY: Nowyear, Nowmonth, Nowday, Julian_day_absolute
       IMPLICIT NONE
       ! Arguments
@@ -1177,11 +1166,10 @@
 !***********************************************************************
 ! getvarsize - return the number of values for a parameter
 !***********************************************************************
-      INTEGER FUNCTION getvarsize(Varname, Numvalues)
+      INTEGER FUNCTION getvarsize(Varname)
       USE PRMS_MMFAPI
       IMPLICIT NONE
       ! Arguments
-      INTEGER, INTENT(OUT) :: Numvalues
       CHARACTER(LEN=*), INTENT(IN) :: Varname
       ! Functions
       INTRINSIC TRIM
@@ -1193,7 +1181,6 @@
         IF ( Varname==TRIM(Variable_data(i)%variable_name) ) THEN
           found = i
           getvarsize = Variable_data(i)%numvals
-          Numvalues = getvarsize
           EXIT
         ENDIF
       ENDDO

@@ -68,33 +68,31 @@
       USE PRMS_MODULE, ONLY: Nhru, Ntemp, Nrain, Model
       IMPLICIT NONE
 ! Functions
-      INTEGER, EXTERNAL :: declparam, declvar
-      EXTERNAL read_error, print_module
+      INTEGER, EXTERNAL :: declparam
+      EXTERNAL read_error, print_module, declvar_real
 ! Local Variables
       CHARACTER(LEN=80), SAVE :: Version_ide_dist
 !***********************************************************************
       idedecl = 0
 
       Version_ide_dist =
-     +'ide_dist.f 2016-07-22 17:22:00Z'
+     +'ide_dist.f 2017-09-27 15:41:00Z'
       CALL print_module(Version_ide_dist,
      +                  'Temp & Precip Distribution  ', 77)
       MODNAME = 'ide_dist'
 
       IF ( Model/=99 ) THEN
         ALLOCATE ( Tmax_rain_sta(Nrain) )
-        IF ( declvar(MODNAME, 'tmax_rain_sta', 'nrain', Nrain, 'real',
+        CALL declvar_real(MODNAME, 'tmax_rain_sta','nrain',Nrain,'real',
      +       'Maximum temperature distributed to the precipitation'//
      +       ' measurement stations',
-     +       'degrees Fahrenheit',
-     +       Tmax_rain_sta)/=0 ) CALL read_error(3, 'tmax_rain_sta')
+     +       'degrees Fahrenheit', Tmax_rain_sta)
 
         ALLOCATE ( Tmin_rain_sta(Nrain) )
-        IF ( declvar(MODNAME, 'tmin_rain_sta', 'nrain', Nrain, 'real',
+        CALL declvar_real(MODNAME, 'tmin_rain_sta','nrain',Nrain,'real',
      +       'Minimum temperature distributed to the precipitation'//
      +       ' measurement stations',
-     +       'degrees Fahrenheit',
-     +       Tmin_rain_sta)/=0 ) CALL read_error(3, 'tmin_rain_sta')
+     +       'degrees Fahrenheit', Tmin_rain_sta)
       ENDIF
 
 ! declare parameters

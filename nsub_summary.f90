@@ -58,7 +58,7 @@
       INTEGER :: i
       CHARACTER(LEN=80), SAVE :: Version_nsub_summary
 !***********************************************************************
-      Version_nsub_summary = 'nsub_summary.f90 2017-08-03 13:49:00Z'
+      Version_nsub_summary = 'nsub_summary.f90 2017-09-27 14:16:00Z'
       CALL print_module(Version_nsub_summary, 'Subbasin Output Summary     ', 90)
       MODNAME = 'nsub_summary'
 
@@ -104,7 +104,7 @@
       INTEGER, EXTERNAL :: getvartype, numchars, getvarsize, getparam
       EXTERNAL read_error, PRMS_open_output_file
 ! Local Variables
-      INTEGER :: ios, ierr, size, dum, jj, j, i, k
+      INTEGER :: ios, ierr, size, jj, j, i, k
       CHARACTER(LEN=MAXFILE_LENGTH) :: fileName
 !***********************************************************************
       Begin_results = 1
@@ -126,7 +126,7 @@
           PRINT *, '       only real or double variables allowed'
           ierr = 1
         ENDIF
-        size = getvarsize(NsubOutVar_names(jj)(:Nc_vars(jj)), dum )
+        size = getvarsize(NsubOutVar_names(jj)(:Nc_vars(jj)) )
         IF ( size/=Nhru ) THEN
           PRINT *, 'ERROR, invalid nsub_summary variable:', NsubOutVar_names(jj)(:Nc_vars(jj))
           PRINT *, '       only variables dimensioned by nhru, nssr, or ngw are allowed'
@@ -231,8 +231,7 @@
       IMPLICIT NONE
 ! FUNCTIONS AND SUBROUTINES
       INTRINSIC SNGL, DBLE
-      INTEGER, EXTERNAL :: getvar
-      EXTERNAL read_error
+      EXTERNAL read_error, getvar_real, getvar_dble
 ! Local Variables
       INTEGER :: j, i, jj, write_month, write_year, last_day, k
 !***********************************************************************
@@ -248,11 +247,9 @@
 ! need getvars for each variable (only can have short string)
       DO jj = 1, NsubOutVars
         IF ( Nsub_var_type(jj)==2 ) THEN
-          IF ( getvar(MODNAME, NsubOutVar_names(jj)(:Nc_vars(jj)), Nhru, 'real', Nhru_var_daily(1, jj))/=0 ) &
-     &         CALL read_error(4, NsubOutVar_names(jj)(:Nc_vars(jj)))
+          CALL getvar_real(MODNAME, NsubOutVar_names(jj)(:Nc_vars(jj)), Nhru, Nhru_var_daily(1, jj))
         ELSEIF ( Nsub_var_type(jj)==3 ) THEN  ! probably don't need double
-          IF ( getvar(MODNAME, NsubOutVar_names(jj)(:Nc_vars(jj)), Nhru, 'double', Nhru_var_dble(1, jj))/=0 ) &
-     &         CALL read_error(4, NsubOutVar_names(jj)(:Nc_vars(jj)))
+          CALL getvar_dble(MODNAME, NsubOutVar_names(jj)(:Nc_vars(jj)), Nhru, Nhru_var_dble(1, jj))
         ENDIF
       ENDDO
 

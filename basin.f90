@@ -5,7 +5,7 @@
       IMPLICIT NONE
       INTRINSIC :: EPSILON
 !   Local Variables
-      REAL, PARAMETER :: NEARZERO = 1.0E-6, INCH2CM = 2.54
+      REAL, PARAMETER :: NEARZERO = EPSILON(0.0), INCH2CM = 2.54
       REAL, PARAMETER :: CLOSEZERO = EPSILON(0.0)
       DOUBLE PRECISION, PARAMETER :: DNEARZERO = EPSILON(0.0D0), FT2_PER_ACRE = 43560.0D0
       DOUBLE PRECISION, PARAMETER :: CFS2CMS_CONV = 0.028316847D0
@@ -70,46 +70,46 @@
      &    Et_flag, Precip_flag, Nlake, GSFLOW_flag, Stream_temp_flag
       IMPLICIT NONE
 ! Functions
-      INTEGER, EXTERNAL :: declparam, declvar
-      EXTERNAL read_error, print_module
+      INTEGER, EXTERNAL :: declparam
+      EXTERNAL read_error, print_module, declvar_real
 !***********************************************************************
       basdecl = 0
 
-      Version_basin = 'basin.f90 2017-08-17 16:48:00Z'
+      Version_basin = 'basin.f90 2017-09-27 12:00:00Z'
       CALL print_module(Version_basin, 'Basin Definition            ', 90)
       MODNAME = 'basin'
 
 ! Declared Variables
       ALLOCATE ( Hru_imperv(Nhru) )
-      IF ( declvar(MODNAME, 'hru_imperv', 'nhru', Nhru, 'real', &
+      CALL declvar_real(MODNAME, 'hru_imperv', 'nhru', Nhru, 'real', &
      &     'Area of HRU that is impervious', &
-     &     'acres', Hru_imperv)/=0 ) CALL read_error(3, 'hru_imperv')
+     &     'acres', Hru_imperv)
 
       ALLOCATE ( Hru_perv(Nhru) )
-      IF ( declvar(MODNAME, 'hru_perv', 'nhru', Nhru, 'real', &
+      CALL declvar_real(MODNAME, 'hru_perv', 'nhru', Nhru, 'real', &
      &     'Area of HRU that is pervious', &
-     &     'acres', Hru_perv)/=0 ) CALL read_error(3, 'hru_perv')
+     &     'acres', Hru_perv)
 
       ALLOCATE ( Hru_frac_perv(Nhru) )
-      IF ( declvar(MODNAME, 'hru_frac_perv', 'nhru', Nhru, 'real', &
+      CALL declvar_real(MODNAME, 'hru_frac_perv', 'nhru', Nhru, 'real', &
      &     'Fraction of HRU that is pervious', &
-     &     'decimal fraction', Hru_frac_perv)/=0 ) CALL read_error(3, 'hru_frac_perv')
+     &     'decimal fraction', Hru_frac_perv)
 
       IF ( Dprst_flag==1 .OR. Model==99 ) THEN
         ALLOCATE ( Dprst_area_max(Nhru) )
-        IF ( declvar(MODNAME, 'dprst_area_max', 'nhru', Nhru, 'real', &
+        CALL declvar_real(MODNAME, 'dprst_area_max', 'nhru', Nhru, 'real', &
      &       'Aggregate sum of surface-depression storage areas of each HRU', &
-     &       'acres', Dprst_area_max)/=0 ) CALL read_error(1, 'dprst_area_max')
+     &       'acres', Dprst_area_max)
 
         ALLOCATE ( Dprst_area_open_max(Nhru) )
-        IF ( declvar(MODNAME, 'dprst_area_open_max', 'nhru', Nhru, 'real', &
+        CALL declvar_real(MODNAME, 'dprst_area_open_max', 'nhru', Nhru, 'real', &
      &       'Aggregate sum of open surface-depression storage areas of each HRU', &
-     &       'acres', Dprst_area_open_max)/=0 ) CALL read_error(1, 'dprst_area_open_max')
+     &       'acres', Dprst_area_open_max)
 
         ALLOCATE ( Dprst_area_clos_max(Nhru) )
-        IF ( declvar(MODNAME, 'dprst_area_clos_max', 'nhru', Nhru, 'real', &
+        CALL declvar_real(MODNAME, 'dprst_area_clos_max', 'nhru', Nhru, 'real', &
      &       'Aggregate sum of closed surface-depression storage areas of each HRU', &
-     &       'acres', Dprst_area_clos_max)/=0 ) CALL read_error(1, 'dprst_area_clos_max')
+     &       'acres', Dprst_area_clos_max)
 
         ALLOCATE ( Dprst_frac(Nhru) )
         IF ( declparam(MODNAME, 'dprst_frac', 'nhru', 'real', &
@@ -458,7 +458,7 @@
 
  9002 FORMAT (A, I4.2, 2('/', I2.2), I3.2, 2(':', I2.2))
  9003 FORMAT (2(A,F13.2))
- 9004 FORMAT (2(A,F12.4))
+ 9004 FORMAT (2(A,F12.5))
  9005 FORMAT (A, F13.2, A, F13.4)
 
       END FUNCTION basinit

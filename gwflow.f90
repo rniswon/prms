@@ -75,115 +75,96 @@
       IMPLICIT NONE
 ! Functions
       INTRINSIC INDEX
-      INTEGER, EXTERNAL :: declparam, declvar
-      EXTERNAL read_error, print_module
+      INTEGER, EXTERNAL :: declparam
+      EXTERNAL read_error, print_module, declvar_real, declvar_dble
 ! Local Variables
       CHARACTER(LEN=80), SAVE :: Version_gwflow
 !***********************************************************************
       gwflowdecl = 0
 
-      Version_gwflow = 'gwflow.f90 2017-09-13 09:26:00Z'
+      Version_gwflow = 'gwflow.f90 2017-09-27 13:45:00Z'
       CALL print_module(Version_gwflow, 'Groundwater                 ', 90)
       MODNAME = 'gwflow'
 
 ! cascading variables and parameters
       IF ( Cascadegw_flag>0 .OR. Model==99 ) THEN
         ALLOCATE ( Gw_upslope(Ngw) )
-        IF ( declvar(MODNAME, 'gw_upslope', 'ngw', Ngw, 'double', &
-     &       'Groundwater flow received from upslope GWRs for each GWR', &
-     &       'acre-inches', Gw_upslope)/=0 ) CALL read_error(3, 'gw_upslope')
+        CALL declvar_dble(MODNAME, 'gw_upslope', 'ngw', Ngw, 'double', &
+     &       'Groundwater flow received from upslope GWRs for each GWR', 'acre-inches', Gw_upslope)
 
         ALLOCATE ( Hru_gw_cascadeflow(Ngw) )
-        IF ( declvar(MODNAME, 'hru_gw_cascadeflow', 'ngw', Ngw, 'real', &
-     &       'Cascading groundwater flow from each GWR', &
-     &       'inches', Hru_gw_cascadeflow)/=0 ) CALL read_error(3, 'hru_gw_cascadeflow')
+        CALL declvar_real(MODNAME, 'hru_gw_cascadeflow', 'ngw', Ngw, 'real', &
+     &       'Cascading groundwater flow from each GWR', 'inches', Hru_gw_cascadeflow)
       ENDIF
 
       ALLOCATE ( Gwres_flow(Ngw) )
-      IF ( declvar(MODNAME, 'gwres_flow', 'ngw', Ngw, 'real', &
-     &     'Groundwater discharge from each GWR to the stream network', &
-     &     'inches', Gwres_flow)/=0 ) CALL read_error(3, 'gwres_flow')
+      CALL declvar_real(MODNAME, 'gwres_flow', 'ngw', Ngw, 'real', &
+     &     'Groundwater discharge from each GWR to the stream network', 'inches', Gwres_flow)
 
       ALLOCATE ( Gwres_in(Ngw) )
-      IF ( declvar(MODNAME, 'gwres_in', 'ngw', Ngw, 'double', &
-     &     'Total inflow to each GWR from associated capillary and gravity reservoirs', &
-     &     'acre-inches', Gwres_in)/=0 ) CALL read_error(3, 'gwres_in')
+      CALL declvar_dble(MODNAME, 'gwres_in', 'ngw', Ngw, 'double', &
+     &     'Total inflow to each GWR from associated capillary and gravity reservoirs', 'acre-inches', Gwres_in)
 
       ALLOCATE ( Gwres_sink(Ngw) )
-      IF ( declvar(MODNAME, 'gwres_sink', 'ngw', Ngw, 'real', &
+      CALL declvar_real(MODNAME, 'gwres_sink', 'ngw', Ngw, 'real', &
      &     'Outflow from GWRs to the groundwater sink; water is'// &
      &     ' considered underflow or flow to deep aquifers and does'// &
-     &     ' not flow to the stream network', &
-     &     'inches', Gwres_sink)/=0 ) CALL read_error(3, 'gwres_sink')
+     &     ' not flow to the stream network', 'inches', Gwres_sink)
 
       ALLOCATE ( Gw_in_soil(Ngw) )
-      IF ( declvar(MODNAME, 'gw_in_soil', 'ngw', Ngw, 'double', &
-     &     'Drainage from capillary reservoir excess water for each GWR', &
-     &     'acre-inches', Gw_in_soil)/=0 ) CALL read_error(3, 'gw_in_soil')
+      CALL declvar_dble(MODNAME, 'gw_in_soil', 'ngw', Ngw, 'double', &
+     &     'Drainage from capillary reservoir excess water for each GWR', 'acre-inches', Gw_in_soil)
 
       ALLOCATE ( Gw_in_ssr(Ngw) )
-      IF ( declvar(MODNAME, 'gw_in_ssr', 'ngw', Ngw, 'double', &
-     &     'Drainage from gravity reservoir excess water for each GWR', &
-     &     'acre-inches', Gw_in_ssr)/=0 ) CALL read_error(3, 'gw_in_ssr')
+      CALL declvar_dble(MODNAME, 'gw_in_ssr', 'ngw', Ngw, 'double', &
+     &     'Drainage from gravity reservoir excess water for each GWR', 'acre-inches', Gw_in_ssr)
 
-      IF ( declvar(MODNAME, 'basin_gwstor', 'one', 1, 'double', &
-     &     'Basin area-weighted average of storage in GWRs', &
-     &     'inches', Basin_gwstor)/=0 ) CALL read_error(3, 'basin_gwstor')
+      CALL declvar_dble(MODNAME, 'basin_gwstor', 'one', 1, 'double', &
+     &     'Basin area-weighted average of storage in GWRs', 'inches', Basin_gwstor)
 
-      IF ( declvar(MODNAME, 'basin_gwin', 'one', 1, 'double', &
-     &     'Basin area-weighted average of inflow to GWRs', &
-     &     'inches', Basin_gwin)/=0 ) CALL read_error(3, 'basin_gwin')
+      CALL declvar_dble(MODNAME, 'basin_gwin', 'one', 1, 'double', &
+     &     'Basin area-weighted average of inflow to GWRs', 'inches', Basin_gwin)
 
-      IF ( declvar(MODNAME, 'basin_gwflow', 'one', 1, 'double', &
-     &     'Basin area-weighted average of groundwater flow to the stream network', &
-     &     'inches', Basin_gwflow)/=0 ) CALL read_error(3, 'basin_gwflow')
+      CALL declvar_dble(MODNAME, 'basin_gwflow', 'one', 1, 'double', &
+     &     'Basin area-weighted average of groundwater flow to the stream network', 'inches', Basin_gwflow)
 
-      IF ( declvar(MODNAME, 'basin_gwsink', 'one', 1, 'double', &
-     &     'Basin area-weighted average of GWR outflow to the groundwater sink', &
-     &     'inches', Basin_gwsink)/=0 ) CALL read_error(3, 'basin_gwsink')
+      CALL declvar_dble(MODNAME, 'basin_gwsink', 'one', 1, 'double', &
+     &     'Basin area-weighted average of GWR outflow to the groundwater sink', 'inches', Basin_gwsink)
 
       ALLOCATE ( Hru_streamflow_out(Nhru) )
-      IF ( declvar(MODNAME, 'hru_streamflow_out', 'nhru', Nhru, 'double', &
-     &     'Total flow to stream network from each HRU', &
-     &     'cfs', Hru_streamflow_out)/=0 ) CALL read_error(3, 'Hru_streamflow_out')
+      CALL declvar_dble(MODNAME, 'hru_streamflow_out', 'nhru', Nhru, 'double', &
+     &     'Total flow to stream network from each HRU', 'cfs', Hru_streamflow_out)
 
       ALLOCATE ( Hru_lateral_flow(Nhru) )
-      IF ( declvar(MODNAME, 'hru_lateral_flow', 'nhru', Nhru, 'double', &
-     &     'Lateral flow to stream network from each HRU', &
-     &     'inches', Hru_lateral_flow)/=0 ) CALL read_error(3, 'Hru_lateral_flow')
+      CALL declvar_dble(MODNAME, 'hru_lateral_flow', 'nhru', Nhru, 'double', &
+     &     'Lateral flow to stream network from each HRU', 'inches', Hru_lateral_flow)
 
       ALLOCATE ( Hru_storage(Nhru) )
-      IF ( declvar(MODNAME, 'hru_storage', 'nhru', Nhru, 'double', &
-     &     'Storage for each HRU', &
-     &     'inches', Hru_storage)/=0 ) CALL read_error(3, 'hru_storage')
+      CALL declvar_dble(MODNAME, 'hru_storage', 'nhru', Nhru, 'double', &
+     &     'Storage for each HRU', 'inches', Hru_storage)
 
       ALLOCATE ( Gwstor_minarea(Ngw) )
       IF ( Dprst_flag==1 ) ALLOCATE ( Gwin_dprst(Ngw) )
 
       IF ( Lake_route_flag==1 .OR. Model==99 ) THEN
-        IF ( declvar(MODNAME, 'basin_lake_seep', 'one', 1, 'double', &
-     &       'Basin area-weighted average of lake-bed seepage to GWRs', &
-     &       'acre-inches', Basin_lake_seep)/=0 ) CALL read_error(3, 'basin_lake_seep')
+        CALL declvar_dble(MODNAME, 'basin_lake_seep', 'one', 1, 'double', &
+     &       'Basin area-weighted average of lake-bed seepage to GWRs', 'acre-inches', Basin_lake_seep)
 
         ALLOCATE ( Lake_seepage(Nlake) )
-        IF ( declvar(MODNAME, 'lake_seepage', 'nlake', Nlake, 'double', &
-     &       'Lake-bed seepage from each lake to associated GWRs', &
-     &       'inches', Lake_seepage)/=0 ) CALL read_error(3, 'lake_seepage')
+        CALL declvar_dble(MODNAME, 'lake_seepage', 'nlake', Nlake, 'double', &
+     &       'Lake-bed seepage from each lake to associated GWRs', 'inches', Lake_seepage)
 
         ALLOCATE ( Gw_seep_lakein(Nlake) )
-        IF ( declvar(MODNAME, 'gw_seep_lakein', 'nlake', Nlake, 'double', &
-     &       'Groundwater discharge to any associated lake for each GWR', &
-     &       'inches', Gw_seep_lakein)/=0 ) CALL read_error(3, 'gw_seep_lakein')
+        CALL declvar_dble(MODNAME, 'gw_seep_lakein', 'nlake', Nlake, 'double', &
+     &       'Groundwater discharge to any associated lake for each GWR', 'inches', Gw_seep_lakein)
 
         ALLOCATE ( Lake_seepage_gwr(Ngw) )
-        IF ( declvar(MODNAME, 'lake_seepage_gwr', 'ngw', Ngw, 'double', &
-     &       'Net lake-bed seepage to associated GWRs', &
-     &       'inches', Lake_seepage_gwr)/=0 ) CALL read_error(3, 'lake_seepage_gwr')
+        CALL declvar_dble(MODNAME, 'lake_seepage_gwr', 'ngw', Ngw, 'double', &
+     &       'Net lake-bed seepage to associated GWRs', 'inches', Lake_seepage_gwr)
 
         ALLOCATE ( Elevlake(Nlake) )
-        IF ( declvar(MODNAME, 'elevlake', 'nlake', Nlake, 'real', &
-     &       'Surface elevation of each lake', &
-     &       'inches', Elevlake)/=0 ) CALL read_error(3, 'elevlake')
+        CALL declvar_real(MODNAME, 'elevlake', 'nlake', Nlake, 'real', &
+     &       'Surface elevation of each lake', 'inches', Elevlake)
       ENDIF
 
       IF ( Init_vars_from_file==0 ) THEN
@@ -249,13 +230,12 @@
      &     'inches')/=0 ) CALL read_error(1, 'gwstor_min')
 
       ALLOCATE ( Gwstor_minarea_wb(Ngw) )
-      IF ( declvar(MODNAME, 'gwstor_minarea_wb', 'ngw', Ngw, 'double', &
-     &     'Storage added to each GWR when storage is less than gwstor_min', &
-     &     'inches', Gwstor_minarea_wb)/=0 ) CALL read_error(3, 'gwstor_minarea_wb')
+      CALL declvar_dble(MODNAME, 'gwstor_minarea_wb', 'ngw', Ngw, 'double', &
+     &     'Storage added to each GWR when storage is less than gwstor_min', 'inches', Gwstor_minarea_wb)
 
-      IF ( declvar(MODNAME, 'basin_gwstor_minarea_wb', 'one', 1, 'double', &
+      CALL declvar_dble(MODNAME, 'basin_gwstor_minarea_wb', 'one', 1, 'double', &
      &     'Basin area-weighted average storage added to each GWR when storage is less than gwstor_min', &
-     &     'inches', Basin_gwstor_minarea_wb)/=0 ) CALL read_error(3, 'basin_gwstor_minarea_wbr_minarea_wb')
+     &     'inches', Basin_gwstor_minarea_wb)
 
       END FUNCTION gwflowdecl
 

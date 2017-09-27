@@ -45,7 +45,7 @@
 ! Functions
       EXTERNAL :: print_module
 !***********************************************************************
-      Version_statvar_out = '$Id: statvar_out.f90 5143 2012-12-18 19:50:35Z rsregan $'
+      Version_statvar_out = 'statvar_out.f90 2017-09-27 15:42:00Z'
       CALL print_module(Version_statvar_out, 'Summary                 ', 90)
 
       IF ( NstatVars==0 ) THEN
@@ -125,8 +125,8 @@
       IMPLICIT NONE
 ! FUNCTIONS AND SUBROUTINES
       INTRINSIC SNGL, FLOAT
-      INTEGER, EXTERNAL :: getvar, getvar_dble, getvar_int, getvarnvals
-      EXTERNAL read_error
+      INTEGER, EXTERNAL :: getvarnvals
+      EXTERNAL read_error, getvar_real, getvar_dble, getvar_int
 ! Local Variables
       INTEGER :: jj, nvals, nc, nvalues
       INTEGER, ALLOCATABLE, TARGET :: values_int(:)
@@ -143,19 +143,19 @@
         ENDIF
         IF ( Stat_var_type(jj)==3 ) THEN
           ALLOCATE ( values_dble(nvals) )
-          IF ( getvar_dble(MODNAME, statVar_names(jj)(:nc), nvals, 'double', values_dble)/=0 ) CALL read_error(4,statVar_names(jj)(:nc))
+          CALL getvar_dble(MODNAME, statVar_names(jj)(:nc), nvals, values_dble)
           Stat_var_values(jj) = SNGL(values_dble(Statvar_id(jj)))
           !print *, statVar_names(jj)(:nc), nvals, Stat_var_values(jj), 'double'
           DEALLOCATE ( values_dble )
         ELSEIF ( Stat_var_type(jj)==2 ) THEN
           ALLOCATE ( values_real(nvals) )
-          IF ( getvar(MODNAME, statVar_names(jj)(:nc), nvals, 'real', values_real)/=0 ) CALL read_error(4,statVar_names(jj)(:nc))
+          CALL getvar_real(MODNAME, statVar_names(jj)(:nc), nvals, values_real)
           Stat_var_values(jj) = values_real(Statvar_id(jj))
           !print *, statVar_names(jj)(:nc), nvals,Stat_var_values(jj), 'real'
           DEALLOCATE ( values_real )
         ELSEIF ( Stat_var_type(jj)==1 ) THEN
           ALLOCATE ( values_int(nvals) )
-          IF ( getvar_int(MODNAME, statVar_names(jj)(:nc), nvals, 'integer', values_int)/=0 ) CALL read_error(4,statVar_names(jj)(:nc))
+          CALL getvar_int(MODNAME, statVar_names(jj)(:nc), nvals, values_int)
           Stat_var_values(jj) = FLOAT(values_int(Statvar_id(jj)))
           !print *, statVar_names(jj)(:nc), nvals,Stat_var_values(jj), 'integer'
           DEALLOCATE ( values_int )

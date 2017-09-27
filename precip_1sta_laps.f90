@@ -31,7 +31,7 @@
 
       INTEGER FUNCTION precip_1sta_laps()
       USE PRMS_PRECIP_1STA_LAPS
-      USE PRMS_MODULE, ONLY: Process, Nhru, Nrain, Inputerror_flag, Precip_flag, Model, Print_debug
+      USE PRMS_MODULE, ONLY: Process, Nhru, Nrain, Precip_flag, Model, Print_debug
       USE PRMS_BASIN, ONLY: Active_hrus, Hru_area, Hru_route_order, Basin_area_inv, Hru_elev, MM2INCH
       USE PRMS_CLIMATEVARS, ONLY: Newsnow, Pptmix, Prmx, Basin_ppt, &
      &    Basin_rain, Basin_snow, Hru_ppt, Hru_rain, Hru_snow, &
@@ -44,9 +44,9 @@
       INTRINSIC ABS
       INTEGER, EXTERNAL :: declparam, getparam
       EXTERNAL :: read_error, precip_form, print_module, compute_precip_laps
-      EXTERNAL :: print_date, checkdim_param_limits
+      EXTERNAL :: print_date
 ! Local Variables
-      INTEGER :: i, ii, ierr
+      INTEGER :: i, ii
       REAL :: ppt
       DOUBLE PRECISION :: sum_obs
       CHARACTER(LEN=80), SAVE :: Version_precip
@@ -95,7 +95,7 @@
         Basin_snow = Basin_snow*Basin_area_inv
 
       ELSEIF ( Process(:4)=='decl' ) THEN
-        Version_precip = 'precip_1sta_laps.f90 2016-10-21 17:36:00Z'
+        Version_precip = 'precip_1sta_laps.f90 2017-09-27 12:12:00Z'
         IF ( Precip_flag==1 ) THEN
           MODNAME = 'precip_1sta'
         ELSE
@@ -191,22 +191,8 @@
         Psta_nuse = 0
         DO ii = 1, Active_hrus
           i = Hru_route_order(ii)
-          ierr = 0
-          CALL checkdim_param_limits(i, 'hru_psta', 'nrain', Hru_psta(i), 1, Nrain, ierr)
-          IF ( ierr==0 ) THEN
-            Psta_nuse(Hru_psta(i)) = 1
-          ELSE
-            Inputerror_flag = 1
-          ENDIF
-          IF ( Precip_flag==2 ) THEN
-            ierr = 0
-            CALL checkdim_param_limits(i, 'hru_plaps', 'nrain', Hru_plaps(i), 1, Nrain, ierr)
-            IF ( ierr==0 ) THEN
-              CALL compute_precip_laps(i, Hru_plaps(i), Hru_psta(i), Hru_elev(i))
-            ELSE
-              Inputerror_flag = 1
-            ENDIF
-          ENDIF
+          Psta_nuse(Hru_psta(i)) = 1
+          IF ( Precip_flag==2 ) CALL compute_precip_laps(i, Hru_plaps(i), Hru_psta(i), Hru_elev(i))
         ENDDO
 
       ENDIF

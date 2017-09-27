@@ -35,8 +35,8 @@
       IMPLICIT NONE
 ! Functions
       INTRINSIC DBLE
-      INTEGER, EXTERNAL :: declparam, getparam, declvar
-      EXTERNAL :: read_error, print_module, print_date
+      INTEGER, EXTERNAL :: declparam, getparam
+      EXTERNAL :: read_error, print_module, print_date, declvar_real, declvar_dble
 ! Local Variables
       INTEGER :: j, jj, k
       REAL :: pptadj, radadj, ccov
@@ -112,18 +112,18 @@
         Basin_cloud_cover = Basin_cloud_cover*Basin_area_inv
 
       ELSEIF ( Process(:4)=='decl' ) THEN
-        Version_ccsolrad = 'ccsolrad.f90 2017-02-15 16:09:00Z'
+        Version_ccsolrad = 'ccsolrad.f90 2017-09-27 14:07:00Z'
         CALL print_module(Version_ccsolrad, 'Solar Radiation Distribution', 90)
         MODNAME = 'ccsolrad'
 
         ALLOCATE ( Cloud_radadj(Nhru) )
-        IF ( declvar(MODNAME, 'cloud_radadj', 'nhru', Nhru, 'real', &
+        CALL declvar_real(MODNAME, 'cloud_radadj', 'nhru', Nhru, 'real', &
      &       'Radiation adjustment for cloud cover of each HRU', &
-     &       'decimal fraction', Cloud_radadj)/=0 ) CALL read_error(3, 'cloud_radadj')
+     &       'decimal fraction', Cloud_radadj)
 
-        IF ( declvar(MODNAME, 'basin_radadj', 'one', 1, 'double', &
+        CALL declvar_dble(MODNAME, 'basin_radadj', 'one', 1, 'double', &
      &       'Basin area-weighted average radiation adjustment for cloud cover', &
-     &       'decimal fraction', Basin_radadj)/=0 ) CALL read_error(3, 'basin_radadj')
+     &       'decimal fraction', Basin_radadj)
 
         ! Declare Parameters
         ALLOCATE ( Crad_coef(Nhru,12) )

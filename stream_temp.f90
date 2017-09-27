@@ -106,14 +106,14 @@
       IMPLICIT NONE
 ! Functions
       INTRINSIC INDEX
-      INTEGER, EXTERNAL :: declparam, declvar, getdim, control_integer
-      EXTERNAL :: read_error, print_module
+      INTEGER, EXTERNAL :: declparam, getdim, control_integer
+      EXTERNAL :: read_error, print_module, declvar_real, declvar_dble
 ! Local Variables
       CHARACTER(LEN=80), SAVE :: Version_stream_temp
 !***********************************************************************
       stream_temp_decl = 0
 
-      Version_stream_temp = 'stream_temp.f90 2016-09-21 14:02:00Z'
+      Version_stream_temp = 'stream_temp.f90 2017-09-27 15:39:00Z'
       CALL print_module(Version_stream_temp, 'Stream Temperature          ', 90)
       MODNAME = 'stream_temp'
 
@@ -128,59 +128,59 @@
 
 ! Declared Variables
       ALLOCATE ( Seg_width(Nsegment) )
-      IF ( declvar( MODNAME, 'seg_width', 'nsegment', Nsegment, 'real', &
+      CALL declvar_real( MODNAME, 'seg_width', 'nsegment', Nsegment, 'real', &
      &     'Width of each segment', &
-     &     'meters', Seg_width)/=0 )  CALL read_error(3, 'seg_width')
+     &     'meters', Seg_width)
 
       ALLOCATE ( Temp_avg(Nsegment) ) ! previous ??
-      IF ( declvar( MODNAME, 'temp_avg', 'nsegment', Nsegment, 'real', &
+      CALL declvar_real( MODNAME, 'temp_avg', 'nsegment', Nsegment, 'real', &
      &     'Average stream temperature based on all inflows and previous temperature for each segment', &
-     &     'degrees Celsius', Temp_avg)/=0 ) CALL read_error(3, 'temp_avg')
+     &     'degrees Celsius', Temp_avg)
 
       ALLOCATE ( Upstrm_temp(Nsegment) )
-      IF ( declvar( MODNAME, 'upstrm_temp', 'nsegment', Nsegment, 'real', &
+      CALL declvar_real( MODNAME, 'upstrm_temp', 'nsegment', Nsegment, 'real', &
      &     'Temperature of streamflow entering each segment', &
-     &     'degrees Celsius', Upstrm_temp)/=0 )   CALL read_error(3,'upstrm_temp')
+     &     'degrees Celsius', Upstrm_temp)
 
       ALLOCATE ( Seg_humid(Nsegment) )
-      IF ( declvar( MODNAME, 'seg_humid', 'nsegment', Nsegment, 'real', &
+      CALL declvar_real( MODNAME, 'seg_humid', 'nsegment', Nsegment, 'real', &
      &     'Area-weighted average relative humidity for each segment from HRUs contributing flow to the segment', &
-     &     'decimal fraction', Seg_humid)/=0 ) CALL read_error(3,'seg_humid')
+     &     'decimal fraction', Seg_humid)
 
       ALLOCATE ( Seg_maxtemp(Nsegment) )
-      IF ( declvar( MODNAME, 'seg_maxtemp', 'nsegment', Nsegment, 'real', &
+      CALL declvar_real( MODNAME, 'seg_maxtemp', 'nsegment', Nsegment, 'real', &
      &     'Area-weighted average maximum air temperature for each segment from HRUs contributing flow to the segment', &
-     &     'degrees Celsius', Seg_maxtemp)/=0 ) CALL read_error(3, 'seg_maxtemp')
+     &     'degrees Celsius', Seg_maxtemp)
 
       ALLOCATE ( Seg_melt(Nsegment) )
-      IF ( declvar( MODNAME, 'seg_melt', 'nsegment', Nsegment, 'real', &
+      CALL declvar_real( MODNAME, 'seg_melt', 'nsegment', Nsegment, 'real', &
      &     'Area-weighted average snowmelt for each segment from HRUs contributing flow to the segment', &
-     &     'inches', Seg_melt)/=0 ) CALL read_error(3, 'seg_melt')
+     &     'inches', Seg_melt)
 
       ALLOCATE ( Seg_rain(Nsegment) )
-      IF ( declvar( MODNAME, 'seg_rain', 'nsegment', Nsegment, 'real', &
+      CALL declvar_real( MODNAME, 'seg_rain', 'nsegment', Nsegment, 'real', &
      &     'Area-weighted average rainfall for each segment from HRUs contributing flow to the segment', &
-     &     'inches', Seg_rain)/=0 ) CALL read_error(3, 'seg_rain')
+     &     'inches', Seg_rain)
 
       ALLOCATE ( T_roff(Nsegment) )
-      IF ( declvar( MODNAME, 't_roff', 'nsegment', Nsegment, 'real', &
+      CALL declvar_real( MODNAME, 't_roff', 'nsegment', Nsegment, 'real', &
      &     'Area-weighted average air temperature for each segment from HRUs contributing flow to the segment', &
-     &     'degrees Celsius', T_roff)/=0 ) CALL read_error(3, 't_roff')
+     &     'degrees Celsius', T_roff)
 
       ALLOCATE ( Seg_potet(Nsegment) )
-      IF ( declvar( MODNAME, 'seg_potet', 'nsegment', Nsegment, 'double', &
+      CALL declvar_dble( MODNAME, 'seg_potet', 'nsegment', Nsegment, 'double', &
      &     'Hru area-weighted average potential ET for each segment', &
-     &     'inches', Seg_potet)/=0 ) CALL read_error(3, 'seg_potet')
+     &     'inches', Seg_potet)
 
       ALLOCATE ( Seg_ccov(Nsegment) )
-      IF ( declvar( MODNAME, 'seg_ccov', 'nsegment', Nsegment, 'real', &
+      CALL declvar_real( MODNAME, 'seg_ccov', 'nsegment', Nsegment, 'real', &
      &     'Area-weighted average cloud cover fraction for each segment from HRUs contributing flow to the segment', &
-     &     'decimal fraction', Seg_ccov )/=0 ) CALL read_error(3, 'seg_ccov')
+     &     'decimal fraction', Seg_ccov )
 
       ALLOCATE ( Dlit(Nsegment) )
-      IF ( declvar( MODNAME, 'dlit', 'nsegment', Nsegment, 'real', &
+      CALL declvar_real( MODNAME, 'dlit', 'nsegment', Nsegment, 'real', &
      &     'Hours of daylight', &
-     &     'hours', Dlit)/=0 )   CALL read_error(3,'dlit')
+     &     'hours', Dlit)
 
       ALLOCATE ( Seg_elev(Nsegment), Press(Nsegment) ) !, Flowsum(Nsegment) )
       ALLOCATE ( T_ss(Nsegment), T_gw(Nsegment), T_ground(Nsegment) )

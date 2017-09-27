@@ -1,4 +1,4 @@
-      ! utils_prms.f90 2017-06-30 12:02:00Z
+      ! utils_prms.f90 2017-09-27 10:53:00Z
 !***********************************************************************
 !     Read CBH File to current time
 !***********************************************************************
@@ -722,7 +722,8 @@
       IF ( Ftype==0 ) THEN
         OPEN ( Iunit, FILE=Fname(:nchars), STATUS='OLD', IOSTAT=ios )
       ELSE
-        OPEN ( Iunit, FILE=Fname(:nchars), STATUS='OLD', FORM='UNFORMATTED', IOSTAT=ios )
+        !OPEN ( Iunit, FILE=Fname(:nchars), STATUS='OLD', FORM='UNFORMATTED', IOSTAT=ios ) ! for linux
+        OPEN ( Iunit, FILE=Fname(:nchars), STATUS='OLD', FORM='BINARY', IOSTAT=ios ) ! for windows
       ENDIF
       IF ( ios/=0 ) THEN
         WRITE ( *, '(/,2A,/,A,/,2A,/)' ) 'ERROR opening input file: ', Fname(:nchars), &
@@ -753,7 +754,8 @@
       IF ( Ftype==0 ) THEN
         OPEN ( Iunit, FILE=Fname(:nchars), STATUS='REPLACE', IOSTAT=ios )
       ELSE
-        OPEN ( Iunit, FILE=Fname(:nchars), STATUS='REPLACE', IOSTAT=ios, FORM='UNFORMATTED' )
+        !OPEN ( Iunit, FILE=Fname(:nchars), STATUS='REPLACE', IOSTAT=ios, FORM='UNFORMATTED' ) ! for linux
+        OPEN ( Iunit, FILE=Fname(:nchars), STATUS='REPLACE', IOSTAT=ios, FORM='BINARY' ) ! for windows
       ENDIF
 
       IF ( ios/=0 ) THEN
@@ -951,27 +953,43 @@
       END SUBROUTINE check_param_zero
 
 !***********************************************************************
-! checks values of basin wide parameters
-! and compute some basin variables
+! Sanity checks for bounded parameters
 !***********************************************************************
-      SUBROUTINE check_nhru_params()
-      USE PRMS_MODULE, ONLY: Temp_flag, Ntemp, Nevap, Inputerror_flag
+      SUBROUTINE check_bounded_params()
+      USE PRMS_MODULE, ONLY: Temp_flag, Precip_flag, Ntemp, Nevap, Nsol, Nrain, Inputerror_flag, Et_flag, Solrad_flag
       USE PRMS_BASIN, ONLY: Active_hrus, Hru_route_order
-      USE PRMS_CLIMATEVARS, ONLY: Hru_tsta, Hru_pansta, Use_pandata
+      USE PRMS_CLIMATEVARS, ONLY: Hru_tsta, Hru_pansta, Use_pandata, Basin_solsta, Hru_solsta, Basin_tsta
+      USE PRMS_OBS, ONLY: Nwind, Nhumid
+      USE PRMS_PRECIP_1STA_LAPS, ONLY: Hru_psta, Hru_plaps
+      USE PRMS_TEMP_1STA_LAPS, ONLY: Hru_tlaps
+      USE PRMS_POTET_PM_STA, ONLY: Hru_windspeed_sta, Hru_humidity_sta
       IMPLICIT NONE
 ! Functions
       EXTERNAL :: checkdim_param_limits
 ! Local variables
-      INTEGER :: i, j, check_tsta
+      INTEGER :: i, j, check_tsta, check_solsta, check_psta
 !***********************************************************************
       check_tsta = 0
       IF ( Temp_flag==1 .OR. Temp_flag==2 ) check_tsta = 1
-
-      ! Sanity checks for parameters
+      check_solsta = 0
+      IF ( (Solrad_flag==1 .OR. Solrad_flag==2) .AND. Nsol>0 ) THEN
+        check_solsta = 1
+        CALL checkdim_param_limits(1, 'basin_solsta', 'nsol', Basin_solsta, 1, Nsol, Inputerror_flag)
+      ENDIF
+      check_psta = 0
+      IF ( Precip_flag==1 .OR. Precip_flag==2 ) check_psta = 1
       DO j = 1, Active_hrus
         i = Hru_route_order(j)
         IF ( check_tsta==1 ) CALL checkdim_param_limits(i, 'hru_tsta', 'ntemp', Hru_tsta(i), 1, Ntemp, Inputerror_flag)
+        IF ( check_psta==1 ) CALL checkdim_param_limits(i, 'hru_psta', 'nrain', Hru_psta(i), 1, Nrain, Inputerror_flag)
         IF ( Use_pandata==1 ) CALL checkdim_param_limits(i, 'hru_pansta', 'nevap', Hru_pansta(i), 1, Nevap, Inputerror_flag)
+        IF ( check_solsta==1 ) CALL checkdim_param_limits(i, 'hru_solsta', 'nsol', Hru_solsta(i), 0, Nsol, Inputerror_flag)
+        IF ( Temp_flag==2 ) CALL checkdim_param_limits(i, 'hru_tlaps', 'ntemp', Hru_tlaps(j), 1, Ntemp, Inputerror_flag)
+        IF ( Precip_flag==2 ) CALL checkdim_param_limits(i, 'hru_plaps', 'nrain', Hru_plaps(i), 1, Nrain, Inputerror_flag)
+        IF ( Temp_flag<4 ) CALL checkdim_param_limits(1, 'basin_tsta', 'ntemp', Basin_tsta, 1, Ntemp, Inputerror_flag)
+        IF ( Et_flag==6 ) THEN
+          CALL checkdim_param_limits(i, 'hru_windspeed_sta', 'nwind', Hru_windspeed_sta(i), 1, Nwind, Inputerror_flag)
+          CALL checkdim_param_limits(i, 'hru_humidity_sta', 'nhumid', Hru_humidity_sta(i), 1, Nhumid, Inputerror_flag)
+        ENDIF
       ENDDO
-
-      END SUBROUTINE check_nhru_params
+      END SUBROUTINE check_bounded_params

@@ -1,7 +1,6 @@
       MODULE PRMS_READ_PARAM_FILE
         USE PRMS_MODULE, ONLY: Print_debug, EQULS, Param_file
         INTEGER, SAVE :: Param_unit, Read_parameters
-        CHARACTER(LEN=80), SAVE :: Version_read_parameter_file
       END MODULE PRMS_READ_PARAM_FILE
 
 !***********************************************************************
@@ -9,6 +8,7 @@
 !***********************************************************************
       SUBROUTINE read_parameter_file_dimens
       USE PRMS_READ_PARAM_FILE
+      USE PRMS_MODULE, ONLY: Version_read_parameter_file
       IMPLICIT NONE
       ! Functions
       INTRINSIC TRIM
@@ -20,7 +20,7 @@
       CHARACTER(LEN=24) :: dimstring
       INTEGER nchars, ios, dimen_value
 !***********************************************************************
-      Version_read_parameter_file = 'read_parameter_file.f90 2017-07-07 15:18:00Z'
+      Version_read_parameter_file = 'read_parameter_file.f90 2017-09-27 12:10:00Z'
       CALL PRMS_open_input_file(Param_unit, Param_file, 'param_file', 0, ios)
       IF ( ios/=0 ) STOP
       IF ( Print_debug>-1 ) THEN
