@@ -14,12 +14,12 @@
       CHARACTER(LEN=80) :: Buffer80
       CHARACTER(LEN=120) :: Buffer120
       CHARACTER(LEN=160) :: Buffer160
-      CHARACTER(LEN=152), PARAMETER :: DASHS = ' --------------------------------------------------------'// &
-     &  '-----------------------------------------------------------------------------------------------'
-      CHARACTER(LEN=152), PARAMETER :: STARS = ' ********************************************************'// &
-     &  '***********************************************************************************************'
-      CHARACTER(LEN=152), PARAMETER :: EQULS = ' ========================================================'// &
-     &  '==============================================================================================='
+      CHARACTER(LEN=151), PARAMETER :: DASHS = ' --------------------------------------------------------'// &
+     &  '----------------------------------------------------------------------------------------------'
+      CHARACTER(LEN=151), PARAMETER :: STARS = ' ********************************************************'// &
+     &  '**********************************************************************************************'
+      CHARACTER(LEN=151), PARAMETER :: EQULS = ' ========================================================'// &
+     &  '=============================================================================================='
       LOGICAL, SAVE :: Dprt, Mprt, Yprt, Tprt
       DOUBLE PRECISION, SAVE :: Basin_swrad_yr, Basin_swrad_tot, Basin_swrad_mo
 !   Declared Variables
@@ -94,7 +94,7 @@
 !***********************************************************************
       sumbdecl = 0
 
-      Version_basin_sum = 'basin_sum.f90 2017-09-27 13:21:00Z'
+      Version_basin_sum = 'basin_sum.f90 2017-09-28 11:54:00Z'
       CALL print_module(Version_basin_sum, 'Summary                     ', 90)
       MODNAME = 'basin_sum'
 
@@ -564,7 +564,7 @@
      &            Basin_snowmelt, Basin_gwstor, Basin_ssstor, &
      &            Basin_gwflow, Basin_ssflow, Basin_sroff, &
      &            Basin_stflow_out, Basin_cfs, obsrunoff, Basin_lakeevap
-          CALL write_outfile(Buffer160(:151))
+          CALL write_outfile(Buffer160)
 
         ENDIF
       ENDIF
@@ -633,7 +633,7 @@
             IF ( Dprt ) CALL write_outfile(DASHS(:62))
 
           ELSEIF ( Print_type==2 ) THEN
-            IF ( Dprt ) CALL write_outfile(DASHS(:144))
+            IF ( Dprt ) CALL write_outfile(DASHS(:148))
             WRITE ( Buffer160, 9006 ) Nowyear, Nowmonth, Basin_swrad_mo, Basin_max_temp_mo, &
      &              Basin_min_temp_mo, Basin_ppt_mo, Basin_net_ppt_mo, &
      &              Basin_intcp_evap_mo, Basin_potet_mo, Basin_actet_mo, &
@@ -641,8 +641,8 @@
      &              Basin_gwstor, Basin_ssstor, Basin_gwflow_mo, &
      &              Basin_ssflow_mo, Basin_sroff_mo, Basin_stflow_mo, &
      &              Basin_cfs_mo, Obs_runoff_mo
-            CALL write_outfile(Buffer160(:144))
-            IF ( Dprt ) CALL write_outfile(DASHS(:144))
+            CALL write_outfile(Buffer160(:148))
+            IF ( Dprt ) CALL write_outfile(DASHS(:148))
           ENDIF
 
         ENDIF
@@ -705,7 +705,7 @@
      &              Basin_gwstor, Basin_ssstor, Basin_gwflow_yr, &
      &              Basin_ssflow_yr, Basin_sroff_yr, Basin_stflow_yr, &
      &              Basin_cfs_yr, Obs_runoff_yr, Basin_lakeevap_yr
-            CALL write_outfile(Buffer160(:151))
+            CALL write_outfile(Buffer160)
             IF ( Mprt .OR. Dprt ) CALL write_outfile(EQULS)
           ENDIF
 
@@ -778,15 +778,15 @@
           ELSEIF ( Print_type==2 ) THEN
             Obs_runoff_tot = Obs_runoff_tot/Totdays
             Basin_cfs_tot = Basin_cfs_tot/Totdays
-            CALL write_outfile(STARS(:151))
+            CALL write_outfile(STARS)
             WRITE ( Buffer160, 9004 ) ' Total for run', Basin_ppt_tot, &
      &              Basin_net_ppt_tot, Basin_intcp_evap_tot, &
      &              Basin_potet_tot, Basin_actet_tot, Basin_soil_moist, &
      &              Basin_pweqv, Basin_snowmelt_tot, Basin_gwstor, &
      &              Basin_ssstor, Basin_gwflow_tot, Basin_ssflow_tot, &
      &              Basin_sroff_tot, Basin_stflow_tot, Basin_cfs_tot, Obs_runoff_tot, Basin_lakeevap_yr
-            CALL write_outfile(Buffer160(:151))
-            CALL write_outfile(STARS(:151))
+            CALL write_outfile(Buffer160)
+            CALL write_outfile(STARS)
           ENDIF
         ENDIF
       ENDIF
@@ -794,8 +794,8 @@
  9001 FORMAT (I6, 2I3, F5.0, 2F5.1, 2F7.2, 2F6.2, 2F7.2, F6.2, F6.3, F7.3, 2F6.3, 3F7.2, F7.4, 2F9.2, F7.2)
  9004 FORMAT (A, 13X, 2F7.2, F12.1, 2F7.2, 2F6.2, F7.2, 2F6.2, 4F7.2, 2F9.2, F7.2)
  9005 FORMAT (A, 3X, 6F9.3)
- 9006 FORMAT (I6, I3, 3X, 3F5.1, 2F7.2, F12.1, 2F7.2, 2F6.2, F7.2, 2F6.2, 4F7.2, 2F9.2)
- 9007 FORMAT (I6, 6X, 3F5.1, 2F7.2, 2F6.2, 2F7.2, 2F6.2, F7.2, 2F6.2, 4F7.2, 2F9.2, F7.2)
+ 9006 FORMAT (I6, I3, 3X, 3F5.1, 2F7.2, F12.1, 2F7.2, 2F6.2, F7.2, 2F6.2, 3F7.2, 2F9.2, F7.2)
+ 9007 FORMAT (I6, 6X, 3F5.1, 2F7.2, 2F6.2, 2F7.2, 2F6.2, F7.2, 2F6.2, 3F7.2, 2F9.2, 2F7.2)
 
       END FUNCTION sumbrun
 
@@ -837,10 +837,10 @@
 !  This writes the detailed table header.
       ELSEIF ( Print_type==2 ) THEN
         CALL write_outfile(' Year mo day srad  tmx  tmn    ppt  n-ppt  ints  intl  potet'// &
-     &    '  actet  smav pweqv   melt gwsto sssto gwflow ssflow  sroff tot-fl     sim     meas  lkevap')
+     &    '  actet  smav pweqv   melt gwsto sssto gwflow ssflow  sroff    tot-fl      sim  meas lkevap')
         CALL write_outfile('             (ly) (F/C)(F/C)  (in)   (in)  (in)  (in)   (in)'// &
-     &    '   (in)  (in)  (in)   (in)  (in)  (in)   (in)   (in)   (in)   (in)    (cfs)    (cfs)   (in)')
-        CALL write_outfile(DASHS(:151))
+     &    '   (in)  (in)  (in)   (in)  (in)  (in)   (in)   (in)   (in)      (in)    (cfs) (cfs)   (in)')
+        CALL write_outfile(DASHS)
 
       ENDIF
 
