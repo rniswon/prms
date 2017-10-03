@@ -72,7 +72,7 @@
 !***********************************************************************
       map_resultsdecl = 0
 
-      Version_map_results = 'map_results.f90 2017-09-27 15:48:00Z'
+      Version_map_results = 'map_results.f90 2017-10-2 13:33:00Z'
       CALL print_module(Version_map_results, 'Output Summary              ', 90)
       MODNAME = 'map_results'
 
@@ -327,8 +327,10 @@
             ELSEIF ( map_frac(i)<NEARZERO ) THEN
               CYCLE
             ELSEIF ( map_frac(i)>1.0001 ) THEN
-              PRINT *, 'WARNING, excess accounting for area of mapped spatial unit:'
-              PRINT *, '         Map id:', i, ' Fraction:', map_frac(i)
+              IF ( Print_debug>-1 ) THEN
+                PRINT *, 'WARNING, excess accounting for area of mapped spatial unit:'
+                PRINT *, '         Map id:', i, ' Fraction:', map_frac(i)
+              ENDIF
             ELSEIF ( map_frac(i)<0.9999 ) THEN
               IF ( Print_debug>-1 ) THEN
                 PRINT *, 'WARNING, incomplete accounting for area of mapped spatial unit'
