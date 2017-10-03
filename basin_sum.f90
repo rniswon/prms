@@ -36,7 +36,7 @@
       DOUBLE PRECISION, SAVE :: Basin_sroff_yr, Basin_sroff_tot
       DOUBLE PRECISION, SAVE :: Basin_stflow_yr, Basin_stflow_tot
       DOUBLE PRECISION, SAVE :: Basin_ppt_yr, Basin_ppt_tot, Last_basin_stor
-      DOUBLE PRECISION, SAVE :: Basin_intcp_evap_yr, Basin_intcp_evap_tot, Basin_lakeevap_yr
+      DOUBLE PRECISION, SAVE :: Basin_intcp_evap_yr, Basin_intcp_evap_tot
       DOUBLE PRECISION, SAVE :: Obsq_inches_yr, Obsq_inches_tot
       DOUBLE PRECISION, SAVE :: Basin_net_ppt_mo, Obsq_inches_mo
       DOUBLE PRECISION, SAVE :: Basin_max_temp_mo, Basin_min_temp_mo
@@ -49,6 +49,7 @@
       DOUBLE PRECISION, SAVE :: Basin_ssflow_mo, Basin_ppt_mo
       DOUBLE PRECISION, SAVE :: Obsq_inches
       DOUBLE PRECISION, SAVE :: Basin_runoff_ratio, Basin_runoff_ratio_mo
+      DOUBLE PRECISION, SAVE :: Basin_lakeevap_mo, Basin_lakeevap_yr
 !   Declared Parameters
       INTEGER, SAVE :: Print_type, Print_freq, Outlet_sta
       END MODULE PRMS_BASINSUM
@@ -94,7 +95,7 @@
 !***********************************************************************
       sumbdecl = 0
 
-      Version_basin_sum = 'basin_sum.f90 2017-09-28 11:54:00Z'
+      Version_basin_sum = 'basin_sum.f90 2017-10-03 15:40:00Z'
       CALL print_module(Version_basin_sum, 'Summary                     ', 90)
       MODNAME = 'basin_sum'
 
@@ -357,6 +358,7 @@
         Obsq_inches_mo = 0.0D0
         Basin_runoff_ratio = 0.0D0
         Basin_runoff_ratio_mo = 0.0D0
+        Basin_lakeevap_mo = 0.0D0
 
         Obs_runoff_yr = 0.0D0
         Basin_cfs_yr = 0.0D0
@@ -589,6 +591,7 @@
         Basin_sroff_mo = 0.0D0
         Basin_stflow_mo = 0.0D0
         Obsq_inches_mo = 0.0D0
+        Basin_lakeevap_mo = 0.0D0
       ENDIF
 
       Obs_runoff_mo = Obs_runoff_mo + obsrunoff
@@ -607,6 +610,7 @@
       Basin_ssflow_mo = Basin_ssflow_mo + Basin_ssflow
       Basin_sroff_mo = Basin_sroff_mo + Basin_sroff
       Basin_stflow_mo = Basin_stflow_mo + Basin_stflow_out
+      Basin_lakeevap_mo = Basin_lakeevap_mo + Basin_lakeevap
 
       IF ( Nowday==Modays(Nowmonth) ) THEN
         monthdays = Modays(Nowmonth)
@@ -616,6 +620,7 @@
         Obs_runoff_mo = Obs_runoff_mo/monthdays
         Basin_cfs_mo = Basin_cfs_mo/monthdays
         Basin_runoff_ratio_mo = Basin_ppt_mo/monthdays/Basin_stflow_mo
+        Basin_lakeevap_mo = Basin_lakeevap_mo/monthdays
 
         IF ( Mprt ) THEN
           IF ( Print_type==0 ) THEN
@@ -640,8 +645,8 @@
      &              Basin_soil_moist, Basin_pweqv, Basin_snowmelt_mo, &
      &              Basin_gwstor, Basin_ssstor, Basin_gwflow_mo, &
      &              Basin_ssflow_mo, Basin_sroff_mo, Basin_stflow_mo, &
-     &              Basin_cfs_mo, Obs_runoff_mo
-            CALL write_outfile(Buffer160(:148))
+     &              Basin_cfs_mo, Obs_runoff_mo, Basin_lakeevap_mo
+            CALL write_outfile(Buffer160(:155))
             IF ( Dprt ) CALL write_outfile(DASHS(:148))
           ENDIF
 
@@ -794,7 +799,7 @@
  9001 FORMAT (I6, 2I3, F5.0, 2F5.1, 2F7.2, 2F6.2, 2F7.2, F6.2, F6.3, F7.3, 2F6.3, 3F7.2, F7.4, 2F9.2, F7.2)
  9004 FORMAT (A, 13X, 2F7.2, F12.1, 2F7.2, 2F6.2, F7.2, 2F6.2, 4F7.2, 2F9.2, F7.2)
  9005 FORMAT (A, 3X, 6F9.3)
- 9006 FORMAT (I6, I3, 3X, 3F5.1, 2F7.2, F12.1, 2F7.2, 2F6.2, F7.2, 2F6.2, 3F7.2, 2F9.2, F7.2)
+ 9006 FORMAT (I6, I3, 3X, 3F5.1, 2F7.2, F12.1, 2F7.2, 2F6.2, F7.2, 2F6.2, 3F7.2, 2F9.2, 2F7.2)
  9007 FORMAT (I6, 6X, 3F5.1, 2F7.2, 2F6.2, 2F7.2, 2F6.2, F7.2, 2F6.2, 3F7.2, 2F9.2, 2F7.2)
 
       END FUNCTION sumbrun

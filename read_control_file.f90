@@ -275,7 +275,7 @@
       Control_parameter_data(i)%values_int(1) = BasinOut_freq
       i = i + 1
       Control_parameter_data(i)%name = 'prms_warmup'
-      Prms_warmup = 1
+      Prms_warmup = 0
       Control_parameter_data(i)%values_int(1) = Prms_warmup
       i = i + 1
       Control_parameter_data(i)%name = 'dyn_imperv_flag'

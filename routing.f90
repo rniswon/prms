@@ -65,7 +65,7 @@
 !***********************************************************************
       routingdecl = 0
 
-      Version_routing = 'routing.f90 2017-10-02 13:34:00Z'
+      Version_routing = 'routing.f90 2017-10-03 15:45:00Z'
       CALL print_module(Version_routing, 'Routing Initialization      ', 90)
       MODNAME = 'routing'
 
@@ -423,6 +423,10 @@
         Ts = 1.0
         ierr = 0
         DO i = 1, Nsegment
+          IF ( Segment_type(i)==2 .AND. K_coef(i)<24.0 ) THEN
+            IF ( Print_debug>-1 ) PRINT *, 'WARNING, K_coef must be specified = 24.0 for lake segments'
+            K_coef(i) = 24.0
+          ENDIF
           k = K_coef(i)
           x = X_coef(i)
 

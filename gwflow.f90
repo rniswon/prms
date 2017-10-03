@@ -82,7 +82,7 @@
 !***********************************************************************
       gwflowdecl = 0
 
-      Version_gwflow = 'gwflow.f90 2017-09-27 13:45:00Z'
+      Version_gwflow = 'gwflow.f90 2017-10-03 15:40:00Z'
       CALL print_module(Version_gwflow, 'Groundwater                 ', 90)
       MODNAME = 'gwflow'
 
@@ -368,8 +368,8 @@
 !***********************************************************************
       INTEGER FUNCTION gwflowrun()
       USE PRMS_GWFLOW
-      USE PRMS_MODULE, ONLY: Dprst_flag, Print_debug, Cascadegw_flag, Gwr_swale_flag
-      USE PRMS_BASIN, ONLY: Active_gwrs, Gwr_route_order, DNEARZERO, &
+      USE PRMS_MODULE, ONLY: Dprst_flag, Print_debug, Cascadegw_flag, Gwr_swale_flag, Nlake
+      USE PRMS_BASIN, ONLY: Active_gwrs, Gwr_route_order, DNEARZERO, Lake_area, &
      &    Basin_area_inv, Hru_area, Gwr_type, Lake_hru_id, Weir_gate_flag, Hru_area_dble
       USE PRMS_FLOWVARS, ONLY: Soil_to_gw, Ssr_to_gw, Sroff, Ssres_flow, Gwres_stor, Pkwater_equiv
       USE PRMS_CASCADE, ONLY: Ncascade_gwr
@@ -407,7 +407,7 @@
               ! seepage added to GWR
               jjj = Lake_hru_id(j) !! jjj must be > zero due to check above
               !rsr, need seepage variable for WB
-              seepage = DBLE( (Elevlake(jjj)-Lake_seep_elev(jjj))*12.0*Gw_seep_coef(j) )
+              seepage = DBLE( (Elevlake(jjj)-Lake_seep_elev(jjj))*12.0*Gw_seep_coef(j) ) 
               IF ( seepage<0.0D0 ) THEN
                 IF ( DABS(seepage)>Gwres_stor(j) ) THEN
 !                  PRINT *, 'WARNING, GWR storage insufficient for discharge to lake:', jjj, ' GWR:', j
@@ -418,9 +418,9 @@
 !                  PRINT *, 'Lake elevation, storage, and water balance not adjusted'
                   seepage = -Gwres_stor(j)
                 ENDIF
-                Gw_seep_lakein(jjj) = Gw_seep_lakein(jjj) - seepage
+                Gw_seep_lakein(jjj) = Gw_seep_lakein(jjj) - seepage*Hru_area_dble(j)
               ELSE
-                Lake_seepage(jjj) = Lake_seepage(jjj) + seepage
+                Lake_seepage(jjj) = Lake_seepage(jjj) + seepage*Hru_area_dble(j)
               ENDIF
               Basin_lake_seep = Basin_lake_seep + seepage*Hru_area_dble(j)
               Gwres_stor(j) = Gwres_stor(j) + seepage
@@ -428,7 +428,13 @@
             ENDIF
           ENDIF
         ENDDO
-        Basin_lake_seep = Basin_lake_seep*Basin_area_inv
+        IF ( Weir_gate_flag==1 ) THEN
+          Basin_lake_seep = Basin_lake_seep*Basin_area_inv
+          DO j = 1, Nlake
+            Lake_seepage(j) = Lake_seepage(j)/Lake_area(j)
+            Gw_seep_lakein(j) = Gw_seep_lakein(j)/Lake_area(j)
+          ENDDO
+        ENDIF
       ENDIF
 
       Basin_gwstor_minarea_wb = 0.0D0
