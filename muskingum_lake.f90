@@ -92,7 +92,7 @@
       IMPLICIT NONE
 !   Local Variables
       DOUBLE PRECISION, PARAMETER :: ONE_24TH = 1.0D0 / 24.0D0
-      INTEGER, SAVE :: Puls_lin_flag, Obs_flag, Linear_flag, Weir_flag, Gate_flag, Puls_flag
+      INTEGER, SAVE :: Obs_flag, Linear_flag, Weir_flag, Gate_flag, Puls_flag
       INTEGER, SAVE :: Secondoutflow_flag
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Currinsum(:), Pastin(:), Pastout(:)
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Outflow_ts(:), Inflow_ts(:)
@@ -104,7 +104,7 @@
       DOUBLE PRECISION, SAVE :: Basin_2ndstflow
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Din1(:)
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Lake_outcfs(:), Lake_outcms(:), Lake_outvol(:), Lake_invol(:)
-      DOUBLE PRECISION, SAVE, ALLOCATABLE :: Lake_vol(:), Lake_sto(:), Lake_inflow(:), Lake_outflow(:)
+      DOUBLE PRECISION, SAVE, ALLOCATABLE :: Lake_sto(:), Lake_inflow(:), Lake_outflow(:)
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Lake_stream_in(:), Lake_lateral_inflow(:), Lake_gwflow(:)
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Lake_precip(:), Lake_sroff(:), Lake_interflow(:), Lake_outvol_ts(:)
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Lake_seep_in(:), Lake_evap(:), Lake_2gw(:), Lake_outq2(:)
@@ -370,11 +370,6 @@
      &     'Total seepage into each lake using broad-crested weir or gate opening routing', &
      &     'cfs', Lake_seep_in)
 
-      ALLOCATE ( Lake_vol(Nlake) )
-      CALL declvar_dble(MODNAME, 'lake_vol', 'nlake', Nlake, 'double', &
-     &     'Storage in each lake using broad-crested weir or gate opening routing', &
-     &     'acre-feet', Lake_vol)
-
       ALLOCATE ( Lake_invol(Nlake) )
       CALL declvar_dble(MODNAME, 'lake_invol', 'nlake', Nlake, 'double', &
      &     'Inflow to each lake using broad-crested weir or gate opening routing', &
@@ -628,8 +623,8 @@
       USE PRMS_MUSKINGUM_LAKE
       USE PRMS_MODULE, ONLY: Nsegment, Inputerror_flag, Init_vars_from_file, Nratetbl, Nhru, Cascade_flag, Nlake
       USE PRMS_BASIN, ONLY: NEARZERO, Basin_area_inv, DNEARZERO, Active_hrus, Hru_route_order, Gwr_type, &
-     &    CFS2CMS_CONV, Lake_hru_id, Weir_gate_flag, Lake_type
-      USE PRMS_FLOWVARS, ONLY: Seg_inflow, Seg_outflow, Basin_lake_stor
+     &    CFS2CMS_CONV, Lake_hru_id, Weir_gate_flag, Lake_type, Puls_lin_flag
+      USE PRMS_FLOWVARS, ONLY: Seg_inflow, Seg_outflow, Basin_lake_stor, Lake_vol
       USE PRMS_SET_TIME, ONLY: Cfs_conv
       USE PRMS_ROUTING, ONLY: Basin_segment_storage, Segment_type, Hru_segment
       IMPLICIT NONE
@@ -660,8 +655,7 @@
       ENDDO
       Basin_segment_storage = Basin_segment_storage*Basin_area_inv/Cfs_conv
 
-! Weir_gate_flag set in call_modules as needed in gwflow module
-      Puls_lin_flag = 0
+! Weir_gate_flag and Puls_lin_flag set in basin as needed for restart and gwflow module
       Obs_flag = 0
       Linear_flag = 0
       Weir_flag = 0
@@ -669,7 +663,6 @@
       Puls_flag = 0
       DO i = 1, Nlake
         IF ( Lake_type(i)==1 .OR. Lake_type(i)==2 ) THEN
-          Puls_lin_flag = 1
           IF ( Lake_type(i)==2 ) Linear_flag = 1
           IF ( Lake_type(i)==1 ) Puls_flag = 1
         ELSEIF ( Lake_type(i)==4 .OR. Lake_type(i)==5 ) THEN
@@ -902,7 +895,7 @@
       USE PRMS_CLIMATEVARS, ONLY: Hru_ppt
       USE PRMS_FLOWVARS, ONLY: Basin_ssflow, Basin_cms, Basin_gwflow_cfs, Basin_ssflow_cfs, &
      &    Basin_stflow_out, Basin_cfs, Basin_stflow_in, Basin_sroff_cfs, Seg_inflow, Seg_outflow, &
-     &    Seg_upstream_inflow, Seg_lateral_inflow, Flow_out, Basin_lake_stor, Hru_actet
+     &    Seg_upstream_inflow, Seg_lateral_inflow, Flow_out, Basin_lake_stor, Hru_actet, Lake_vol
       USE PRMS_OBS, ONLY: Streamflow_cfs
       USE PRMS_SET_TIME, ONLY: Cfs_conv
       USE PRMS_ROUTING, ONLY: Use_transfer_segment, Segment_delta_flow, Basin_segment_storage, &
@@ -911,7 +904,7 @@
      &    Flow_to_lakes, Flow_replacement, Flow_in_region, Flow_in_nation, Flow_headwater, Flow_in_great_lakes
       USE PRMS_SRUNOFF, ONLY: Basin_sroff, Hortonian_lakes
       USE PRMS_SOILZONE, ONLY: Upslope_dunnianflow, Upslope_interflow
-      USE PRMS_GWFLOW, ONLY: Basin_gwflow, Lake_seepage, Gw_seep_lakein, Gw_upslope
+      USE PRMS_GWFLOW, ONLY: Basin_gwflow, Lake_seepage, Gw_seep_lakein, Gw_upslope, elevlake
       IMPLICIT NONE
 ! Functions
       INTRINSIC MOD, DBLE
@@ -1154,7 +1147,7 @@
       Basin_2ndstflow = Basin_2ndstflow*Basin_area_inv
       Basin_lake_stor = Basin_lake_stor*Basin_area_inv
 
-      write(77,'(8f9.3)') lake_vol, lake_outflow, lake_stream_in, lake_outcfs
+      write(77,'(10f11.3)') lake_vol, lake_outflow, lake_stream_in, lake_outcfs, elevlake
       END FUNCTION muskingum_lake_run
 
 !     ***********************************
@@ -1173,7 +1166,7 @@
       USE PRMS_GWFLOW, ONLY: Elevlake
       IMPLICIT NONE
 ! Functions
-      INTRINSIC EXP, DBLE, SNGL
+      INTRINSIC EXP, DBLE, SNGL, DABS
       EXTERNAL table_comp
 ! Arguments
       INTEGER, INTENT(IN) :: Lakeid, Laketype
@@ -1331,14 +1324,15 @@
         IF ( Secondoutflow_flag==1 ) q2 = q2 + Lake_outq2(Lakeid)
 
         Lake_outvol_ts = q2*Cfs2acft + lake_out
-
-        ! ??? in 1, 24 loop
-        ! adjust lake storage, think the real vol needs to be adjusted
         Lake_vol = Lake_vol + Lake_invol(Lakeid) - Lake_outvol_ts
-
+        IF ( Lake_vol<0.0D0 ) THEN
+          Lake_outvol_ts = DABS(Lake_vol)
+          Lake_vol = 0.0D0
+        ELSE
         ! adjust lake elevation with stream and lateral inflows
         ! and streamflow, any second outlet, GWR, and evaporation outflows
-        Elevlake(Lakeid) = Elevlake(Lakeid) + SNGL( (Lake_invol(Lakeid)-Lake_outvol_ts)/Lake_area )
+          Elevlake(Lakeid) = Elevlake(Lakeid) + SNGL( (Lake_invol(Lakeid)-Lake_outvol_ts)/Lake_area )
+        ENDIF
       ENDIF
       IF ( lake_storage<0.0D0 ) THEN
         PRINT *, 'ERROR: lake storage < 0 lake:', Lakeid, '; storage:', lake_storage
@@ -1435,7 +1429,8 @@
 !***********************************************************************
       SUBROUTINE muskingum_lake_restart(In_out)
       USE PRMS_MODULE, ONLY: Restart_outunit, Restart_inunit, Cascade_flag
-      USE PRMS_BASIN, ONLY: Weir_gate_flag
+      USE PRMS_BASIN, ONLY: Weir_gate_flag, Puls_lin_flag
+      USE PRMS_FLOWVARS, ONLY: Lake_vol
       USE PRMS_MUSKINGUM_LAKE
       IMPLICIT NONE
       ! Argument
