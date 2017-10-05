@@ -70,7 +70,7 @@
 !***********************************************************************
       subdecl = 0
 
-      Version_subbasin = 'subbasin.f90 2017-09-27 15:39:00Z'
+      Version_subbasin = 'subbasin.f90 2017-10-05 14:05:00Z'
       CALL print_module(Version_subbasin, 'Output Summary              ', 90)
       MODNAME = 'subbasin'
 
@@ -251,13 +251,13 @@
       USE PRMS_MODULE, ONLY: Nsub, Nhru, Print_debug, Inputerror_flag, Dprst_flag, Lake_route_flag, Cascade_flag, GSFLOW_flag
       USE PRMS_BASIN, ONLY: Hru_area_dble, Active_hrus, Hru_route_order, &
      &    Hru_type, Hru_frac_perv, DNEARZERO, Lake_hru_id, Cfs2cms_conv
-      USE PRMS_FLOWVARS, ONLY: Ssres_stor, Soil_moist, Pkwater_equiv, Gwres_stor, Sroff, Ssres_flow
+      USE PRMS_FLOWVARS, ONLY: Ssres_stor, Soil_moist, Pkwater_equiv, Gwres_stor, Sroff, Ssres_flow, Lake_vol
       USE PRMS_SET_TIME, ONLY: Cfs_conv, Cfs2inches
       USE PRMS_INTCP, ONLY: Hru_intcpstor
       USE PRMS_SRUNOFF, ONLY: Hru_impervstor, Hortonian_lakes, Dprst_stor_hru
       USE PRMS_SOILZONE, ONLY: Lakein_sz
       USE PRMS_GWFLOW, ONLY: Gwres_flow
-      USE PRMS_MUSKINGUM_LAKE, ONLY: Lake_vol, Lake_outcfs
+      USE PRMS_MUSKINGUM_LAKE, ONLY: Lake_outcfs
       IMPLICIT NONE
 ! Functions
       INTRINSIC :: DBLE
@@ -451,12 +451,12 @@
       USE PRMS_SNOW, ONLY: Snowcov_area, Snowmelt
       USE PRMS_CLIMATEVARS, ONLY: Hru_ppt, Swrad, Potet, Tminc, Tmaxc, Tavgc, Hru_rain, Hru_snow
       USE PRMS_FLOWVARS, ONLY: Hru_actet, Ssres_flow, Sroff, &
-     &    Ssres_stor, Soil_moist, Pkwater_equiv, Gwres_stor
+     &    Ssres_stor, Soil_moist, Pkwater_equiv, Gwres_stor, Lake_vol
       USE PRMS_INTCP, ONLY: Hru_intcpstor
       USE PRMS_SRUNOFF, ONLY: Hru_impervstor, Hortonian_lakes, Dprst_stor_hru
       USE PRMS_SOILZONE, ONLY: Lakein_sz, Soil_moist_frac, Cpr_stor_frac, Recharge
       USE PRMS_GWFLOW, ONLY: Gwres_flow
-      USE PRMS_MUSKINGUM_LAKE, ONLY: Lake_vol, Lake_outcfs
+      USE PRMS_MUSKINGUM_LAKE, ONLY: Lake_outcfs
       IMPLICIT NONE
 ! Functions
       INTRINSIC :: DBLE

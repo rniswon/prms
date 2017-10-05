@@ -79,6 +79,7 @@
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Gwres_stor(:)
       ! lakes
       DOUBLE PRECISION, SAVE :: Basin_lake_stor
+      DOUBLE PRECISION, SAVE, ALLOCATABLE :: Lake_vol(:)
       ! streamflow
       DOUBLE PRECISION, SAVE :: Basin_cfs, Basin_cms, Basin_ssflow_cfs, Basin_sroff_cfs
       DOUBLE PRECISION, SAVE :: Basin_stflow_in, Basin_gwflow_cfs, Basin_stflow_out, Flow_out
@@ -119,7 +120,7 @@
       INTEGER FUNCTION climateflow_decl()
       USE PRMS_CLIMATEVARS
       USE PRMS_FLOWVARS
-      USE PRMS_MODULE, ONLY: Temp_flag, Precip_flag, Model, Nhru, Nssr, Nevap, &
+      USE PRMS_MODULE, ONLY: Temp_flag, Precip_flag, Model, Nhru, Nssr, Nevap, Nlake, &
      &    Nsegment, Strmflow_module, Temp_module, Ntemp, Stream_order_flag, &
      &    Precip_module, Solrad_module, Transp_module, Et_module, Init_vars_from_file, &
      &    Soilzone_module, Srunoff_module, Nrain, Nsol, Call_cascade, Et_flag, Dprst_flag, Solrad_flag, Stream_temp_flag
@@ -132,7 +133,7 @@
 !***********************************************************************
       climateflow_decl = 0
 
-      Version_climateflow = 'climateflow.f90 2017-09-27 10:56:00Z'
+      Version_climateflow = 'climateflow.f90 2017-10-05 14:04:00Z'
       CALL print_module(Version_climateflow, 'Common States and Fluxes    ', 90)
       MODNAME = 'climateflow'
 
@@ -440,6 +441,13 @@
       CALL declvar_dble(Strmflow_module, 'basin_lake_stor', 'one', 1, 'double', &
      &     'Basin volume-weighted average storage for all lakes using broad-crested weir or gate opening routing', &
      &     'inches', Basin_lake_stor)
+      
+      IF ( Nlake>0 ) THEN
+        ALLOCATE ( Lake_vol(Nlake) )
+        CALL declvar_dble(Strmflow_module, 'lake_vol', 'nlake', Nlake, 'double', &
+     &       'Storage in each lake using broad-crested weir or gate opening routing', &
+     &       'acre-feet', Lake_vol)
+      ENDIF
 
       IF ( Dprst_flag==1 .OR. Model==99 ) THEN
         ALLOCATE ( Dprst_vol_open(Nhru) )
@@ -701,7 +709,7 @@
       USE PRMS_FLOWVARS
       USE PRMS_MODULE, ONLY: Temp_flag, Precip_flag, Nhru, Nssr, Temp_module, Precip_module, &
      &    Solrad_module, Soilzone_module, Srunoff_module, Stream_order_flag, Ntemp, Nrain, Nsol, &
-     &    Init_vars_from_file, Dprst_flag, Solrad_flag, Et_flag, Stream_temp_flag
+     &    Init_vars_from_file, Dprst_flag, Solrad_flag, Et_flag, Stream_temp_flag, Nlake
       USE PRMS_BASIN, ONLY: Elev_units, FEET2METERS, METERS2FEET, Active_hrus, Hru_route_order
       IMPLICIT NONE
 ! Functions
@@ -939,6 +947,8 @@
         Seg_upstream_inflow = 0.0D0
         Seg_lateral_inflow = 0.0D0
       ENDIF
+! initialize arrays (dimensioned Nssr)
+      IF ( Nlake>0 ) Lake_vol = 0.0D0
 
       END FUNCTION climateflow_init
 

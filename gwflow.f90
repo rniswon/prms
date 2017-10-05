@@ -41,11 +41,10 @@
 !     Main gwflow routine
 !***********************************************************************
       INTEGER FUNCTION gwflow()
-      USE PRMS_MODULE, ONLY: Process, Save_vars_to_file, Init_vars_from_file
+      USE PRMS_MODULE, ONLY: Process, Save_vars_to_file
       IMPLICIT NONE
 ! Functions
       INTEGER, EXTERNAL :: gwflowdecl, gwflowinit, gwflowrun
-      EXTERNAL gwflow_restart
 !***********************************************************************
       gwflow = 0
 
@@ -54,7 +53,6 @@
       ELSEIF ( Process(:4)=='decl' ) THEN
         gwflow = gwflowdecl()
       ELSEIF ( Process(:4)=='init' ) THEN
-        IF ( Init_vars_from_file==1 ) CALL gwflow_restart(1)
         gwflow = gwflowinit()
       ELSEIF ( Process(:5)=='clean' ) THEN
         IF ( Save_vars_to_file==1 ) CALL gwflow_restart(0)
@@ -82,7 +80,7 @@
 !***********************************************************************
       gwflowdecl = 0
 
-      Version_gwflow = 'gwflow.f90 2017-10-03 15:40:00Z'
+      Version_gwflow = 'gwflow.f90 2017-10-05 14:04:00Z'
       CALL print_module(Version_gwflow, 'Groundwater                 ', 90)
       MODNAME = 'gwflow'
 
@@ -255,7 +253,7 @@
       USE PRMS_SOILZONE, ONLY: Soil_moist_tot
       IMPLICIT NONE
       INTEGER, EXTERNAL :: getparam
-      EXTERNAL read_error
+      EXTERNAL read_error, gwflow_restart
       INTRINSIC DBLE
 ! Local Variables
       INTEGER :: i, j, jjj
@@ -339,26 +337,29 @@
         ENDDO
       ENDIF
 
-      IF ( Init_vars_from_file==1 ) RETURN
+      IF ( Init_vars_from_file==1 ) THEN
+        CALL gwflow_restart(1)
+      ELSE
 
 ! do only once, so restart uses saved values
-      IF ( Cascadegw_flag>0 ) THEN
-        Gw_upslope = 0.0D0
-        Hru_gw_cascadeflow = 0.0
+        IF ( Cascadegw_flag>0 ) THEN
+          Gw_upslope = 0.0D0
+          Hru_gw_cascadeflow = 0.0
+        ENDIF
+        Gwres_flow = 0.0
+        Gwres_in = 0.0
+        Gwres_sink = 0.0
+        Gw_in_ssr = 0.0D0
+        Gw_in_soil = 0.0D0
+        Basin_gwflow = 0.0D0
+        Basin_gwsink = 0.0D0
+        Basin_gwin = 0.0D0
+        Basin_gw_upslope = 0.0D0
+        Basin_dnflow = 0.0D0
+        Hru_streamflow_out = 0.0D0
+        Hru_lateral_flow = 0.0D0
+        Basin_lake_seep = 0.0D0
       ENDIF
-      Gwres_flow = 0.0
-      Gwres_in = 0.0
-      Gwres_sink = 0.0
-      Gw_in_ssr = 0.0D0
-      Gw_in_soil = 0.0D0
-      Basin_gwflow = 0.0D0
-      Basin_gwsink = 0.0D0
-      Basin_gwin = 0.0D0
-      Basin_gw_upslope = 0.0D0
-      Basin_dnflow = 0.0D0
-      Hru_streamflow_out = 0.0D0
-      Hru_lateral_flow = 0.0D0
-      Basin_lake_seep = 0.0D0
 
       END FUNCTION gwflowinit
 
@@ -371,7 +372,7 @@
       USE PRMS_MODULE, ONLY: Dprst_flag, Print_debug, Cascadegw_flag, Gwr_swale_flag, Nlake
       USE PRMS_BASIN, ONLY: Active_gwrs, Gwr_route_order, DNEARZERO, Lake_area, &
      &    Basin_area_inv, Hru_area, Gwr_type, Lake_hru_id, Weir_gate_flag, Hru_area_dble
-      USE PRMS_FLOWVARS, ONLY: Soil_to_gw, Ssr_to_gw, Sroff, Ssres_flow, Gwres_stor, Pkwater_equiv
+      USE PRMS_FLOWVARS, ONLY: Soil_to_gw, Ssr_to_gw, Sroff, Ssres_flow, Gwres_stor, Pkwater_equiv, Lake_vol
       USE PRMS_CASCADE, ONLY: Ncascade_gwr
       USE PRMS_SET_TIME, ONLY: Cfs_conv
       USE PRMS_SRUNOFF, ONLY: Dprst_seep_hru, Hru_impervstor, Dprst_stor_hru
@@ -407,6 +408,7 @@
               ! seepage added to GWR
               jjj = Lake_hru_id(j) !! jjj must be > zero due to check above
               !rsr, need seepage variable for WB
+              ! what happens when lake goes dry? need lake bottom elevation
               seepage = DBLE( (Elevlake(jjj)-Lake_seep_elev(jjj))*12.0*Gw_seep_coef(j) ) 
               IF ( seepage<0.0D0 ) THEN
                 IF ( DABS(seepage)>Gwres_stor(j) ) THEN
@@ -420,7 +422,11 @@
                 ENDIF
                 Gw_seep_lakein(jjj) = Gw_seep_lakein(jjj) - seepage*Hru_area_dble(j)
               ELSE
-                Lake_seepage(jjj) = Lake_seepage(jjj) + seepage*Hru_area_dble(j)
+                IF ( Lake_vol(jjj)>0.0D0 ) THEN
+                  Lake_seepage(jjj) = Lake_seepage(jjj) + seepage*Hru_area_dble(j)
+                ELSE
+                  seepage = 0.0D0
+                ENDIF
               ENDIF
               Basin_lake_seep = Basin_lake_seep + seepage*Hru_area_dble(j)
               Gwres_stor(j) = Gwres_stor(j) + seepage

@@ -21,7 +21,7 @@
       REAL, SAVE, ALLOCATABLE :: Hru_elev_feet(:), Hru_elev_meters(:)
       REAL, SAVE, ALLOCATABLE :: Dprst_frac_clos(:)
       INTEGER, SAVE, ALLOCATABLE :: Gwr_type(:), Hru_route_order(:), Gwr_route_order(:)
-      INTEGER, SAVE :: Weir_gate_flag
+      INTEGER, SAVE :: Weir_gate_flag, Puls_lin_flag
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Hru_area_dble(:), Lake_area(:)
       CHARACTER(LEN=80), SAVE :: Version_basin
 !   Declared Variables
@@ -75,7 +75,7 @@
 !***********************************************************************
       basdecl = 0
 
-      Version_basin = 'basin.f90 2017-09-27 12:00:00Z'
+      Version_basin = 'basin.f90 2017-10-05 14:06:00Z'
       CALL print_module(Version_basin, 'Basin Definition            ', 90)
       MODNAME = 'basin'
 
@@ -262,6 +262,7 @@
       ENDIF
 
       Weir_gate_flag = 0
+      Puls_lin_flag = 0
       Water_area = 0.0D0
       Lake_area = 0.0D0
       Numlakes_check = 0
@@ -271,7 +272,11 @@
         IF ( Lake_route_flag==1 ) THEN ! Lake_route_flag set to 0 for GSFLOW mode and if muskingum_lake and nlake = 1
           IF ( getparam(MODNAME, 'lake_type', Nlake, 'integer', Lake_type)/=0 ) CALL read_error(2, 'lake_type')
           DO i = 1, Nlake
-            IF ( Lake_type(i)==4 .OR. Lake_type(i)==5 ) Weir_gate_flag = 1
+            IF ( Lake_type(i)==4 .OR. Lake_type(i)==5 ) THEN
+              Weir_gate_flag = 1
+            ELSEIF ( Lake_type(i)==1 .OR. Lake_type(i)==2 ) THEN
+              Puls_lin_flag = 1
+            ENDIF
           ENDDO
         ENDIF
       ELSE
