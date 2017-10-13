@@ -1,3 +1,5 @@
+! need to add lake shape and changing area in same manner as depression storage
+
 !***********************************************************************
 ! Routes water between segments and lakes in the stream network;
 ! using Muskingum routing for stream segments and 5 lake routing methods
@@ -139,7 +141,7 @@
       ELSEIF ( Process(:4)=='decl' ) THEN
         muskingum_lake  = muskingum_lake_decl()
       ELSEIF ( Process(:4)=='init' ) THEN
-        IF ( Init_vars_from_file==1 ) CALL muskingum_lake_restart(1)
+        IF ( Init_vars_from_file>0 ) CALL muskingum_lake_restart(1)
         muskingum_lake = muskingum_lake_init()
       ELSEIF ( Process(:5)=='clean' ) THEN
         IF ( Save_vars_to_file==1 ) CALL muskingum_lake_restart(0)
@@ -209,7 +211,7 @@
 !***********************************************************************
       muskingum_lake_decl = 0
 
-      Version_muskingum_lake = 'muskingum_lake.f90 2017-10-03 15:41:00Z'
+      Version_muskingum_lake = 'muskingum_lake.f90 2017-10-05 14:11:00Z'
       CALL print_module(Version_muskingum_lake, 'Streamflow Routing          ', 90)
       MODNAME = 'muskingum_lake'
 
@@ -284,7 +286,7 @@
       ALLOCATE ( Pastin(Nsegment), Pastout(Nsegment) )
       ALLOCATE ( Outflow_ts(Nsegment), Inflow_ts(Nsegment) )
 
-      IF ( Init_vars_from_file==0 ) THEN
+      IF ( Init_vars_from_file==0 .OR. Init_vars_from_file==2 .OR. Init_vars_from_file==4 ) THEN
         ALLOCATE ( Segment_flow_init(Nsegment) )
         IF ( declparam(MODNAME, 'segment_flow_init', 'nsegment', 'real', &
      &       '0.0', '0.0', '1.0E7', &
@@ -407,7 +409,7 @@
      &       'none')/=0 ) CALL read_error(1, 'lake_segment_id')
       ENDIF
 
-      IF ( Init_vars_from_file==0 ) THEN
+      IF ( Init_vars_from_file==0 .OR. Init_vars_from_file==2 .OR. Init_vars_from_file==4 ) THEN
         ALLOCATE ( Lake_qro(Nlake) )
         IF ( declparam(MODNAME, 'lake_qro', 'nlake', 'real', &
      &       '0.1', '0.0', '1.0E7', &
@@ -464,7 +466,7 @@
       ENDIF
 
 ! Declared Parameters for broad-crested weir or gate opening routing
-      IF ( Init_vars_from_file==0 .OR. Model==99 ) THEN
+      IF ( Init_vars_from_file==0 .OR. Init_vars_from_file==2 .OR. Init_vars_from_file==4 ) THEN
         ALLOCATE ( Lake_vol_init(Nlake) )
         IF ( declparam(MODNAME, 'lake_vol_init', 'nlake', 'real', &
      &       '0.0', '0.0', '1.0E7', &
@@ -638,14 +640,16 @@
 !***********************************************************************
       muskingum_lake_init = 0
 
-      IF ( Init_vars_from_file==0 ) THEN
+      IF ( Init_vars_from_file==0 .OR. Init_vars_from_file==2 .OR. Init_vars_from_file==4 ) THEN
         IF ( getparam(MODNAME, 'segment_flow_init',  Nsegment, 'real', Segment_flow_init)/=0 ) &
      &       CALL read_error(2,'segment_flow_init')
-        Seg_inflow = 0.0D0
         DO i = 1, Nsegment
           Seg_outflow(i) = Segment_flow_init(i)
         ENDDO
         DEALLOCATE ( Segment_flow_init )
+      ENDIF
+      IF ( Init_vars_from_file==0 ) THEN
+        Seg_inflow = 0.0D0
         Outflow_ts = 0.0D0
       ENDIF
 
@@ -676,12 +680,14 @@
         ENDIF
       ENDDO
 
-      IF ( Init_vars_from_file==0 ) THEN
+      IF ( Init_vars_from_file==0 .OR. Init_vars_from_file==2 .OR. Init_vars_from_file==4 ) THEN
         IF ( getparam(MODNAME, 'lake_qro', Nlake, 'real', Lake_qro)/=0 ) CALL read_error(2, 'lake_qro')
         DO j = 1, Nlake
           Lake_outcfs(j) = Lake_qro(j)
           Lake_outcms(j) = Lake_qro(j)*CFS2CMS_CONV
         ENDDO
+      ENDIF
+      IF ( Init_vars_from_file==0 ) THEN
         Lake_outvol = 0.0D0
         Lake_outvol_ts = 0.0D0
         Lake_invol = 0.0D0
@@ -769,7 +775,7 @@
       ENDIF
 
       IF ( Puls_lin_flag==1 ) THEN
-        IF ( Init_vars_from_file==0 ) THEN
+        IF ( Init_vars_from_file==0 .OR. Init_vars_from_file==2 .OR. Init_vars_from_file==4 ) THEN
           IF ( getparam(MODNAME, 'lake_init', Nlake, 'real', Lake_init)/=0 ) CALL read_error(2, 'lake_init')
           IF ( getparam(MODNAME, 'lake_din1', Nlake, 'real', Lake_din1)/=0 ) CALL read_error(2, 'lake_din1')
           DO i = 1, Nlake
@@ -800,7 +806,7 @@
       ENDIF
 
       IF ( Weir_gate_flag==1 ) THEN
-        IF ( Init_vars_from_file==0 ) THEN
+        IF ( Init_vars_from_file==0 .OR. Init_vars_from_file==2 .OR. Init_vars_from_file==4 ) THEN
           IF ( getparam(MODNAME, 'lake_vol_init', Nlake, 'real', Lake_vol_init)/=0 ) CALL read_error(2, 'lake_vol_init')
           DO i = 1, Nlake
             Lake_vol(i) = DBLE( Lake_vol_init(i) )
