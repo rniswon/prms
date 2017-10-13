@@ -321,7 +321,7 @@
      &       'meters')/=0 ) CALL read_error(1, 'vow')
       ENDIF
 
-      IF ( Init_vars_from_file==0 ) THEN
+      IF ( Init_vars_from_file==0 .OR. Init_vars_from_file==2 .OR. Init_vars_from_file==8 ) THEN
         ALLOCATE ( Gw_init(Nsegment) )
         IF ( declparam( MODNAME, 'gw_init', 'nsegment', 'real', &
      &       '1.0', '0.0', '45.', &
@@ -497,6 +497,10 @@
         Seg_humid = 0.0
         Seg_width = 0.0
         Seg_ccov = 0.0
+        T_roff = 0.0
+        T_ground = 0.0
+      ENDIF
+      IF ( Init_vars_from_file == 0 .OR. Init_vars_from_file==2 .OR. Init_vars_from_file==8 ) THEN
         DO i = 1, Nsegment
           DO j = 1, 365
             Tyear(i,j) =  Gw_init(i)
@@ -505,8 +509,6 @@
             T30(i,k) = Ss_init(i)
           ENDDO
         ENDDO
-        T_roff = 0.0
-        T_ground = 0.0
       ENDIF
 
       IF ( Stream_temp_shade_flag==0 ) THEN

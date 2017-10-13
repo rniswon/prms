@@ -82,7 +82,7 @@
       ELSEIF ( Process(:4)=='decl' ) THEN
         xyz_dist = xyzdecl()
       ELSEIF ( Process(:4)=='init' ) THEN
-        IF ( Init_vars_from_file==1 )  CALL xyz_restart(1)
+        IF ( Init_vars_from_file>0 )  CALL xyz_restart(1)
         xyz_dist = xyzinit()
       ELSEIF ( Process(:5)=='clean' ) THEN
         IF ( Save_vars_to_file==1 ) CALL xyz_restart(0)

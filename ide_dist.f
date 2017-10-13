@@ -52,7 +52,7 @@
       ELSEIF ( Process(:4)=='decl' ) THEN
         ide_dist = idedecl()
       ELSEIF ( Process(:4)=='init' ) THEN
-        IF ( Init_vars_from_file==1 ) CALL ide_restart(1)
+        IF ( Init_vars_from_file>0 ) CALL ide_restart(1)
         ide_dist = ideinit()
       ELSEIF ( Process(:5)=='clean' ) THEN
         IF ( Save_vars_to_file==1 ) CALL ide_restart(0)

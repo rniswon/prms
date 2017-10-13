@@ -109,7 +109,7 @@
 !***********************************************************************
       srunoffdecl = 0
 
-      Version_srunoff = 'srunoff.f90 2017-09-27 16:29:00Z'
+      Version_srunoff = 'srunoff.f90 2017-10-06 11:06:00Z'
       IF ( Sroff_flag==1 ) THEN
         MODNAME = 'srunoff_smidx'
       ELSE
@@ -427,7 +427,7 @@
      &       'Fraction of unsatisfied potential evapotranspiration to apply to surface-depression storage', &
      &       'decimal fraction')/=0 ) CALL read_error(1, 'dprst_et_coef')
 
-        IF ( Init_vars_from_file==0 ) THEN
+        IF ( Init_vars_from_file==0 .OR. Init_vars_from_file==2 .OR. Init_vars_from_file==7 ) THEN
           ALLOCATE ( Dprst_frac_init(Nhru) )
           IF ( declparam(MODNAME, 'dprst_frac_init', 'nhru', 'real', &
      &         '0.5', '0.0', '1.0', &
@@ -1102,6 +1102,8 @@
         Dprst_seep_hru = 0.0D0
         Dprst_sroff_hru = 0.0D0
         Dprst_insroff_hru = 0.0
+      ENDIF
+      IF ( Init_vars_from_file==0 .OR. Init_vars_from_file==2 .OR. Init_vars_from_file==7 ) THEN
         IF ( getparam(MODNAME, 'dprst_frac_init', Nhru, 'real', Dprst_frac_init)/=0 ) CALL read_error(2, 'dprst_frac_init')
       ENDIF
       IF ( getparam(MODNAME, 'dprst_flow_coef', Nhru, 'real', Dprst_flow_coef)/=0 ) CALL read_error(2, 'dprst_flow_coef')
@@ -1150,7 +1152,7 @@
           IF ( Dprst_open_flag==1 ) Dprst_vol_open_max(i) = DBLE( Dprst_area_open_max(i)*Dprst_depth_avg(i) )
 
 !         calculate the initial open and closed depression storage volume:
-          IF ( Init_vars_from_file==0 ) THEN
+          IF ( Init_vars_from_file==0 .OR. Init_vars_from_file==2 .OR. Init_vars_from_file==7 ) THEN
             IF ( Dprst_open_flag==1 ) Dprst_vol_open(i) = DBLE(Dprst_frac_init(i))*Dprst_vol_open_max(i)
             IF ( Dprst_clos_flag==1 ) Dprst_vol_clos(i) = DBLE(Dprst_frac_init(i))*Dprst_vol_clos_max(i)
           ENDIF
@@ -1202,7 +1204,7 @@
       ENDDO
       Basin_dprst_volop = Basin_dprst_volop*Basin_area_inv
       Basin_dprst_volcl = Basin_dprst_volcl*Basin_area_inv
-      IF ( Init_vars_from_file==0 ) DEALLOCATE ( Dprst_frac_init )
+      IF ( Init_vars_from_file==0 .OR. Init_vars_from_file==2 .OR. Init_vars_from_file==7 ) DEALLOCATE ( Dprst_frac_init )
 
       END SUBROUTINE dprst_init
 

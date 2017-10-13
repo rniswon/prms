@@ -49,7 +49,7 @@
       ELSEIF ( Process(:4)=='decl' ) THEN
         temp_dist2 = t2dist2decl()
       ELSEIF ( Process(:4)=='init' ) THEN
-        IF ( Init_vars_from_file==1 ) CALL temp_dist2_restart(1)
+        IF ( Init_vars_from_file>0 ) CALL temp_dist2_restart(1)
         temp_dist2 = t2dist2init()
       ELSEIF ( Process(:5)=='clean' ) THEN
         IF ( Save_vars_to_file==1 ) CALL temp_dist2_restart(0)

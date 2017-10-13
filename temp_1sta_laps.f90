@@ -201,7 +201,7 @@
      &       'none')/=0 ) CALL read_error(1, 'max_missing')
 
       ELSEIF ( Process(:4)=='init' ) THEN
-        IF ( Init_vars_from_file==1 ) CALL temp_1sta_laps_restart(1)
+        IF ( Init_vars_from_file>0 ) CALL temp_1sta_laps_restart(1)
 
         ! Initialize variables, get parameter values, compute Elfac
         IF ( Temp_flag==1 ) THEN

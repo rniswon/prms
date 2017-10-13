@@ -36,7 +36,7 @@
       ELSEIF ( Process(:4)=='decl' ) THEN
         obs = obsdecl()
       ELSEIF ( Process(:4)=='init' ) THEN
-        IF ( Init_vars_from_file==1 ) CALL obs_restart(1)
+        IF ( Init_vars_from_file>0 ) CALL obs_restart(1)
         obs = obsinit()
       ELSEIF ( Process(:5)=='clean' ) THEN
         IF ( Save_vars_to_file==1 ) CALL obs_restart(0)

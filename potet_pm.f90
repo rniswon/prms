@@ -167,7 +167,7 @@
 
 !******Get parameters
       ELSEIF ( Process(:4)=='init' ) THEN
-        IF ( Init_vars_from_file==1 ) THEN
+        IF ( Init_vars_from_file>0 ) THEN
           CALL potet_pm_restart(1)
         ELSE
           Vp_sat = 0.0

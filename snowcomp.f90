@@ -98,7 +98,7 @@
 !***********************************************************************
       snodecl = 0
 
-      Version_snowcomp = 'snowcomp.f90 2017-09-27 16:02:00Z'
+      Version_snowcomp = 'snowcomp.f90 2017-10-06 10:28:00Z'
       CALL print_module(Version_snowcomp, 'Snow Dynamics               ', 90)
       MODNAME = 'snowcomp'
 
@@ -436,7 +436,7 @@
      &     ' type for each HRU (0=frontal storms; 1=convective storms)', &
      &     'none')/=0 ) CALL read_error(1, 'tstorm_mo')
 
-      IF ( Init_vars_from_file==0 ) THEN
+      IF ( Init_vars_from_file==0 .OR. Init_vars_from_file==2 .OR. Init_vars_from_file==3 ) THEN
         ALLOCATE ( Snowpack_init(Nhru) )
         IF ( declparam(MODNAME, 'snowpack_init', 'nhru', 'real', &
      &       '0.0', '0.0', '5000.0', &
@@ -470,7 +470,7 @@
 !***********************************************************************
       snoinit = 0
 
-      IF ( Init_vars_from_file==1 ) CALL snowcomp_restart(1)
+      IF ( Init_vars_from_file>0 ) CALL snowcomp_restart(1)
 
       IF ( getparam(MODNAME, 'den_init', 1, 'real', Den_init)/=0 ) CALL read_error(2, 'den_init')
       Deninv = 1.0D0/DBLE(Den_init)
@@ -497,41 +497,44 @@
       IF ( getparam(MODNAME, 'freeh2o_cap', Nhru, 'real', Freeh2o_cap)/=0 ) CALL read_error(2, 'freeh2o_cap')
       IF ( getparam(MODNAME, 'tstorm_mo', Nhru*12, 'integer', Tstorm_mo)/=0 ) CALL read_error(2, 'tstorm_mo')
 
-      IF ( Init_vars_from_file==1 ) RETURN
-
-      IF ( getparam(MODNAME, 'snowpack_init', Nhru, 'real', Snowpack_init)/=0 ) CALL read_error(2, 'snowpack_init')
-      Pkwater_equiv = 0.0D0
-      Pk_depth = 0.0D0
-      Pk_den = 0.0
-      Pk_ice = 0.0
-      Freeh2o = 0.0
-      Ai = 0.0D0
-      Frac_swe = 0.0D0
-      Snowcov_area = 0.0
-      Basin_pweqv = 0.0D0
-      Basin_snowdepth = 0.0D0
-      Basin_snowcov = 0.0D0
-      DO j = 1, Active_hrus
-        i = Hru_route_order(j)
-        Pkwater_equiv(i) = DBLE( Snowpack_init(i) )
-        IF ( Pkwater_equiv(i)>0.0D0 ) THEN
-          Basin_pweqv = Basin_pweqv + Pkwater_equiv(i)*Hru_area_dble(i)
-          Pk_depth(i) = Pkwater_equiv(i)*Deninv
-          Pk_den(i) = Pkwater_equiv(i)/Pk_depth(i)
-          Pk_ice(i) = SNGL( Pkwater_equiv(i) )
-          Freeh2o = Pk_ice(i)*Freeh2o_cap(i)
-          Ai(i) = Pkwater_equiv(i) ! [inches]
-          IF ( Ai(i)>Snarea_thresh(i) ) Ai = DBLE( Snarea_thresh(i) ) ! [inches]
-          CALL sca_deplcrv(i, Snowcov_area(i))
-          Basin_snowcov = Basin_snowcov + DBLE(Snowcov_area(i))*Hru_area_dble(i)
-          Basin_snowdepth = Basin_snowdepth + Pk_depth(i)*Hru_area_dble(i)
-        ENDIF
-      ENDDO
-      Basin_pweqv = Basin_pweqv*Basin_area_inv
-      Basin_snowcov = Basin_snowcov*Basin_area_inv
-      Basin_snowdepth = Basin_snowdepth*Basin_area_inv
-      DEALLOCATE ( Snowpack_init )
-      Pkwater_ante = Pkwater_equiv
+      IF ( Init_vars_from_file==0 .OR. Init_vars_from_file==2 .OR. Init_vars_from_file==3 ) THEN
+        IF ( getparam(MODNAME, 'snowpack_init', Nhru, 'real', Snowpack_init)/=0 ) CALL read_error(2, 'snowpack_init')
+        Pkwater_equiv = 0.0D0
+        Pk_depth = 0.0D0
+        Pk_den = 0.0
+        Pk_ice = 0.0
+        Freeh2o = 0.0
+        Ai = 0.0D0
+        Frac_swe = 0.0D0
+        Snowcov_area = 0.0
+        Basin_pweqv = 0.0D0
+        Basin_snowdepth = 0.0D0
+        Basin_snowcov = 0.0D0
+        DO j = 1, Active_hrus
+          i = Hru_route_order(j)
+          Pkwater_equiv(i) = DBLE( Snowpack_init(i) )
+          IF ( Pkwater_equiv(i)>0.0D0 ) THEN
+            Basin_pweqv = Basin_pweqv + Pkwater_equiv(i)*Hru_area_dble(i)
+            Pk_depth(i) = Pkwater_equiv(i)*Deninv
+            Pk_den(i) = Pkwater_equiv(i)/Pk_depth(i)
+            Pk_ice(i) = SNGL( Pkwater_equiv(i) )
+            Freeh2o(i) = Pk_ice(i)*Freeh2o_cap(i)
+            Ai(i) = Pkwater_equiv(i) ! [inches]
+            IF ( Ai(i)>Snarea_thresh(i) ) Ai = DBLE( Snarea_thresh(i) ) ! [inches]
+            CALL sca_deplcrv(i, Snowcov_area(i))
+            Basin_snowcov = Basin_snowcov + DBLE(Snowcov_area(i))*Hru_area_dble(i)
+            Basin_snowdepth = Basin_snowdepth + Pk_depth(i)*Hru_area_dble(i)
+          ENDIF
+        ENDDO
+        Basin_pweqv = Basin_pweqv*Basin_area_inv
+        Basin_snowcov = Basin_snowcov*Basin_area_inv
+        Basin_snowdepth = Basin_snowdepth*Basin_area_inv
+        DEALLOCATE ( Snowpack_init )
+        Pkwater_ante = Pkwater_equiv
+        Pss = Pkwater_equiv
+        Pst = Pkwater_equiv
+      ENDIF
+      IF ( Init_vars_from_file>0 ) RETURN
       Snowmelt = 0.0
       Snow_evap = 0.0
       Pptmix_nopack = 0
@@ -543,8 +546,6 @@
       Lso = 0
       Pk_def = 0.0
       Pk_temp = 0.0
-      Pss = Pkwater_equiv
-      Pst = Pkwater_equiv
       Albedo = 0.0
       Snsv = 0.0
       Lst = 0

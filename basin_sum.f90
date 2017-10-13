@@ -36,7 +36,7 @@
       DOUBLE PRECISION, SAVE :: Basin_sroff_yr, Basin_sroff_tot
       DOUBLE PRECISION, SAVE :: Basin_stflow_yr, Basin_stflow_tot
       DOUBLE PRECISION, SAVE :: Basin_ppt_yr, Basin_ppt_tot, Last_basin_stor
-      DOUBLE PRECISION, SAVE :: Basin_intcp_evap_yr, Basin_intcp_evap_tot
+      DOUBLE PRECISION, SAVE :: Basin_intcp_evap_yr, Basin_intcp_evap_tot, Basin_lakeevap_yr
       DOUBLE PRECISION, SAVE :: Obsq_inches_yr, Obsq_inches_tot
       DOUBLE PRECISION, SAVE :: Basin_net_ppt_mo, Obsq_inches_mo
       DOUBLE PRECISION, SAVE :: Basin_max_temp_mo, Basin_min_temp_mo
@@ -49,7 +49,7 @@
       DOUBLE PRECISION, SAVE :: Basin_ssflow_mo, Basin_ppt_mo
       DOUBLE PRECISION, SAVE :: Obsq_inches
       DOUBLE PRECISION, SAVE :: Basin_runoff_ratio, Basin_runoff_ratio_mo
-      DOUBLE PRECISION, SAVE :: Basin_lakeevap_mo, Basin_lakeevap_yr
+      DOUBLE PRECISION, SAVE :: Basin_lakeevap_mo
 !   Declared Parameters
       INTEGER, SAVE :: Print_type, Print_freq, Outlet_sta
       END MODULE PRMS_BASINSUM
@@ -326,15 +326,18 @@
       sumbinit = 0
 
       IF ( Nobs>0 ) THEN
-        IF ( getparam(MODNAME, 'outlet_sta', 1, 'integer', Outlet_sta)/=0 ) CALL read_error(2, 'outlet_sta')
+        IF ( getparam(MODNAME, 'outlet_sta', 1, 'integer', Outlet_sta) &
+     &       /=0 ) CALL read_error(2, 'outlet_sta')
         IF ( Outlet_sta==0 ) Outlet_sta = 1
       ENDIF
 
-      IF ( getparam(MODNAME, 'print_type', 1, 'integer', Print_type)/=0 ) CALL read_error(2, 'print_type')
+      IF ( getparam(MODNAME, 'print_type', 1, 'integer', Print_type) &
+     &     /=0 ) CALL read_error(2, 'print_type')
 
-      IF ( getparam(MODNAME, 'print_freq', 1, 'integer', Print_freq)/=0 ) CALL read_error(2, 'print_freq')
+      IF ( getparam(MODNAME, 'print_freq', 1, 'integer', Print_freq) &
+     &     /=0 ) CALL read_error(2, 'print_freq')
 
-      IF ( Init_vars_from_file==1 ) THEN
+      IF ( Init_vars_from_file>0 ) THEN
         CALL basin_sum_restart(1)
       ELSE
 !  Zero stuff out when Timestep = 0

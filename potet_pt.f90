@@ -159,7 +159,7 @@
 !******Get parameters
       ELSEIF ( Process(:4)=='init' ) THEN
         IF ( getparam(MODNAME, 'pt_alpha', Nhru*12, 'real', Pt_alpha)/=0 ) CALL read_error(2, 'pt_alpha')
-        IF ( Init_vars_from_file==1 ) CALL potet_pt_restart(1)
+        IF ( Init_vars_from_file>0 ) CALL potet_pt_restart(1)
 
         !ALLOCATE ( Tavgc_ante(Nhru) )
         !Tavgc_ante = Tavgc

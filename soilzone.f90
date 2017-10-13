@@ -126,7 +126,7 @@
 !***********************************************************************
       szdecl = 0
 
-      Version_soilzone = 'soilzone.f90 2017-09-27 16:14:00Z'
+      Version_soilzone = 'soilzone.f90 2017-10-06 11:04:00Z'
       CALL print_module(Version_soilzone, 'Soil Zone Computations      ', 90 )
       MODNAME = 'soilzone'
 
@@ -712,7 +712,7 @@
         ENDIF
 
         ! hru_type = 1 or 3
-        IF ( Init_vars_from_file==0 ) THEN
+        IF ( Init_vars_from_file==0 .OR. Init_vars_from_file==2 .OR. Init_vars_from_file==5 ) THEN
           Slow_stor(i) = MIN( Ssres_stor(i), Pref_flow_thrsh(i) )
           Pref_flow_stor(i) = Ssres_stor(i) - Slow_stor(i)
         ENDIF
@@ -794,10 +794,6 @@
         Unused_potet = 0.0 ! dimension nhru
         Interflow_max = 0.0
         Snowevap_aet_frac = 0.0
-        IF ( Print_debug==1 ) THEN
-          Soil_moist_ante = Soil_moist
-          Ssres_stor_ante = Ssres_stor
-        ENDIF
 
         ! initialize scalers
         CALL init_basin_vars()
@@ -808,6 +804,10 @@
           Sm2gw_grav = 0.0 ! dimension nhrucell
           Sm2gw_grav_old = 0.0 ! dimension nhrucell
         ENDIF
+      ENDIF
+      IF ( Print_debug==1 ) THEN
+        Soil_moist_ante = Soil_moist
+        Ssres_stor_ante = Ssres_stor
       ENDIF
 
 ! initialize arrays (dimensioned Nhrucell)
@@ -821,7 +821,8 @@
             Gravity_stor_res(i) = 0.0
           ELSE
             ! set only for cold start simulations
-            IF ( Init_vars_from_file==0 ) Gravity_stor_res(i) = Ssres_stor(ihru)
+            IF ( Init_vars_from_file==0 .OR. Init_vars_from_file==2 .OR. Init_vars_from_file==5 ) &
+      &          Gravity_stor_res(i) = Ssres_stor(ihru)
             Hru_gvr_count(ihru) = Hru_gvr_count(ihru) + 1
             IF ( Hru_gvr_count(ihru)>Max_gvrs ) Max_gvrs = Hru_gvr_count(ihru)
           ENDIF
