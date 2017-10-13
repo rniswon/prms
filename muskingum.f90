@@ -81,8 +81,8 @@
 !
 !***********************************************************************
       MODULE PRMS_MUSKINGUM
-      IMPLICIT NONE 
-!   Local Variables 
+      IMPLICIT NONE
+!   Local Variables
       DOUBLE PRECISION, PARAMETER :: ONE_24TH = 1.0D0 / 24.0D0
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Currinsum(:), Pastin(:), Pastout(:)
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Outflow_ts(:), Inflow_ts(:)
@@ -108,7 +108,7 @@
       ELSEIF ( Process(:4)=='decl' ) THEN
         muskingum  = muskingum_decl()
       ELSEIF ( Process(:4)=='init' ) THEN
-        IF ( Init_vars_from_file==1 ) CALL muskingum_restart(1)
+        IF ( Init_vars_from_file>0 ) CALL muskingum_restart(1)
         muskingum = muskingum_init()
       ELSEIF ( Process(:5)=='clean' ) THEN
         IF ( Save_vars_to_file==1 ) CALL muskingum_restart(0)
@@ -133,7 +133,7 @@
 !***********************************************************************
       muskingum_decl = 0
 
-      Version_muskingum = 'muskingum.f90 2017-09-27 14:00:00Z'
+      Version_muskingum = 'muskingum.f90 2017-10-06 11:04:00Z'
       CALL print_module(Version_muskingum, 'Streamflow Routing          ', 90)
       MODNAME = 'muskingum'
 
@@ -141,7 +141,7 @@
       ALLOCATE ( Pastin(Nsegment), Pastout(Nsegment) )
       ALLOCATE ( Outflow_ts(Nsegment), Inflow_ts(Nsegment) )
 
-      IF ( Init_vars_from_file==0 ) THEN
+      IF ( Init_vars_from_file==0 .OR. Init_vars_from_file==2 ) THEN
         ALLOCATE ( Segment_flow_init(Nsegment) )
         IF ( declparam(MODNAME, 'segment_flow_init', 'nsegment', 'real', &
      &       '0.0', '0.0', '1.0E7', &
@@ -171,14 +171,16 @@
 !***********************************************************************
       muskingum_init = 0
 
-      IF ( Init_vars_from_file==0 ) THEN
+      IF ( Init_vars_from_file==0 .OR. Init_vars_from_file==2 ) THEN
         IF ( getparam(MODNAME, 'segment_flow_init',  Nsegment, 'real', Segment_flow_init)/=0 ) &
      &       CALL read_error(2,'segment_flow_init')
-        Seg_inflow = 0.0D0
         DO i = 1, Nsegment
           Seg_outflow(i) = Segment_flow_init(i)
         ENDDO
         DEALLOCATE ( Segment_flow_init )
+      ENDIF
+      IF ( Init_vars_from_file==0 ) THEN
+        Seg_inflow = 0.0D0
         Outflow_ts = 0.0D0
       ENDIF
 

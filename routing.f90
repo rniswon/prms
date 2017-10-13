@@ -44,7 +44,7 @@
       ELSEIF ( Process(:4)=='decl' ) THEN
         routing = routingdecl()
       ELSEIF ( Process(:4)=='init' ) THEN
-        IF ( Init_vars_from_file==1 ) CALL routing_restart(1)
+        IF ( Init_vars_from_file>0 ) CALL routing_restart(1)
         routing = routinginit()
       ELSEIF ( Process(:5)=='clean' ) THEN
         IF ( Save_vars_to_file==1 ) CALL routing_restart(0)
@@ -65,7 +65,7 @@
 !***********************************************************************
       routingdecl = 0
 
-      Version_routing = 'routing.f90 2017-10-03 15:45:00Z'
+      Version_routing = 'routing.f90 2017-10-06 11:58:00Z'
       CALL print_module(Version_routing, 'Routing Initialization      ', 90)
       MODNAME = 'routing'
 
@@ -257,7 +257,7 @@
       INTEGER FUNCTION routinginit()
       USE PRMS_ROUTING
       USE PRMS_MODULE, ONLY: Nsegment, Nhru, Init_vars_from_file, Strmflow_flag, Cascade_flag, &
-     &    Water_use_flag, Segment_transferON_OFF, Print_debug, Inputerror_flag
+     &    Water_use_flag, Segment_transferON_OFF, Inputerror_flag, Parameter_check_flag
       USE PRMS_SET_TIME, ONLY: Timestep_seconds
       USE PRMS_BASIN, ONLY: FT2_PER_ACRE, DNEARZERO, Active_hrus, Hru_route_order, Hru_area_dble, NEARZERO !, Active_area
       IMPLICIT NONE
@@ -335,7 +335,7 @@
           Segment_area = Segment_area + Segment_hruarea(j)
           IF ( Segment_hruarea(j)<DNEARZERO ) THEN
             Noarea_flag = 1
-            IF ( Print_debug>-1 ) THEN
+            IF ( Parameter_check_flag>0 ) THEN
               WRITE ( buffer, '(I10)' ) j
               CALL write_outfile('WARNING, No HRUs are associated with segment:'//buffer)
               IF ( Tosegment(j)==0 ) PRINT *, 'WARNING, No HRUs and tosegment=0 for segment:', j
@@ -361,7 +361,7 @@
         ENDIF
       ENDDO
 
-      IF ( Print_debug>-1 ) THEN
+      IF ( Parameter_check_flag>0 ) THEN
         DO i = 1, Nsegment
           IF ( Segment_up(i)==0 .AND. Tosegment(i)==0 ) &
      &         PRINT *, 'WARNING, no other segment flows into segment:',  i, ' and tosegment=0'
@@ -424,7 +424,7 @@
         ierr = 0
         DO i = 1, Nsegment
           IF ( Segment_type(i)==2 .AND. K_coef(i)<24.0 ) THEN
-            IF ( Print_debug>-1 ) PRINT *, 'WARNING, K_coef must be specified = 24.0 for lake segments'
+            IF ( Parameter_check_flag>0 ) PRINT *, 'WARNING, K_coef must be specified = 24.0 for lake segments'
             K_coef(i) = 24.0
           ENDIF
           k = K_coef(i)
@@ -489,7 +489,7 @@
 
           d = k - (k * x) + (0.5 * Ts(i))
           IF ( ABS(d)<NEARZERO ) THEN
-            IF ( Print_debug>-1 ) PRINT *, 'WARNING, segment ', i, ' computed value d <', NEARZERO, ', set to 0.0001'
+            IF ( Parameter_check_flag>0 ) PRINT *, 'WARNING, segment ', i, ' computed value d <', NEARZERO, ', set to 0.0001'
             d = 0.0001
           ENDIF
           C0(i) = (-(k * x) + (0.5 * Ts(i))) / d
@@ -507,7 +507,7 @@
 !  c2 as is, reduce c1 by c0 and set c0=0
 ! SHORT travel time
           IF ( C2(i)<0.0 ) THEN
-            IF ( Print_debug>-1 ) THEN
+            IF ( Parameter_check_flag>0 ) THEN
               PRINT '(/,A)', 'WARNING, c2 < 0, set to 0, c1 set to c1 + c2'
               PRINT *, '        old c2:', C2(i), '; old c1:', C1(i), '; new c1:', C1(i) + C2(i)
               PRINT *, '        K_coef:', K_coef(i), '; x_coef:', x_coef(i)
@@ -518,7 +518,7 @@
 
 ! LONG travel time
           IF ( C0(i)<0.0 ) THEN
-            IF ( Print_debug>-1 ) THEN
+            IF ( Parameter_check_flag>0 ) THEN
               PRINT '(/,A)', 'WARNING, c0 < 0, set to 0, c0 set to c1 + c0'
               PRINT *, '      old c0:', C0(i), 'old c1:', C1(i), 'new c1:', C1(i) + C0(i)
               PRINT *, '        K_coef:', K_coef(i), '; x_coef:', x_coef(i)
