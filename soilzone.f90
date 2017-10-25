@@ -323,22 +323,6 @@
      &       'Cascading interflow and Dunnian surface runoff from each HRU', &
      &       'inches', Hru_sz_cascadeflow)/=0 ) CALL read_error(3, 'hru_sz_cascadeflow')
 
-        ALLOCATE ( Cap_upflow_max(Nhru) )
-        IF ( declvar(MODNAME, 'cap_upflow_max', 'nhru', Nhru, 'real', &
-     &       'Maximum infiltration and any cascading interflow and'// &
-     &       ' Dunnian surface runoff that can be added to capillary reservoir storage for each HRU', &
-     &       'inches', Cap_upflow_max)/=0 ) CALL read_error(3, 'cap_upflow_max')
-
-        ALLOCATE ( Cascade_interflow(Nhru) )
-        IF ( declvar(MODNAME, 'cascade_interflow', 'nhru', Nhru, 'real', &
-     &       'Cascading interflow for each HRU', &
-     &       'inches', Cascade_interflow)/=0 ) CALL read_error(3, 'cascade_interflow')
-
-        ALLOCATE ( Cascade_dunnianflow(Nhru) )
-        IF ( declvar(MODNAME, 'cascade_dunnianflow', 'nhru', Nhru, 'real', &
-     &       'Cascading Dunnian flow for each HRU', &
-     &       'inches', Cascade_dunnianflow)/=0 ) CALL read_error(3, 'cascade_dunnianflow')
-
         IF ( Nlake>0 ) THEN
           ALLOCATE ( Lakein_sz(Nhru) )
           IF ( declvar(MODNAME, 'lakein_sz', 'nhru', Nhru, 'double', &
@@ -447,11 +431,6 @@
      &     'Unsatisfied potential evapotranspiration', &
      &     'inches', Unused_potet)/=0 ) CALL read_error(3, 'unused_potet')
 
-      ALLOCATE ( Snowevap_aet_frac(Nhru) )
-      IF ( declvar(MODNAME, 'snowevap_aet_frac', 'nhru', Nhru, 'double', &
-     &     'Fraction of sublimation of AET for each HRU', &
-     &     'decimal fraction', Snowevap_aet_frac)/=0 ) CALL read_error(3, 'snowevap_aet_frac')
-
       IF ( Model==0 .OR. Model==99 ) THEN
         IF ( Nhrucell<-1 ) STOP 'ERROR, dimension nhrucell not specified > 0'
         ALLOCATE ( Gravity_stor_res(Nhrucell) )
@@ -483,11 +462,6 @@
      &       'Groundwater discharge to gravity-flow reservoirs', &
      &       'inches', Gw2sm_grav)/=0 ) CALL read_error(3, 'gw2sm_grav')
 
-        ALLOCATE ( Grav_gwin(Nhru) ) ! ???
-        IF ( declvar(MODNAME, 'grav_gwin', 'nhru', Nhru, 'real', &
-     &       'Groundwater discharge to gravity-flow reservoirs for each HRU', &
-     &       'inches', Grav_gwin)/=0 ) CALL read_error(3, 'grav_gwin')
-
         ALLOCATE ( Gw_rejected(Nhru) )
         IF ( declvar(MODNAME, 'gw_rejected', 'nhru', Nhru, 'real', &
      &       'HRU average recharge rejected by UZF', 'inches', &
@@ -501,7 +475,7 @@
         ALLOCATE ( Hru_gvr_count(Nhru), Hrucheck(Nhru) )
         ALLOCATE ( It0_pref_flow_stor(Nhru), It0_ssres_stor(Nhru), It0_soil_rechr(Nhru), It0_soil_moist(Nhru) )
         ALLOCATE ( It0_gravity_stor_res(Nhrucell), It0_sroff(Nhru), It0_slow_stor(Nhru) )
-        ALLOCATE ( It0_strm_seg_in(Nsegment), It0_potet(Nhru), Replenish_frac(Nhru) )
+        ALLOCATE ( It0_strm_seg_in(Nsegment), It0_potet(Nhru), Replenish_frac(Nhru), Grav_gwin(Nhru) )
       ENDIF
 
 ! Allocate arrays for local and variables from other modules
@@ -645,7 +619,7 @@
       USE PRMS_SNOW, ONLY: Snowcov_area
       IMPLICIT NONE
 ! Functions
-      EXTERNAL :: init_basin_vars
+      EXTERNAL :: init_basin_vars, checkdim_param_limits
       INTEGER, EXTERNAL :: getparam
       INTRINSIC MIN, DBLE
 ! Local Variables
@@ -710,7 +684,7 @@
       Basin_gvr_stor_frac = 0.0D0
       Basin_pfr_stor_frac = 0.0D0
       Pfr_stor_frac = 0.0
-
+      ! Sanity checks for parameters
       DO i = 1, Nhru
         Snow_free(i) = 1.0 - Snowcov_area(i)
 
@@ -977,7 +951,7 @@
      &    Basin_soil_moist, Basin_ssstor, Slow_stor, Slow_flow, &
      &    Ssres_stor, Soil_moist, Sat_threshold, Soil_rechr, Basin_lake_stor
       USE PRMS_CASCADE, ONLY: Ncascade_hru
-      USE PRMS_SET_TIME, ONLY: Nowmonth !, Nowday
+      USE PRMS_SET_TIME, ONLY: Nowmonth, Nowday
       USE PRMS_INTCP, ONLY: Hru_intcpevap
       USE PRMS_SNOW, ONLY: Snowcov_area, Snow_evap
       USE PRMS_SRUNOFF, ONLY: Basin_sroff, Hru_impervevap, Strm_seg_in, Dprst_evap_hru, Dprst_seep_hru
@@ -990,7 +964,7 @@
       INTEGER :: i, k, update_potet
       REAL :: dunnianflw, interflow, perv_area, harea
       REAL :: dnslowflow, dnpreflow, dndunn, availh2o, avail_potet
-      REAL :: gvr_maxin, topfr ! , tmp
+      REAL :: tmp, gvr_maxin, topfr
       REAL :: dunnianflw_pfr, dunnianflw_gvr, pref_flow_maxin
       REAL :: perv_frac, capacity, capwater_maxin, ssresin
       REAL :: unsatisfied_et, pervactet, prefflow
@@ -1206,9 +1180,9 @@
             Soil_rechr(i) = Soil_rechr(i) + Gvr2sm(i)/perv_frac*Replenish_frac(i)
             Soil_rechr(i) = MIN( Soil_rechr_max(i), Soil_rechr(i) )
             Basin_gvr2sm = Basin_gvr2sm + DBLE( Gvr2sm(i)*harea )
-!          ELSEIF ( Gvr2sm(i)<-NEARZERO ) THEN
-!            PRINT *, 'negative gvr2sm, HRU:', i, Gvr2sm(i)
-!            Gvr2sm(i) = 0.0
+          ELSEIF ( Gvr2sm(i)<-NEARZERO ) THEN
+            PRINT *, 'negative gvr2sm, HRU:', i, Gvr2sm(i)
+            Gvr2sm(i) = 0.0
           ENDIF
           Grav_gwin(i) = SNGL( gwin )
           Basin_sz_gwin = Basin_sz_gwin + gwin*DBLE( harea )
@@ -1268,43 +1242,42 @@
      &                         Soil_type(i), Soil_moist(i), Soil_rechr(i), pervactet, &
      &                         avail_potet, Snow_free(i), Potet_rechr(i), Potet_lower(i))
           ! sanity check
-!          IF ( pervactet>avail_potet ) THEN
-!            Soil_moist(i) = Soil_moist(i) + pervactet - avail_potet
-!            pervactet = avail_potet
+          IF ( pervactet>avail_potet ) THEN
+            Soil_moist(i) = Soil_moist(i) + pervactet - avail_potet
+            pervactet = avail_potet
 !            PRINT *, 'perv_et problem', pervactet, Avail_potet
-!          ENDIF
+          ENDIF
         ENDIF
-        Perv_avail_et(i) = avail_potet
 
         ! sanity check
-!        IF ( Soil_moist(i)<0.0 ) THEN
-!          IF ( Print_debug>-1 ) PRINT *, i, Soil_moist(i), ' negative'
-!          IF ( pervactet>=ABS(Soil_moist(i)) ) THEN
-!            pervactet = pervactet + Soil_moist(i)
-!            Soil_moist(i) = 0.0
-!          ENDIF
-!          IF ( Soil_moist(i)<-NEARZERO ) THEN
-!            IF ( Print_debug>-1 ) PRINT *, 'HRU:', i, ' soil_moist<0.0', Soil_moist(i)
-!          ENDIF
-!          Soil_moist(i) = 0.0
-!        ENDIF
+        IF ( Soil_moist(i)<0.0 ) THEN
+          IF ( Print_debug>-1 ) PRINT *, i, Soil_moist(i), ' negative'
+          IF ( pervactet>=ABS(Soil_moist(i)) ) THEN
+            pervactet = pervactet + Soil_moist(i)
+            Soil_moist(i) = 0.0
+          ENDIF
+          IF ( Soil_moist(i)<-NEARZERO ) THEN
+            IF ( Print_debug>-1 ) PRINT *, 'HRU:', i, ' soil_moist<0.0', Soil_moist(i)
+          ENDIF
+          Soil_moist(i) = 0.0
+        ENDIF
 
         Hru_actet(i) = Hru_actet(i) + pervactet*perv_frac
         avail_potet = Potet(i) - Hru_actet(i)
         ! sanity check
-!        IF ( avail_potet<0.0 ) THEN
-!          IF ( Print_debug>-1 ) THEN
-!            IF ( avail_potet<-NEARZERO ) PRINT *, 'hru_actet>potet', i, &
-!     &           Nowmonth, Nowday, Hru_actet(i), Potet(i), avail_potet
-!          ENDIF
-!          Hru_actet(i) = Potet(i)
-!          tmp = avail_potet/perv_frac
-!          pervactet = pervactet + tmp
-!          Soil_moist(i) = Soil_moist(i) - tmp
-!          Soil_rechr(i) = Soil_rechr(i) - tmp
-!          IF ( Soil_rechr(i)<0.0 ) Soil_rechr(i) = 0.0
-!          IF ( Soil_moist(i)<0.0 ) Soil_moist(i) = 0.0
-!        ENDIF
+        IF ( avail_potet<0.0 ) THEN
+          IF ( Print_debug>-1 ) THEN
+            IF ( avail_potet<-NEARZERO ) PRINT *, 'hru_actet>potet', i, &
+     &           Nowmonth, Nowday, Hru_actet(i), Potet(i), avail_potet
+          ENDIF
+          Hru_actet(i) = Potet(i)
+          tmp = avail_potet/perv_frac
+          pervactet = pervactet + tmp
+          Soil_moist(i) = Soil_moist(i) - tmp
+          Soil_rechr(i) = Soil_rechr(i) - tmp
+          IF ( Soil_rechr(i)<0.0 ) Soil_rechr(i) = 0.0
+          IF ( Soil_moist(i)<0.0 ) Soil_moist(i) = 0.0
+        ENDIF
         Perv_actet(i) = pervactet
 
 ! soil_moist & soil_rechr multiplied by perv_area instead of harea
@@ -1598,11 +1571,11 @@
       ENDIF
       Perv_actet = et
       ! sanity check
-!      IF ( Perv_actet>Avail_potet ) THEN
-!        PRINT *, 'perv_et problem', Perv_actet, Avail_potet
-!        Soil_moist = Soil_moist + Perv_actet - Avail_potet
-!        Perv_actet = Avail_potet
-!      ENDIF
+      IF ( Perv_actet>Avail_potet ) THEN
+        PRINT *, 'perv_et problem', Perv_actet, Avail_potet
+        Soil_moist = Soil_moist + Perv_actet - Avail_potet
+        Perv_actet = Avail_potet
+      ENDIF
 
       END SUBROUTINE compute_szactet
 
@@ -1663,24 +1636,22 @@
       ENDIF
 
 ! sanity check
-!      IF ( Inter_flow<0.0 ) THEN
-!        IF ( Inter_flow<-NEARZERO ) PRINT *, 'interflow<0', Inter_flow, Ssres_in, Storage
-!        Storage = Storage - Inter_flow
-!        Inter_flow = 0.0
-!      ELSEIF ( Inter_flow>Storage ) THEN
-!        Inter_flow = Storage
-!      ENDIF
-      IF ( Inter_flow>Storage ) Inter_flow = Storage
+      IF ( Inter_flow<0.0 ) THEN
+        IF ( Inter_flow<-NEARZERO ) PRINT *, 'interflow<0', Inter_flow, Ssres_in, Storage
+        Storage = Storage - Inter_flow
+        Inter_flow = 0.0
+      ELSEIF ( Inter_flow>Storage ) THEN
+        Inter_flow = Storage
+      ENDIF
       Storage = Storage - Inter_flow
-!      IF ( Storage<0.0 ) THEN
-!        IF ( Storage<-CLOSEZERO ) PRINT *, 'Sanity check, ssres_stor<0.0', Storage
-!        Storage = 0.0
+      IF ( Storage<0.0 ) THEN
+        IF ( Storage<-CLOSEZERO ) PRINT *, 'Sanity check, ssres_stor<0.0', Storage
+        Storage = 0.0
 ! rsr, if very small storage, add it to interflow
-!      ELSEIF ( Storage>0.0 .AND. Storage<NEARZERO ) THEN
-!        print *, 'small storage', storage, inter_flow
-!        Inter_flow = Inter_flow + Storage
-!        Storage = 0.0
-!      ENDIF
+      ELSEIF ( Storage>0.0 .AND. Storage<NEARZERO ) THEN
+        Inter_flow = Inter_flow + Storage
+        Storage = 0.0
+      ENDIF
 
       END SUBROUTINE compute_interflow
 

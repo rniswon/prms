@@ -24,12 +24,13 @@
 !   Declared Variables - Transp
       INTEGER, SAVE :: Basin_transp_on
       INTEGER, SAVE, ALLOCATABLE :: Transp_on(:)
-!   Declared Variables - Potetential ET
-      DOUBLE PRECISION, SAVE :: Basin_potet
+!   Declared Parameters and Variables - Potetential ET
+      DOUBLE PRECISION, SAVE :: Basin_potet, Basin_humidity
       REAL, SAVE, ALLOCATABLE :: Potet(:)
       ! for potet_pt, potet_pm and potet_pm_sta
       REAL, SAVE, ALLOCATABLE :: Tempc_dewpt(:), Vp_actual(:), Lwrad_net(:), Vp_slope(:)
       REAL, SAVE, ALLOCATABLE :: Vp_sat(:)
+      REAL, SAVE, ALLOCATABLE :: Humidity_percent(:, :)
 !   Declared Parameters and Variables - Solar Radiation
       INTEGER, SAVE :: Basin_solsta
       INTEGER, SAVE, ALLOCATABLE :: Hru_solsta(:), Hru_pansta(:)
@@ -128,7 +129,7 @@
 !***********************************************************************
       climateflow_decl = 0
 
-      Version_climateflow = 'climateflow.f90 2017-01-23 12:35:00Z'
+      Version_climateflow = 'climateflow.f90 2017-10-23 14:33:00Z'
       CALL print_module(Version_climateflow, 'Common States and Fluxes    ', 90)
       MODNAME = 'climateflow'
 
@@ -292,6 +293,9 @@
 
       IF ( Et_flag==5 .OR. Et_flag==11 .OR. Et_flag==6 .OR. Model==99 ) THEN
       ! For potet_pt,potet_pm and potet_pm_sta
+        IF ( declvar(Et_module, 'basin_humidity', 'one', 1, 'double', &
+     &       'Basin area-weighted average humidity', &
+     &       'percentage', Basin_humidity)/=0 ) CALL read_error(3, 'basin_humidity')
         ALLOCATE ( Tempc_dewpt(Nhru) )
         IF ( declvar(Et_module, 'tempc_dewpt', 'nhru', Nhru, 'real', &
      &       'Air temperature at dew point for each HRU', &
@@ -314,6 +318,12 @@
      &         'Saturation vapor pressure for each HRU', &
      &         'kilopascals', Vp_sat)/=0 ) CALL read_error(3, 'vp_sat')
         ENDIF
+        ALLOCATE ( Humidity_percent(Nhru,12) )
+        IF ( declparam(Et_module, 'humidity_percent', 'nhru,nmonths', 'real', &
+     &       '0.0', '0.0', '100.0', &
+     &       'Monthy humidity for each HRU', &
+     &       'Monthy humidity for each HRU', &
+     &       'percentage')/=0 ) CALL read_error(1, 'humidity_percent')
       ENDIF
 
 ! Soilzone variables
@@ -738,7 +748,7 @@
       USE PRMS_FLOWVARS
       USE PRMS_MODULE, ONLY: Temp_flag, Precip_flag, Nhru, Temp_module, Precip_module, &
      &    Solrad_module, Soilzone_module, Srunoff_module, Stream_order_flag, Ntemp, Nrain, Nsol, &
-     &    Init_vars_from_file, Inputerror_flag, Dprst_flag, Solrad_flag, Et_flag
+     &    Init_vars_from_file, Inputerror_flag, Dprst_flag, Solrad_flag, Et_flag, Et_module, Humidity_cbh_flag
       USE PRMS_BASIN, ONLY: Elev_units, FEET2METERS, METERS2FEET, Active_hrus, Hru_route_order
       IMPLICIT NONE
 ! Functions
@@ -902,12 +912,19 @@
       Basin_transp_on = 0
       Basin_potet = 0.0D0
       Potet = 0.0
+      Basin_humidity = 0.0D0
       IF ( Et_flag==5 .OR. Et_flag==11 .OR. Et_flag==6 ) THEN
         Tempc_dewpt = 0.0
         Vp_actual = 0.0
         Lwrad_net = 0.0
         Vp_slope = 0.0
         IF ( Et_flag==11 .OR. Et_flag==6 ) Vp_sat = 0.0
+        IF ( Humidity_cbh_flag==0 ) THEN
+          IF ( getparam(Et_module, 'humidity_percent', Nhru*12, 'real', Humidity_percent)/=0 ) &
+     &         CALL read_error(2, 'humidity_percent')
+        ELSE
+          Humidity_percent = 1.0
+        ENDIF
       ENDIF
       Basin_orad = 0.0D0
       IF ( Solrad_flag==1 .OR. Solrad_flag==2 ) Orad_hru = 0.0

@@ -2,14 +2,14 @@
 ! Routes water between segments in the system as inflow equals outflow
 !***********************************************************************
       INTEGER FUNCTION strmflow_in_out()
-      USE PRMS_MODULE, ONLY: Process, Nsegment, Print_debug
+      USE PRMS_MODULE, ONLY: Process, Nsegment
       USE PRMS_SET_TIME, ONLY: Cfs_conv
       USE PRMS_BASIN, ONLY: Active_area, CFS2CMS_CONV
       USE PRMS_GWFLOW, ONLY: Basin_gwflow
       USE PRMS_FLOWVARS, ONLY: Basin_ssflow, Basin_cfs, Basin_cms, Basin_stflow_in, &
      &    Basin_sroff_cfs, Basin_ssflow_cfs, Basin_gwflow_cfs, Basin_stflow_out, &
      &    Seg_inflow, Seg_outflow, Seg_upstream_inflow, Seg_lateral_inflow, Flow_out
-      USE PRMS_ROUTING, ONLY: Obsin_segment, Segment_order, Tosegment, Obsout_segment
+      USE PRMS_ROUTING, ONLY: Obsin_segment, Segment_order, Tosegment
       USE PRMS_SRUNOFF, ONLY: Basin_sroff
       USE PRMS_OBS, ONLY: Streamflow_cfs
       IMPLICIT NONE
@@ -32,21 +32,7 @@
           toseg = Tosegment(iorder)
           IF ( Obsin_segment(iorder)>0 ) Seg_upstream_inflow(iorder) = Streamflow_cfs(Obsin_segment(iorder))
           Seg_inflow(iorder) = Seg_upstream_inflow(iorder) + Seg_lateral_inflow(iorder)
-          IF ( Obsout_segment(iorder)>0 ) THEN
-            Seg_outflow(iorder) = Streamflow_cfs(Obsout_segment(iorder))
-          ELSE
-            Seg_outflow(iorder) = Seg_inflow(iorder)
-          ENDIF
-
-          IF ( Seg_outflow(iorder) < 0.0 ) THEN
-            IF ( Print_debug>-1 ) THEN
-              PRINT *, 'WARNING, negative flow from segment:', iorder, ' flow:', Seg_outflow(iorder)
-              PRINT *, '         likely a water-use specification or replacement flow issue'
-            ENDIF
-          ENDIF
-
-! Flow_out is the total flow out of the basin, which allows for multiple outlets
-! includes closed basins (tosegment=0)
+          Seg_outflow(iorder) = Seg_inflow(iorder)
           IF ( toseg==0 ) THEN
             Flow_out = Flow_out + Seg_outflow(iorder)
           ELSE

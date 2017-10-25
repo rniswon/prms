@@ -1,4 +1,4 @@
-      ! utils_prms.f90 2017-06-30 09:46:00Z
+      ! utils_prms.f90 2017-10-25 17:01:00Z
 !***********************************************************************
 !     Read CBH File to current time
 !***********************************************************************
@@ -91,21 +91,36 @@
 !     Read File to line before data starts in file
 !***********************************************************************
       SUBROUTINE find_header_end(Iunit, Fname, Paramname, Iret, Cbh_flag, Cbh_binary_flag)
-      USE PRMS_MODULE, ONLY: Nhru, Orad_flag
+      USE PRMS_MODULE, ONLY: Nhru, Orad_flag, Print_debug
       IMPLICIT NONE
 ! Argument
       INTEGER, INTENT(IN) :: Cbh_flag, Cbh_binary_flag
       INTEGER, INTENT(OUT) :: Iunit, Iret
       CHARACTER(LEN=*), INTENT(IN) :: Fname, Paramname
 ! Functions
-      EXTERNAL :: PRMS_open_input_file
+      INTRINSIC :: trim
+      INTEGER, EXTERNAL :: get_ftnunit
 ! Local Variables
       INTEGER :: i, ios, dim
       CHARACTER(LEN=4) :: dum
       CHARACTER(LEN=80) :: dum2
 !***********************************************************************
-      CALL PRMS_open_input_file(Iunit, Fname, Paramname, Cbh_binary_flag, Iret)
-      IF ( Iret==0 ) THEN
+      Iunit = get_ftnunit(777)
+      IF ( Cbh_binary_flag==0 ) THEN
+        OPEN ( Iunit, FILE=trim(Fname), STATUS='OLD', IOSTAT=ios )
+      ELSE
+        OPEN ( Iunit, FILE=trim(Fname), STATUS='OLD', FORM='UNFORMATTED', IOSTAT=ios )
+      ENDIF
+      IF ( ios/=0 ) THEN
+        IF ( Iret==2 ) THEN ! this signals climate_hru to ignore the Humidity CBH file, could add other files
+          IF ( Print_debug>-1 ) &
+     &         WRITE ( *, '(/,A,/,A,/,A)' ) 'WARNING, optional CBH file not found, will use associated parameter values'
+        ELSE
+          WRITE ( *, '(/,A,/,A,/,A)' ) 'ERROR reading file:', Fname, 'check to be sure the input file exists'
+          Iret = 1
+        ENDIF
+        RETURN
+      ELSE
 ! read to line before data starts in each file
         i = 0
         DO WHILE ( i==0 )
@@ -149,6 +164,7 @@
           ENDIF
         ENDDO
       ENDIF
+      Iret = ios
       END SUBROUTINE find_header_end
 
 !**********************
@@ -846,7 +862,6 @@
 !***********************************************************************
 ! check restart file module order
 !***********************************************************************
-
       SUBROUTINE check_restart(Modname, Restart_module)
       IMPLICIT NONE
       ! Arguments

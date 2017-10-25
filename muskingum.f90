@@ -352,7 +352,7 @@
      &    Seg_lateral_inflow, Flow_out
       USE PRMS_OBS, ONLY: Streamflow_cfs
       USE PRMS_SET_TIME, ONLY: Cfs_conv
-      USE PRMS_ROUTING, ONLY: Obsin_segment, Segment_order, Tosegment, Obsout_segment
+      USE PRMS_ROUTING, ONLY: Obsin_segment, Segment_order, Tosegment
       USE PRMS_SRUNOFF, ONLY: Basin_sroff
       USE PRMS_GWFLOW, ONLY: Basin_gwflow
       IMPLICIT NONE
@@ -431,15 +431,6 @@
 ! because the upstream inflow from streams is used, reset it to zero so new average
 ! can be computed next routing timestep.
             Inflow_ts(iorder) = 0.0D0
-          ENDIF
-
-          IF ( Obsout_segment(iorder)>0 ) Outflow_ts(iorder) = Streamflow_cfs(Obsout_segment(iorder))
-
-          ! check for negative flow
-          IF ( Outflow_ts(iorder)<0.0 ) THEN
-            PRINT *, 'ERROR, outflow from segment:', iorder, ' is negative:', Outflow_ts(iorder)
-            PRINT *, '       routing parameters may be invalid'
-            STOP
           ENDIF
 
           ! Seg_outflow (the mean daily flow rate for each segment) will be the average of the hourly values.

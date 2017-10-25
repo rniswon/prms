@@ -17,7 +17,7 @@
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Seginc_gwflow(:), Seginc_swrad(:), Seginc_potet(:)
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Hru_outflow(:), Seg_ssflow(:), Seg_sroff(:), Seg_gwflow(:)
 !   Declared Parameters
-      INTEGER, SAVE, ALLOCATABLE :: Tosegment(:), Hru_segment(:), Obsin_segment(:), Obsout_segment(:)
+      INTEGER, SAVE, ALLOCATABLE :: Tosegment(:), Hru_segment(:), Obsin_segment(:)
       END MODULE PRMS_ROUTING
 
 !***********************************************************************
@@ -58,7 +58,7 @@
 !***********************************************************************
       routingdecl = 0
 
-      Version_routing = 'routing.f90 2017-07-11 11:07:00Z'
+      Version_routing = 'routing.f90 2017-10-25 15:33:00Z'
       CALL print_module(Version_routing, 'Routing Initialization      ', 90)
       MODNAME = 'routing'
 
@@ -92,13 +92,6 @@
      &     'Index of measured streamflow station that replaces inflow to a segment', &
      &     'Index of measured streamflow station that replaces inflow to a segment', &
      &     'none')/=0 ) CALL read_error(1, 'obsin_segment')
-
-      ALLOCATE ( Obsout_segment(Nsegment) )
-      IF ( declparam(MODNAME, 'obsout_segment', 'nsegment', 'integer', &
-     &     '0', 'bounded', 'nobs', &
-     &     'Index of measured streamflow station that replaces outflow from a segment', &
-     &     'Index of measured streamflow station that replaces outflow from a segment', &
-     &     'none')/=0 ) CALL read_error(1, 'obsout_segment')
 
       IF ( Cascade_flag==0 .OR. Model==99 ) THEN
         ALLOCATE ( Seginc_potet(Nsegment) )
@@ -192,7 +185,6 @@
 
       IF ( getparam(MODNAME, 'tosegment', Nsegment, 'integer', Tosegment)/=0 ) CALL read_error(2, 'tosegment')
       IF ( getparam(MODNAME, 'obsin_segment', Nsegment, 'integer', Obsin_segment)/=0 ) CALL read_error(2, 'obsin_segment')
-      IF ( getparam(MODNAME, 'obsout_segment', Nsegment, 'integer', Obsout_segment)/=0 ) CALL read_error(2, 'obsout_segment')
 
       Noarea_flag = 0
       IF ( Cascade_flag==0 ) THEN

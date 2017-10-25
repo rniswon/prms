@@ -66,7 +66,7 @@
 !***********************************************************************
       INTEGER FUNCTION basdecl()
       USE PRMS_BASIN
-      USE PRMS_MODULE, ONLY: Model, Nhru, Nlake, Dprst_flag, Et_flag, Precip_flag
+      USE PRMS_MODULE, ONLY: Model, Nhru, Nlake, Dprst_flag, Et_flag, Precip_flag, Cascadegw_flag
       IMPLICIT NONE
 ! Functions
       INTEGER, EXTERNAL :: declparam, declvar
@@ -74,7 +74,7 @@
 !***********************************************************************
       basdecl = 0
 
-      Version_basin = 'basin.f90 2017-08-17 16:48:00Z'
+      Version_basin = 'basin.f90 2017-10-25 16:59:00Z'
       CALL print_module(Version_basin, 'Basin Definition            ', 90)
       MODNAME = 'basin'
 
@@ -143,7 +143,7 @@
       ALLOCATE ( Hru_route_order(Nhru) )
 ! gwflow inactive for GSFLOW mode so arrays not allocated
 ! when GSFLOW can run in multi-mode will need these arrays
-      IF ( Model/=0 ) ALLOCATE ( Gwr_route_order(Nhru), Gwr_type(Nhru) )
+      IF ( Model/=0 .OR. Cascadegw>0 ) ALLOCATE ( Gwr_route_order(Nhru), Gwr_type(Nhru) )
       ! potet_pm, potet_pm_sta, or potet_pt
       IF ( Et_flag==5 .OR. Et_flag==11 .OR. Et_flag==6 ) ALLOCATE ( Hru_elev_feet(Nhru) )
       ! ide_dist, potet_pm, potet_pm_sta, or potet_pt
@@ -399,7 +399,7 @@
       Active_hrus = j
       Active_area = Land_area + Water_area
 
-      IF ( Model/=0 ) THEN
+      IF ( Model/=0 .OR. Cascadegw_flag>0 ) THEN
         Active_gwrs = Active_hrus
         Gwr_type = Hru_type
         Gwr_route_order = Hru_route_order
@@ -454,13 +454,13 @@
       ENDIF
 
 !     print out start and end times
-        !CALL write_outfile(' Surface Water and Energy Budgets Simulated by '//PRMS_VERSION)
-      WRITE ( Prms_output_unit, '(1X)' )
+      !CALL write_outfile(' Surface Water and Energy Budgets Simulated by '//PRMS_VERSION)
+      CALL write_outfile(' ')
       WRITE (buffer, 9002) 'Start time: ', Starttime
       CALL write_outfile(buffer(:31))
       WRITE (buffer, 9002) 'End time:   ', Endtime
       CALL write_outfile(buffer(:31))
-      WRITE ( Prms_output_unit, '(1X)' )
+      CALL write_outfile(' ')
       WRITE (buffer, 9003) 'Model domain area:   ', Totarea, '    Active basin area:', Active_area
       CALL write_outfile(buffer)
       WRITE (buffer, 9004) 'Fraction impervious:  ', basin_imperv, '    Fraction pervious: ', basin_perv
