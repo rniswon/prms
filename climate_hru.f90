@@ -15,7 +15,7 @@
         CHARACTER(LEN=MAXFILE_LENGTH), SAVE :: Humidity_day, Windspeed_day
         INTEGER, SAVE :: Cbh_check_flag, Cbh_binary_flag
         ! Declared Variables
-        DOUBLE PRECISION, SAVE :: Basin_humidity, Basin_windspeed
+        DOUBLE PRECISION, SAVE :: Basin_windspeed
         REAL, ALLOCATABLE :: Humidity_hru(:), Windspeed_hru(:)
         ! Declared Parameters
         REAL, SAVE, ALLOCATABLE :: Rain_cbh_adj(:, :), Snow_cbh_adj(:, :), Potet_cbh_adj(:, :)
@@ -34,7 +34,7 @@
      &    Precip_units, Tmax_allrain_f, Adjmix_rain, &
      &    Basin_ppt, Basin_potet, Potet, Basin_snow, Basin_rain, &
      &    Basin_horad, Orad, Swrad, Basin_potsw, Basin_swrad, Basin_obs_ppt, &
-     &    Transp_on, Basin_transp_on, Tmax_allsnow_f
+     &    Transp_on, Basin_transp_on, Tmax_allsnow_f, Basin_humidity
       USE PRMS_SET_TIME, ONLY: Nowmonth, Jday
       USE PRMS_SOLTAB, ONLY: Soltab_basinpotsw, Hru_cossl, Soltab_potsw
       IMPLICIT NONE
@@ -242,7 +242,7 @@
         IF ( Windspeed_cbh_flag==1 ) Basin_windspeed = Basin_windspeed*Basin_area_inv
 
       ELSEIF ( Process(:4)=='decl' ) THEN
-        Version_climate_hru = 'climate_hru.f90 2017-09-27 12:18:00Z'
+        Version_climate_hru = 'climate_hru.f90 2017-10-23 15:57:00Z'
         MODNAME = 'climate_hru'
 
         IF ( control_integer(Cbh_check_flag, 'cbh_check_flag')/=0 ) Cbh_check_flag = 1
@@ -254,9 +254,6 @@
         IF ( Climate_potet_flag==1 .OR. Model==99 ) CALL print_module(Version_climate_hru, 'Potential Evapotranspiration', 90)
         IF ( Climate_transp_flag==1 .OR. Model==99 ) CALL print_module(Version_climate_hru, 'Transpiration Distribution  ', 90)
         IF ( Humidity_cbh_flag==1 .OR. Model==99 ) THEN
-          CALL declvar_dble(MODNAME, 'basin_humidity', 'one', 1, 'double', &
-     &         'Basin area-weighted average humidity', &
-     &         'percentage', Basin_humidity)
           ALLOCATE ( Humidity_hru(Nhru) )
           CALL declvar_real(MODNAME, 'humidity_hru', 'nhru', Nhru, 'real', &
      &         'Relative humidity of each HRU', &
@@ -420,9 +417,12 @@
 
         IF ( Humidity_cbh_flag==1 ) THEN
           IF ( control_string(Humidity_day, 'humidity_day')/=0 ) CALL read_error(5, 'humidity_day')
+          ierr = 2 ! signals routine to ignore CBH file requirement and use a parameter
           CALL find_header_end(Humidity_unit, Humidity_day, 'humidity_day', ierr, 1, Cbh_binary_flag)
           IF ( ierr==1 ) THEN
             istop = 1
+          ELSEIF ( ierr==2 ) THEN
+            Humidity_cbh_flag = 0
           ELSE
             CALL find_current_time(Humidity_unit, Start_year, Start_month, Start_day, ierr, Cbh_binary_flag)
             IF ( ierr==-1 ) THEN

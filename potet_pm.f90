@@ -18,10 +18,10 @@
 !***********************************************************************
       INTEGER FUNCTION potet_pm()
       USE PRMS_POTET_PM
-      USE PRMS_MODULE, ONLY: Process, Nhru, Save_vars_to_file, Init_vars_from_file
+      USE PRMS_MODULE, ONLY: Process, Nhru, Save_vars_to_file, Init_vars_from_file, Humidity_cbh_flag
       USE PRMS_BASIN, ONLY: Active_hrus, Hru_route_order, Hru_area, Basin_area_inv, Hru_elev_meters
       USE PRMS_CLIMATEVARS, ONLY: Basin_potet, Potet, Tavgc, Swrad, Tminc, Tmaxc, &
-     &    Tempc_dewpt, Vp_actual, Lwrad_net, Vp_slope, Vp_sat
+     &    Tempc_dewpt, Vp_actual, Lwrad_net, Vp_slope, Vp_sat, Basin_humidity, Humidity_percent
       USE PRMS_CLIMATE_HRU, ONLY: Humidity_hru, Windspeed_hru
       USE PRMS_SOLTAB, ONLY: Soltab_potsw
       USE PRMS_SET_TIME, ONLY: Nowmonth, Jday
@@ -40,7 +40,9 @@
       potet_pm = 0
 
       IF ( Process(:3)=='run' ) THEN
+        IF ( Humidity_cbh_flag==0 ) Humidity_hru = Humidity_percent(1, Nowmonth) 
         Basin_potet = 0.0D0
+        Basin_humidity = 0.0D0
         DO j = 1, Active_hrus
           i = Hru_route_order(j)
 
@@ -134,12 +136,14 @@
 
           IF ( Potet(i)<0.0 ) Potet(i) = 0.0
           Basin_potet = Basin_potet + DBLE( Potet(i)*Hru_area(i) )
+          Basin_humidity = Basin_humidity + DBLE( Humidity_hru(i)*Hru_area(i) )
 !          Tavgc_ante(i) = Tavgc(i)
         ENDDO
         Basin_potet = Basin_potet*Basin_area_inv
+        Basin_humidity = Basin_humidity*Basin_area_inv
 
       ELSEIF ( Process(:4)=='decl' ) THEN
-        Version_potet = 'potet_pm.f90 2017-01-23 11:27:00Z'
+        Version_potet = 'potet_pm.f90 2017-10-24 12:24:00Z'
         CALL print_module(Version_potet, 'Potential Evapotranspiration', 90)
         MODNAME = 'potet_pm'
 

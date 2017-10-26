@@ -19,11 +19,11 @@
 !***********************************************************************
       INTEGER FUNCTION potet_pm_sta()
       USE PRMS_POTET_PM_STA
-      USE PRMS_MODULE, ONLY: Process, Nhru, Save_vars_to_file, Init_vars_from_file
+      USE PRMS_MODULE, ONLY: Process, Nhru, Save_vars_to_file, Init_vars_from_file, Parameter_check_flag, Inputerror_flag
       USE PRMS_BASIN, ONLY: Active_hrus, Hru_route_order, Hru_area, Basin_area_inv, Hru_elev_meters
       USE PRMS_CLIMATEVARS, ONLY: Basin_potet, Potet, Tavgc, Swrad, Tminc, Tmaxc, &
-     &    Tempc_dewpt, Vp_actual, Lwrad_net, Vp_slope, Vp_sat
-      USE PRMS_OBS, ONLY: Humidity, Wind_speed
+     &    Tempc_dewpt, Vp_actual, Lwrad_net, Vp_slope, Vp_sat, Basin_humidity
+      USE PRMS_OBS, ONLY: Humidity, Wind_speed, Nwind, Nhumid
       USE PRMS_SOLTAB, ONLY: Soltab_potsw
       USE PRMS_SET_TIME, ONLY: Nowmonth, Jday
       IMPLICIT NONE
@@ -31,7 +31,7 @@
       INTRINSIC SQRT, DBLE, LOG, SNGL
       INTEGER, EXTERNAL :: declparam, getparam
       REAL, EXTERNAL :: sat_vapor_press
-      EXTERNAL read_error, print_module, potet_pm_restart
+      EXTERNAL read_error, print_module, potet_pm_restart, checkdim_param_limits
 ! Local Variables
       INTEGER :: i, j
       REAL :: elh, prsr, psycnst, heat_flux, net_rad, vp_deficit, a, b, c 
@@ -42,6 +42,7 @@
 
       IF ( Process(:3)=='run' ) THEN
         Basin_potet = 0.0D0
+        Basin_humidity = 0.0D0
         DO j = 1, Active_hrus
           i = Hru_route_order(j)
 
@@ -135,12 +136,14 @@
 
           IF ( Potet(i)<0.0 ) Potet(i) = 0.0
           Basin_potet = Basin_potet + DBLE( Potet(i)*Hru_area(i) )
+          Basin_humidity = Basin_humidity + DBLE( Hru_humidity_sta(i)*Hru_area(i) )
 !          Tavgc_ante(i) = Tavgc(i)
         ENDDO
         Basin_potet = Basin_potet*Basin_area_inv
+        Basin_humidity = Basin_humidity*Basin_area_inv
 
       ELSEIF ( Process(:4)=='decl' ) THEN
-        Version_potet = 'potet_pm_sta.f90 2017-09-27 12:06:00Z'
+        Version_potet = 'potet_pm_sta.f90 2017-10-24 12:23:00Z'
         CALL print_module(Version_potet, 'Potential Evapotranspiration', 90)
         MODNAME = 'potet_pm_sta'
 
@@ -193,6 +196,13 @@
         IF ( getparam(MODNAME, 'crop_coef', Nhru*12, 'real', Crop_coef)/=0 ) CALL read_error(2, 'crop_coef')
         IF ( getparam(MODNAME, 'hru_windspeed_sta', Nhru, 'integer', Hru_windspeed_sta)/=0 ) CALL read_error(2,'hru_windspeed_sta')
         IF ( getparam(MODNAME, 'hru_humidity_sta', Nhru, 'integer', Hru_humidity_sta)/=0 ) CALL read_error(2, 'hru_humidity_sta')
+        IF ( Parameter_check_flag>0 ) THEN
+          DO j = 1, Active_hrus
+            i = Hru_route_order(j)
+            CALL checkdim_param_limits(i, 'hru_windspeed_sta', 'nhru', Hru_windspeed_sta(i), 1, Nwind, Inputerror_flag)
+            CALL checkdim_param_limits(i, 'hru_humidity_sta', 'nhru', Hru_humidity_sta(i), 1, Nhumid, Inputerror_flag)
+          ENDDO
+        ENDIF
 
         !ALLOCATE ( Tavgc_ante(Nhru) )
         !Tavgc_ante = Tavgc
