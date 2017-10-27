@@ -20,6 +20,7 @@
       DOUBLE PRECISION, SAVE :: Basin_gw_upslope
       INTEGER, SAVE :: Gwminarea_flag
       DOUBLE PRECISION, SAVE :: Basin_dnflow
+      DOUBLE PRECISION, SAVE, ALLOCATABLE :: Lake_seepage_max(:)
 !   Declared Variables
       DOUBLE PRECISION, SAVE :: Basin_gwstor, Basin_gwflow, Basin_gwsink
       DOUBLE PRECISION, SAVE :: Basin_gwin, Basin_lake_seep
@@ -80,7 +81,7 @@
 !***********************************************************************
       gwflowdecl = 0
 
-      Version_gwflow = 'gwflow.f90 2017-10-05 14:04:00Z'
+      Version_gwflow = 'gwflow.f90 2017-10-27 13:46:00Z'
       CALL print_module(Version_gwflow, 'Groundwater                 ', 90)
       MODNAME = 'gwflow'
 
@@ -146,15 +147,15 @@
 
       IF ( Lake_route_flag==1 .OR. Model==99 ) THEN
         CALL declvar_dble(MODNAME, 'basin_lake_seep', 'one', 1, 'double', &
-     &       'Basin area-weighted average of lake-bed seepage to GWRs', 'acre-inches', Basin_lake_seep)
+     &       'Basin area-weighted average of lake-bed seepage to GWRs', 'acre-feet', Basin_lake_seep)
 
-        ALLOCATE ( Lake_seepage(Nlake) )
+        ALLOCATE ( Lake_seepage(Nlake), Lake_seepage_max(Nlake) )
         CALL declvar_dble(MODNAME, 'lake_seepage', 'nlake', Nlake, 'double', &
-     &       'Lake-bed seepage from each lake to associated GWRs', 'inches', Lake_seepage)
+     &       'Lake-bed seepage from each lake to associated GWRs', 'acre-feet', Lake_seepage)
 
         ALLOCATE ( Gw_seep_lakein(Nlake) )
         CALL declvar_dble(MODNAME, 'gw_seep_lakein', 'nlake', Nlake, 'double', &
-     &       'Groundwater discharge to any associated lake for each GWR', 'inches', Gw_seep_lakein)
+     &       'Groundwater discharge to any associated lake for each GWR', 'acre-feet', Gw_seep_lakein)
 
         ALLOCATE ( Lake_seepage_gwr(Ngw) )
         CALL declvar_dble(MODNAME, 'lake_seepage_gwr', 'ngw', Ngw, 'double', &
@@ -162,7 +163,7 @@
 
         ALLOCATE ( Elevlake(Nlake) )
         CALL declvar_real(MODNAME, 'elevlake', 'nlake', Nlake, 'real', &
-     &       'Surface elevation of each lake', 'inches', Elevlake)
+     &       'Surface elevation of each lake', 'feet', Elevlake)
       ENDIF
 
       IF ( Init_vars_from_file==0 .OR. Init_vars_from_file==2 .OR. Init_vars_from_file==6 ) THEN
@@ -321,6 +322,7 @@
           Elevlake = Elevlake_init
           DEALLOCATE ( Elevlake_init )
         ENDIF
+        Lake_seepage_max = 0.0D0
         IF ( Init_vars_from_file==0 ) THEN
           Lake_seepage_gwr = 0.0D0
           Lake_seepage = 0.0D0
@@ -371,8 +373,8 @@
 !***********************************************************************
       INTEGER FUNCTION gwflowrun()
       USE PRMS_GWFLOW
-      USE PRMS_MODULE, ONLY: Dprst_flag, Print_debug, Cascadegw_flag, Gwr_swale_flag, Nlake
-      USE PRMS_BASIN, ONLY: Active_gwrs, Gwr_route_order, DNEARZERO, Lake_area, &
+      USE PRMS_MODULE, ONLY: Dprst_flag, Print_debug, Cascadegw_flag, Gwr_swale_flag
+      USE PRMS_BASIN, ONLY: Active_gwrs, Gwr_route_order, DNEARZERO, Lake_type, &
      &    Basin_area_inv, Hru_area, Gwr_type, Lake_hru_id, Weir_gate_flag, Hru_area_dble
       USE PRMS_FLOWVARS, ONLY: Soil_to_gw, Ssr_to_gw, Sroff, Ssres_flow, Gwres_stor, Pkwater_equiv, Lake_vol
       USE PRMS_CASCADE, ONLY: Ncascade_gwr
@@ -388,7 +390,7 @@
 ! Local Variables
       INTEGER :: i, j, jj, jjj
       REAL :: dnflow
-      DOUBLE PRECISION :: gwin, gwstor, gwsink, gwflow, gwstor_last, seepage, gwarea
+      DOUBLE PRECISION :: gwin, gwstor, gwsink, gwflow, gwstor_last, seepage, gwarea, inch2acre_feet
 !***********************************************************************
       gwflowrun = 0
 
@@ -405,44 +407,49 @@
         Basin_lake_seep = 0.0D0
         DO jj = 1, Active_gwrs
           j = Gwr_route_order(jj)
-          IF ( Weir_gate_flag==1 ) THEN
-            IF ( Gwr_type(j)==2 ) THEN
-              ! seepage added to GWR
-              jjj = Lake_hru_id(j) !! jjj must be > zero due to check above
-              !rsr, need seepage variable for WB
-              ! what happens when lake goes dry? need lake bottom elevation
-              seepage = DBLE( (Elevlake(jjj)-Lake_seep_elev(jjj))*12.0*Gw_seep_coef(j) ) 
-              IF ( seepage<0.0D0 ) THEN
-                IF ( DABS(seepage)>Gwres_stor(j) ) THEN
-!                  PRINT *, 'WARNING, GWR storage insufficient for discharge to lake:', jjj, ' GWR:', j
-!                  CALL print_date(1)
-!                  PRINT *, 'GWR storage:', Gwres_stor(j), ', computed discharge:', seepage
-!                  PRINT *, 'Discharge set to available GWR storage'
+          IF ( Gwr_type(j)/=2 ) CYCLE
+          jjj = Lake_hru_id(j)
+          ! what happens when lake goes dry? need lake bottom elevation ?
+          IF ( Lake_type(jjj)==4 .OR. Lake_type(jjj)==5 ) &
+     &         Lake_seepage_max(jjj) = DBLE( (Elevlake(jjj)-Lake_seep_elev(jjj))*12.0*Gw_seep_coef(j) ) ! units = inches
+        ENDDO
+        DO jj = 1, Active_gwrs
+          j = Gwr_route_order(jj)
+          IF ( Gwr_type(j)/=2 ) CYCLE ! only if a weir gate lake
+          jjj = Lake_hru_id(j) !! jjj must be > zero due to check above
+          IF ( Lake_type(jjj)==4 .OR. Lake_type(jjj)==5 ) THEN
+            inch2acre_feet = Hru_area_dble(j)/12.0D0
+            seepage = Lake_seepage_max(jjj)
+            ! seepage added to GWR
+            !rsr, need seepage variable for WB
+            IF ( seepage<0.0D0 ) THEN
+! water to lake from GWR, negative value of seepage
+              IF ( DABS(seepage)>Gwres_stor(j) ) THEN
+                IF ( Print_debug>-1 ) THEN
+                  PRINT *, 'WARNING, GWR storage insufficient for discharge to lake:', jjj, ' GWR:', j
+                  CALL print_date(1)
+                  PRINT *, 'GWR storage:', Gwres_stor(j), ', computed discharge:', seepage
+                  PRINT *, 'Discharge set to available GWR storage'
 !?? adjust lake storage and elevation
-!                  PRINT *, 'Lake elevation, storage, and water balance not adjusted'
-                  seepage = -Gwres_stor(j)
+                  PRINT *, 'Lake elevation, storage, and water balance not adjusted'
                 ENDIF
-                Gw_seep_lakein(jjj) = Gw_seep_lakein(jjj) - seepage*Hru_area_dble(j)
-              ELSE
-                IF ( Lake_vol(jjj)>0.0D0 ) THEN
-                  Lake_seepage(jjj) = Lake_seepage(jjj) + seepage*Hru_area_dble(j)
-                ELSE
-                  seepage = 0.0D0
-                ENDIF
+                seepage = -Gwres_stor(j)
               ENDIF
-              Basin_lake_seep = Basin_lake_seep + seepage*Hru_area_dble(j)
-              Gwres_stor(j) = Gwres_stor(j) + seepage
-              Lake_seepage_gwr(j) = seepage
+              Gw_seep_lakein(jjj) = Gw_seep_lakein(jjj) - seepage*inch2acre_feet ! units, acre-feet
+            ELSE
+! water from lake to GWR, positive value of seepage
+              ! needed because lakes could go dry
+! DANGER, needed for multiple HRU lakes, if lake goes dry some GWRs won't receive seepage, withdrawn from lake based on route order
+              IF ( Lake_vol(jjj)<seepage*inch2acre_feet ) seepage = Lake_vol(jjj)/inch2acre_feet
+              Lake_seepage(jjj) = Lake_seepage(jjj) + seepage*inch2acre_feet ! units, acre-feet
+              Basin_lake_seep = Basin_lake_seep + seepage*Hru_area_dble(j) ! units, acre-inches
             ENDIF
+            Gwres_stor(j) = Gwres_stor(j) + seepage
+            Lake_seepage_gwr(j) = seepage ! can be positive or negative value
+            Lake_vol(jjj) = Lake_vol(jjj) - seepage*inch2acre_feet
           ENDIF
         ENDDO
-        IF ( Weir_gate_flag==1 ) THEN
-          Basin_lake_seep = Basin_lake_seep*Basin_area_inv
-          DO j = 1, Nlake
-            Lake_seepage(j) = Lake_seepage(j)/Lake_area(j)
-            Gw_seep_lakein(j) = Gw_seep_lakein(j)/Lake_area(j)
-          ENDDO
-        ENDIF
+        Basin_lake_seep = Basin_lake_seep*Basin_area_inv
       ENDIF
 
       Basin_gwstor_minarea_wb = 0.0D0

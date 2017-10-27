@@ -72,7 +72,7 @@
 !***********************************************************************
       map_resultsdecl = 0
 
-      Version_map_results = 'map_results.f90 2017-10-2 13:33:00Z'
+      Version_map_results = 'map_results.f90 2017-10-25 16:11:00Z'
       CALL print_module(Version_map_results, 'Output Summary              ', 90)
       MODNAME = 'map_results'
 
@@ -412,7 +412,8 @@
               ELSE
                 Map_var_id = 0.0D0
                 DO k = 1, Nhrucell
-                  IF ( Gvr_map_frac(k)<NEARZERO .OR. Gvr_cell_id(k)<1 ) CYCLE
+                  IF ( Gvr_cell_id(k)==0 ) CYCLE
+                  IF ( Gvr_map_frac(k)<NEARZERO ) CYCLE
                   Map_var_id(Gvr_cell_id(k)) = Map_var_id(Gvr_cell_id(k)) + &
      &                                         Map_var_yr(Gvr_hru_id(k), jj)*Gvr_map_frac_dble(k)
                 ENDDO
@@ -483,7 +484,8 @@
           ELSE
             Map_var_id = 0.0D0
             DO k = 1, Nhrucell
-              IF ( Gvr_map_frac(k)<NEARZERO .OR. Gvr_cell_id(k)<1 ) CYCLE
+              IF ( Gvr_cell_id(k)==0 ) CYCLE
+              IF ( Gvr_map_frac(k)<NEARZERO ) CYCLE
               Map_var_id(Gvr_cell_id(k)) = Map_var_id(Gvr_cell_id(k)) + &
      &                                     Map_var_daily(Gvr_hru_id(k), jj)*Gvr_map_frac_dble(k)
             ENDDO
@@ -513,7 +515,8 @@
             ELSE
               Map_var_id = 0.0D0
               DO k = 1, Nhrucell
-                IF ( Gvr_map_frac(k)<NEARZERO .OR. Gvr_cell_id(k)<1 ) CYCLE
+                IF ( Gvr_cell_id(k)==0 ) CYCLE
+                IF ( Gvr_map_frac(k)<NEARZERO ) CYCLE
                 Map_var_id(Gvr_cell_id(k)) = Map_var_id(Gvr_cell_id(k)) + &
      &                                       Map_var_week(Gvr_hru_id(k),jj)*Gvr_map_frac_dble(k)
               ENDDO
@@ -547,7 +550,8 @@
             ELSE
               Map_var_id = 0.0D0
               DO k = 1, Nhrucell
-                IF ( Gvr_map_frac(k)<NEARZERO .OR. Gvr_cell_id(k)<1 ) CYCLE
+                IF ( Gvr_cell_id(k)==0 ) CYCLE
+                IF ( Gvr_map_frac(k)<NEARZERO ) CYCLE
                 Map_var_id(Gvr_cell_id(k)) = Map_var_id(Gvr_cell_id(k)) + &
      &                                       Map_var_mon(Gvr_hru_id(k), jj)*Gvr_map_frac_dble(k)
               ENDDO
@@ -582,7 +586,8 @@
             ELSE
               Map_var_id = 0.0D0
               DO k = 1, Nhrucell
-                IF ( Gvr_map_frac(k)<NEARZERO .OR. Gvr_cell_id(k)<1 ) CYCLE
+                IF ( Gvr_cell_id(k)==0 ) CYCLE
+                IF ( Gvr_map_frac(k)<NEARZERO ) CYCLE
                 Map_var_id(Gvr_cell_id(k)) = Map_var_id(Gvr_cell_id(k)) + &
      &                                       Map_var_tot(Gvr_hru_id(k), jj)*Gvr_map_frac_dble(k)
               ENDDO

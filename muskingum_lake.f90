@@ -211,7 +211,7 @@
 !***********************************************************************
       muskingum_lake_decl = 0
 
-      Version_muskingum_lake = 'muskingum_lake.f90 2017-10-05 14:11:00Z'
+      Version_muskingum_lake = 'muskingum_lake.f90 2017-10-26 16:58:00Z'
       CALL print_module(Version_muskingum_lake, 'Streamflow Routing          ', 90)
       MODNAME = 'muskingum_lake'
 
@@ -666,12 +666,14 @@
       Gate_flag = 0
       Puls_flag = 0
       DO i = 1, Nlake
-        IF ( Lake_type(i)==1 .OR. Lake_type(i)==2 ) THEN
-          IF ( Lake_type(i)==2 ) Linear_flag = 1
-          IF ( Lake_type(i)==1 ) Puls_flag = 1
-        ELSEIF ( Lake_type(i)==4 .OR. Lake_type(i)==5 ) THEN
-          IF ( Lake_type(i)==4 ) Weir_flag = 1
-          IF ( Lake_type(i)==5 ) Gate_flag = 1
+        IF ( Lake_type(i)==1 ) THEN
+          Puls_flag = 1
+        ELSEIF ( Lake_type(i)==2 ) THEN
+          Linear_flag = 1
+        ELSEIF ( Lake_type(i)==4 ) THEN
+          Weir_flag = 1
+        ELSEIF ( Lake_type(i)==5 ) THEN
+          Gate_flag = 1
         ELSEIF ( Lake_type(i)==6 ) THEN
           Obs_flag = 1
         ELSEIF ( Lake_type(i)/=3 ) THEN
@@ -1269,16 +1271,16 @@
             IF ( Lakeid==Ratetbl_lake(i) ) THEN
               IF ( i==1 ) THEN
                 CALL table_comp(Ngate, Nstage, Tbl_gate, Tbl_stage, &
-     &                          Rate_table, elevold, Gate_ht(i), q1, Lake_area, Print_debug, Cfs2acft)
+     &                          Rate_table, elevold, Gate_ht(i), q1, Lake_area)
               ELSEIF ( i==2 ) THEN
                 CALL table_comp(Ngate2, Nstage2, Tbl_gate2, Tbl_stage2, &
-     &                          Rate_table2, elevold, Gate_ht(i), q1, Lake_area, Print_debug, Cfs2acft)
+     &                          Rate_table2, elevold, Gate_ht(i), q1, Lake_area)
               ELSEIF ( i==3 ) THEN
                 CALL table_comp(Ngate3, Nstage3, Tbl_gate3, Tbl_stage3, &
-     &                          Rate_table3, elevold, Gate_ht(i), q1, Lake_area, Print_debug, Cfs2acft)
+     &                          Rate_table3, elevold, Gate_ht(i), q1, Lake_area)
               ELSEIF ( i==4 ) THEN
                 CALL table_comp(Ngate4, Nstage4, Tbl_gate4, Tbl_stage4, &
-     &                          Rate_table4, elevold, Gate_ht(i), q1, Lake_area, Print_debug, Cfs2acft)
+     &                          Rate_table4, elevold, Gate_ht(i), q1, Lake_area)
               ENDIF
             ENDIF
           ENDDO
@@ -1352,13 +1354,14 @@
 !=====================================================================
 !    Rating table computation
 !=====================================================================
-      SUBROUTINE table_comp(Ngate, Nstage, Tbl_gate, Tbl_stage, Rate_table, Elevlake, Gate_ht, Q2, Lake_area, &
-      &                     Print_debug, Cfs2acft)
+      SUBROUTINE table_comp(Ngate, Nstage, Tbl_gate, Tbl_stage, Rate_table, Elevlake, Gate_ht, Q2, Lake_area)
+      USE PRMS_MODULE, ONLY: Print_debug
+      USE PRMS_ROUTING, ONLY: Cfs2acft
       IMPLICIT NONE
 ! Arguments
-      INTEGER, INTENT(IN) :: Ngate, Nstage, Print_debug
+      INTEGER, INTENT(IN) :: Ngate, Nstage
       REAL, INTENT(IN) :: Tbl_gate(Ngate), Tbl_stage(Nstage), Rate_table(Nstage, Ngate), Gate_ht, Elevlake
-      DOUBLE PRECISION, INTENT(IN) :: Lake_area, Cfs2acft
+      DOUBLE PRECISION, INTENT(IN) :: Lake_area
       REAL, INTENT(OUT) :: Q2
 ! Functions
       INTRINSIC SNGL
