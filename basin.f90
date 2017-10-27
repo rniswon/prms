@@ -143,7 +143,7 @@
       ALLOCATE ( Hru_route_order(Nhru) )
 ! gwflow inactive for GSFLOW mode so arrays not allocated
 ! when GSFLOW can run in multi-mode will need these arrays
-      IF ( Model/=0 .OR. Cascadegw>0 ) ALLOCATE ( Gwr_route_order(Nhru), Gwr_type(Nhru) )
+      IF ( Model/=0 .OR. Cascadegw_flag>0 ) ALLOCATE ( Gwr_route_order(Nhru), Gwr_type(Nhru) )
       ! potet_pm, potet_pm_sta, or potet_pt
       IF ( Et_flag==5 .OR. Et_flag==11 .OR. Et_flag==6 ) ALLOCATE ( Hru_elev_feet(Nhru) )
       ! ide_dist, potet_pm, potet_pm_sta, or potet_pt
@@ -234,7 +234,7 @@
       USE PRMS_BASIN
       USE PRMS_MODULE, ONLY: Nhru, Nlake, Dprst_flag, &
      &    Print_debug, Model, PRMS_VERSION, Starttime, Endtime, &
-     &    Et_flag, Precip_flag, Prms_output_unit
+     &    Et_flag, Precip_flag, Cascadegw_flag
       IMPLICIT NONE
 ! Functions
       INTEGER, EXTERNAL :: getparam

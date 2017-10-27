@@ -323,6 +323,22 @@
      &       'Cascading interflow and Dunnian surface runoff from each HRU', &
      &       'inches', Hru_sz_cascadeflow)/=0 ) CALL read_error(3, 'hru_sz_cascadeflow')
 
+        ALLOCATE ( Cap_upflow_max(Nhru) )
+        IF ( declvar(MODNAME, 'cap_upflow_max', 'nhru', Nhru, 'real', &
+     &       'Maximum infiltration and any cascading interflow and'// &
+     &       ' Dunnian surface runoff that can be added to capillary reservoir storage for each HRU', &
+     &       'inches', Cap_upflow_max)/=0 ) CALL read_error(3, 'cap_upflow_max')
+
+        ALLOCATE ( Cascade_interflow(Nhru) )
+        IF ( declvar(MODNAME, 'cascade_interflow', 'nhru', Nhru, 'real', &
+     &       'Cascading interflow for each HRU', &
+     &       'inches', Cascade_interflow)/=0 ) CALL read_error(3, 'cascade_interflow')
+
+        ALLOCATE ( Cascade_dunnianflow(Nhru) )
+        IF ( declvar(MODNAME, 'cascade_dunnianflow', 'nhru', Nhru, 'real', &
+     &       'Cascading Dunnian flow for each HRU', &
+     &       'inches', Cascade_dunnianflow)/=0 ) CALL read_error(3, 'cascade_dunnianflow')
+
         IF ( Nlake>0 ) THEN
           ALLOCATE ( Lakein_sz(Nhru) )
           IF ( declvar(MODNAME, 'lakein_sz', 'nhru', Nhru, 'double', &
@@ -431,6 +447,11 @@
      &     'Unsatisfied potential evapotranspiration', &
      &     'inches', Unused_potet)/=0 ) CALL read_error(3, 'unused_potet')
 
+      ALLOCATE ( Snowevap_aet_frac(Nhru) )
+      IF ( declvar(MODNAME, 'snowevap_aet_frac', 'nhru', Nhru, 'double', &
+     &     'Fraction of sublimation of AET for each HRU', &
+     &     'decimal fraction', Snowevap_aet_frac)/=0 ) CALL read_error(3, 'snowevap_aet_frac')
+
       IF ( Model==0 .OR. Model==99 ) THEN
         IF ( Nhrucell<-1 ) STOP 'ERROR, dimension nhrucell not specified > 0'
         ALLOCATE ( Gravity_stor_res(Nhrucell) )
@@ -462,6 +483,11 @@
      &       'Groundwater discharge to gravity-flow reservoirs', &
      &       'inches', Gw2sm_grav)/=0 ) CALL read_error(3, 'gw2sm_grav')
 
+        ALLOCATE ( Grav_gwin(Nhru) ) ! ???
+        IF ( declvar(MODNAME, 'grav_gwin', 'nhru', Nhru, 'real', &
+     &       'Groundwater discharge to gravity-flow reservoirs for each HRU', &
+     &       'inches', Grav_gwin)/=0 ) CALL read_error(3, 'grav_gwin')
+
         ALLOCATE ( Gw_rejected(Nhru) )
         IF ( declvar(MODNAME, 'gw_rejected', 'nhru', Nhru, 'real', &
      &       'HRU average recharge rejected by UZF', 'inches', &
@@ -475,7 +501,7 @@
         ALLOCATE ( Hru_gvr_count(Nhru), Hrucheck(Nhru) )
         ALLOCATE ( It0_pref_flow_stor(Nhru), It0_ssres_stor(Nhru), It0_soil_rechr(Nhru), It0_soil_moist(Nhru) )
         ALLOCATE ( It0_gravity_stor_res(Nhrucell), It0_sroff(Nhru), It0_slow_stor(Nhru) )
-        ALLOCATE ( It0_strm_seg_in(Nsegment), It0_potet(Nhru), Replenish_frac(Nhru), Grav_gwin(Nhru) )
+        ALLOCATE ( It0_strm_seg_in(Nsegment), It0_potet(Nhru), Replenish_frac(Nhru) )
       ENDIF
 
 ! Allocate arrays for local and variables from other modules
@@ -684,7 +710,7 @@
       Basin_gvr_stor_frac = 0.0D0
       Basin_pfr_stor_frac = 0.0D0
       Pfr_stor_frac = 0.0
-      ! Sanity checks for parameters
+
       DO i = 1, Nhru
         Snow_free(i) = 1.0 - Snowcov_area(i)
 
