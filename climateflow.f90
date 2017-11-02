@@ -24,7 +24,7 @@
 !   Declared Variables - Transp
       INTEGER, SAVE :: Basin_transp_on
       INTEGER, SAVE, ALLOCATABLE :: Transp_on(:)
-!   Declared Parameters and Variables - Potetential ET
+!   Declared Parameters and Variables - Potential ET
       DOUBLE PRECISION, SAVE :: Basin_potet, Basin_humidity
       REAL, SAVE, ALLOCATABLE :: Potet(:)
       ! for potet_pt, potet_pm and potet_pm_sta
