@@ -2,7 +2,7 @@
 ! Computes inflows to and outflows from soil zone of each HRU and
 ! includes inflows from infiltration, ground-water, and upslope HRUs,
 ! and outflows to gravity drainage, interflow, and surface runoff to
-! down-slope HRUs; merge of smbal_prms and ssflow_prms with enhancements
+! downslope HRUs; merge of smbal_prms and ssflow_prms with enhancements
 !
 ! Daily accounting for soil zone;
 !    adds infiltration
@@ -63,7 +63,7 @@
       REAL, SAVE, ALLOCATABLE :: Potet_lower(:), Potet_rechr(:), Soil_lower_ratio(:), Interflow_max(:)
       REAL, SAVE, ALLOCATABLE :: Cap_upflow_max(:), Cascade_interflow(:), Cascade_dunnianflow(:)
       DOUBLE PRECISION, SAVE :: Basin_gvr2sm
-      REAL, SAVE, ALLOCATABLE :: Sm2gw_grav(:), Sm2gw_grav_old(:)
+      REAL, SAVE, ALLOCATABLE :: Sm2gw_grav(:) !, Sm2gw_grav_old(:)
       REAL, SAVE, ALLOCATABLE :: Gravity_stor_res(:), Gvr2sm(:), Unused_potet(:), Grav_gwin(:)
 !   Declared Parameters
       INTEGER, SAVE, ALLOCATABLE :: Soil_type(:), Gvr_hru_id(:)
@@ -309,13 +309,13 @@
         ALLOCATE ( Upslope_interflow(Nhru) )
         CALL declvar_dble(MODNAME, 'upslope_interflow', 'nhru', Nhru, 'double', &
      &       'Cascading interflow runoff that flows to'// &
-     &       ' the capillary reservoir of each down slope HRU for each upslope HRU', &
+     &       ' the capillary reservoir of each downslope HRU for each upslope HRU', &
      &       'inches', Upslope_interflow)
 
         ALLOCATE ( Upslope_dunnianflow(Nhru) )
         CALL declvar_dble(MODNAME, 'upslope_dunnianflow', 'nhru', Nhru, 'double', &
      &       'Cascading Dunnian surface runoff that'// &
-     &       ' flows to the capillary reservoir of each down slope HRU for each upslope HRU', &
+     &       ' flows to the capillary reservoir of each downslope HRU for each upslope HRU', &
      &       'inches', Upslope_dunnianflow)
 
         ALLOCATE ( Hru_sz_cascadeflow(Nhru) )
@@ -464,7 +464,7 @@
      &       'Drainage from each gravity reservoir to each MODFLOW cell', &
      &       'inches', Sm2gw_grav)
 
-        ALLOCATE ( Sm2gw_grav_old(Nhrucell) )
+!        ALLOCATE ( Sm2gw_grav_old(Nhrucell) )
 !        CALL declvar_real(MODNAME, 'sm2gw_grav_old', 'nhrucell', Nhrucell, 'real', &
 !     &       'Drainage from each gravity reservoir to each MODFLOW cell from the previous iteration', &
 !     &       'inches', Sm2gw_grav_old)
@@ -536,7 +536,7 @@
       IF ( declparam(MODNAME, 'slowcoef_lin', 'nhru', 'real', &
      &     '0.015', '0.0', '1.0', &
      &     'Linear gravity-flow reservoir routing coefficient', &
-     &     'Linear coefficient in equation to route gravity-reservoir storage down slope for each HRU', &
+     &     'Linear coefficient in equation to route gravity-reservoir storage downslope for each HRU', &
      &     'fraction/day')/=0 ) CALL read_error(1, 'slowcoef_lin')
 
       ALLOCATE ( Slowcoef_sq(Nhru) )
@@ -544,7 +544,7 @@
      &     '0.1', '0.0', '1.0', &
      &     'Non-linear gravity-flow reservoir routing coefficient', &
      &     'Non-linear coefficient in equation to route'// &
-     &     ' gravity-reservoir storage down slope for each HRU', &
+     &     ' gravity-reservoir storage downslope for each HRU', &
      &     'none')/=0 ) CALL read_error(1, 'slowcoef_sq')
 
       ALLOCATE ( Pref_flow_den(Nhru) )
@@ -572,7 +572,7 @@
       IF ( declparam(MODNAME, 'fastcoef_lin', 'nhru', 'real', &
      &     '0.1', '0.0', '1.0', &
      &     'Linear preferential-flow routing coefficient', &
-     &     'Linear coefficient in equation to route preferential-flow storage down slope for each HRU', &
+     &     'Linear coefficient in equation to route preferential-flow storage downslope for each HRU', &
      &     'fraction/day')/=0 ) CALL read_error(1, 'fastcoef_lin')
 
       ALLOCATE ( Fastcoef_sq(Nhru) )
@@ -580,7 +580,7 @@
      &     '0.8', '0.0', '1.0', &
      &     'Non-linear preferential-flow routing coefficient', &
      &     'Non-linear coefficient in equation used to route'// &
-     &     ' preferential-flow storage down slope for each HRU', &
+     &     ' preferential-flow storage downslope for each HRU', &
      &     'none')/=0 ) CALL read_error(1, 'fastcoef_sq')
 
       ALLOCATE ( Ssr2gw_rate(Nhru) )
@@ -802,7 +802,7 @@
         IF ( GSFLOW_flag==1 ) THEN
           Gvr2sm = 0.0 ! dimension nhru
           Sm2gw_grav = 0.0 ! dimension nhrucell
-          Sm2gw_grav_old = 0.0 ! dimension nhrucell
+!          Sm2gw_grav_old = 0.0 ! dimension nhrucell
         ENDIF
       ENDIF
       IF ( Print_debug==1 ) THEN
@@ -919,7 +919,7 @@
             IF ( Hrucheck(Gvr_hru_id(i))==0 ) CYCLE
             It0_gravity_stor_res(i) = Gravity_stor_res(i)
             Sm2gw_grav(i) = 0.0
-            Sm2gw_grav_old(i) = 0.0
+!            Sm2gw_grav_old(i) = 0.0
             Gw2sm_grav(i) = 0.0
           ENDDO
           It0_strm_seg_in = Strm_seg_in
@@ -941,7 +941,7 @@
           DO i = 1, Nhrucell
             IF ( Hrucheck(Gvr_hru_id(i))==0 ) CYCLE
             Gravity_stor_res(i) = It0_gravity_stor_res(i)
-            Sm2gw_grav_old(i) = Sm2gw_grav(i)
+!            Sm2gw_grav_old(i) = Sm2gw_grav(i)
             Sm2gw_grav(i) = 0.0
           ENDDO
           Strm_seg_in = It0_strm_seg_in
@@ -1654,7 +1654,7 @@
      &           Pref_flow_thrsh, Gvr2pfr, Ssr_to_gw, &
      &           Slow_flow, Slow_stor, Gvr2sm, Soil_to_gw, Gwin, Hru_type)
       USE PRMS_SOILZONE, ONLY: Gravity_stor_res, Sm2gw_grav, Hru_gvr_count, Hru_gvr_index, &
-     &    Gw2sm_grav, Gvr_hru_pct_adjusted
+     &    Gw2sm_grav, Gvr_hru_pct_adjusted, Gw2sm_grav_save
       USE PRMS_MODULE, ONLY: Dprst_flag, Print_debug
       USE PRMS_BASIN, ONLY: NEARZERO
       USE PRMS_SRUNOFF, ONLY: Dprst_seep_hru
@@ -1743,6 +1743,7 @@
         IF ( Dprst_flag==1 ) Sm2gw_grav(igvr) = Sm2gw_grav(igvr) + Dprst_seep_hru(Ihru)
 
       ENDDO ! end loop of GVRs in the HRU
+      Gw2sm_grav_save = Gw2sm_grav
 
       Gvr2pfr = SNGL( topfr )
       Slow_flow = SNGL( slflow )
@@ -1882,7 +1883,7 @@
           WRITE ( Restart_outunit ) Gravity_stor_res
           WRITE ( Restart_outunit ) Gvr2sm
           WRITE ( Restart_outunit ) Sm2gw_grav
-          WRITE ( Restart_outunit ) Sm2gw_grav_old
+!          WRITE ( Restart_outunit ) Sm2gw_grav_old
           WRITE ( Restart_outunit ) Grav_gwin
         ENDIF
         IF ( Cascade_flag==1 ) THEN
@@ -1925,7 +1926,7 @@
           READ ( Restart_inunit ) Gravity_stor_res
           READ ( Restart_inunit ) Gvr2sm
           READ ( Restart_inunit ) Sm2gw_grav
-          READ ( Restart_inunit ) Sm2gw_grav_old
+!          READ ( Restart_inunit ) Sm2gw_grav_old
           READ ( Restart_inunit ) Grav_gwin
         ENDIF
         IF ( Cascade_flag==1 ) THEN

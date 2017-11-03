@@ -11,9 +11,9 @@
      &      Cascade_flag, Cascadegw_flag, Prms_warmup, Humidity_cbh_flag, Windspeed_cbh_flag, &
      &      Gwflow_cbh_flag, NhruOutON_OFF, NsubOutON_OFF, BasinOutON_OFF, Dyn_imperv_flag, Dyn_dprst_flag, Dyn_intcp_flag, &
      &      Dyn_covtype_flag, Dyn_potet_flag, Dyn_transp_flag, Dyn_soil_flag, Dyn_radtrncf_flag, Dyn_transp_on_flag, &
-     &      Dyn_sro2dprst_perv_flag, Dyn_sro2dprst_imperv_flag, Dyn_fallfrost_flag, &
+     &      Dyn_sro2dprst_perv_flag, Dyn_sro2dprst_imperv_flag, Dyn_fallfrost_flag, NsegmentOutON_OFF, &
      &      Dyn_springfrost_flag, Dyn_snareathresh_flag, Dyn_covden_flag, Segment_transferON_OFF, Gwr_transferON_OFF, &
-     &      Lake_transferON_OFF, External_transferON_OFF, Dprst_transferON_OFF, basinOutON_OFF, mappingFileName, xyFileName
+     &      Lake_transferON_OFF, External_transferON_OFF, Dprst_transferON_OFF, BasinOutON_OFF, mappingFileName, xyFileName
         USE GSFMODFLOW, ONLY: Modflow_name, Modflow_time_zero
         USE PRMS_CLIMATE_HRU, ONLY: Precip_day, Tmax_day, Tmin_day, Potet_day, Transp_day, Swrad_day, &
      &      Cbh_check_flag, Cbh_binary_flag, Windspeed_day, Humidity_day
@@ -22,6 +22,7 @@
         USE PRMS_NHRU_SUMMARY, ONLY: NhruOutVars, NhruOut_freq, NhruOutBaseFileName, NhruOutVar_names
         USE PRMS_NSUB_SUMMARY, ONLY: NsubOutVars, NsubOut_freq, NsubOutBaseFileName, NsubOutVar_names
         USE PRMS_BASIN_SUMMARY, ONLY: BasinOutVars, BasinOut_freq, BasinOutBaseFileName, BasinOutVar_names
+        USE PRMS_NSEGMENT_SUMMARY, ONLY: NsegmentOutVars, NsegmentOut_freq, NsegmentOutBaseFileName, NsegmentOutVar_names
         USE PRMS_DYNAMIC_PARAM_READ, ONLY: imperv_frac_dynamic, imperv_stor_dynamic, dprst_depth_dynamic, dprst_frac_dynamic, &
      &      wrain_intcp_dynamic, srain_intcp_dynamic, snow_intcp_dynamic, covtype_dynamic, &
      &      potetcoef_dynamic, transpbeg_dynamic, transpend_dynamic, &
@@ -242,6 +243,12 @@
       Control_parameter_data(i)%name = 'basinOutVars'
       BasinOutVars = 0
       i = i + 1
+      Control_parameter_data(i)%name = 'nsegmentOutON_OFF'
+      NsegmentOutON_OFF = 0
+      i = i + 1
+      Control_parameter_data(i)%name = 'nsegmentOutVars'
+      NsegmentOutVars = 0
+      i = i + 1
       Control_parameter_data(i)%name = 'statsON_OFF'
       StatsON_OFF = 0
       i = i + 1
@@ -273,6 +280,9 @@
       Control_parameter_data(i)%name = 'basinOut_freq'
       BasinOut_freq = 1
       Control_parameter_data(i)%values_int(1) = BasinOut_freq
+      i = i + 1
+      Control_parameter_data(i)%name = 'nsegmentOut_freq'
+      NsegmentOut_freq = 1
       i = i + 1
       Control_parameter_data(i)%name = 'prms_warmup'
       Prms_warmup = 0
@@ -392,6 +402,10 @@
       Control_parameter_data(i)%allocate_flag = 1 ! need to allocate
       i = i + 1
       Control_parameter_data(i)%name = 'basinOutVar_names'
+      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%allocate_flag = 1 ! need to allocate
+      i = i + 1
+      Control_parameter_data(i)%name = 'nsegmentOutVar_names'
       Control_parameter_data(i)%data_type = 4
       Control_parameter_data(i)%allocate_flag = 1 ! need to allocate
       i = i + 1
@@ -534,6 +548,11 @@
       Control_parameter_data(i)%name = 'basinOutBaseFileName'
       BasinOutBaseFileName = 'basinout_path'
       Control_parameter_data(i)%values_character(1) = BasinOutBaseFileName
+      Control_parameter_data(i)%data_type = 4
+      i = i + 1
+      Control_parameter_data(i)%name = 'nsegmentOutBaseFileName'
+      NsubOutBaseFileName = 'nsegmentout_path'
+      Control_parameter_data(i)%values_character(1) = NsegmentOutBaseFileName
       Control_parameter_data(i)%data_type = 4
       i = i + 1
       Control_parameter_data(i)%name = 'tmax_day'
