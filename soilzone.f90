@@ -2,7 +2,7 @@
 ! Computes inflows to and outflows from soil zone of each HRU and
 ! includes inflows from infiltration, ground-water, and upslope HRUs,
 ! and outflows to gravity drainage, interflow, and surface runoff to
-! down-slope HRUs; merge of smbal_prms and ssflow_prms with enhancements
+! downslope HRUs; merge of smbal_prms and ssflow_prms with enhancements
 !
 ! Daily accounting for soil zone;
 !    adds infiltration
@@ -126,7 +126,7 @@
 !***********************************************************************
       szdecl = 0
 
-      Version_soilzone = 'soilzone.f90 2017-06-29 11:58:00Z'
+      Version_soilzone = 'soilzone.f90 2017-11-02 11:58:00Z'
       CALL print_module(Version_soilzone, 'Soil Zone Computations      ', 90 )
       MODNAME = 'soilzone'
 
@@ -309,13 +309,13 @@
         ALLOCATE ( Upslope_interflow(Nhru) )
         IF ( declvar(MODNAME, 'upslope_interflow', 'nhru', Nhru, 'double', &
      &       'Cascading interflow runoff that flows to'// &
-     &       ' the capillary reservoir of each down slope HRU for each upslope HRU', &
+     &       ' the capillary reservoir of each downslope HRU for each upslope HRU', &
      &       'inches', Upslope_interflow)/=0 ) CALL read_error(3, 'upslope_interflow')
 
         ALLOCATE ( Upslope_dunnianflow(Nhru) )
         IF ( declvar(MODNAME, 'upslope_dunnianflow', 'nhru', Nhru, 'double', &
      &       'Cascading Dunnian surface runoff that'// &
-     &       ' flows to the capillary reservoir of each down slope HRU for each upslope HRU', &
+     &       ' flows to the capillary reservoir of each downslope HRU for each upslope HRU', &
      &       'inches', Upslope_dunnianflow)/=0 ) CALL read_error(3, 'upslope_dunnianflow')
 
         ALLOCATE ( Hru_sz_cascadeflow(Nhru) )
@@ -536,7 +536,7 @@
       IF ( declparam(MODNAME, 'slowcoef_lin', 'nhru', 'real', &
      &     '0.015', '0.0', '1.0', &
      &     'Linear gravity-flow reservoir routing coefficient', &
-     &     'Linear coefficient in equation to route gravity-reservoir storage down slope for each HRU', &
+     &     'Linear coefficient in equation to route gravity-reservoir storage downslope for each HRU', &
      &     'fraction/day')/=0 ) CALL read_error(1, 'slowcoef_lin')
 
       ALLOCATE ( Slowcoef_sq(Nhru) )
@@ -544,7 +544,7 @@
      &     '0.1', '0.0', '1.0', &
      &     'Non-linear gravity-flow reservoir routing coefficient', &
      &     'Non-linear coefficient in equation to route'// &
-     &     ' gravity-reservoir storage down slope for each HRU', &
+     &     ' gravity-reservoir storage downslope for each HRU', &
      &     'none')/=0 ) CALL read_error(1, 'slowcoef_sq')
 
       ALLOCATE ( Pref_flow_den(Nhru) )
@@ -600,7 +600,7 @@
       IF ( declparam(MODNAME, 'fastcoef_lin', 'nhru', 'real', &
      &     '0.1', '0.0', '1.0', &
      &     'Linear preferential-flow routing coefficient', &
-     &     'Linear coefficient in equation to route preferential-flow storage down slope for each HRU', &
+     &     'Linear coefficient in equation to route preferential-flow storage downslope for each HRU', &
      &     'fraction/day')/=0 ) CALL read_error(1, 'fastcoef_lin')
 
       ALLOCATE ( Fastcoef_sq(Nhru) )
@@ -608,7 +608,7 @@
      &     '0.8', '0.0', '1.0', &
      &     'Non-linear preferential-flow routing coefficient', &
      &     'Non-linear coefficient in equation used to route'// &
-     &     ' preferential-flow storage down slope for each HRU', &
+     &     ' preferential-flow storage downslope for each HRU', &
      &     'none')/=0 ) CALL read_error(1, 'fastcoef_sq')
 
       ALLOCATE ( Ssr2gw_rate(Nhru) )
@@ -1734,7 +1734,7 @@
      &           Pref_flow_thrsh, Gvr2pfr, Ssr_to_gw, &
      &           Slow_flow, Slow_stor, Gvr2sm, Soil_to_gw, Gwin, Hru_type)
       USE PRMS_SOILZONE, ONLY: Gravity_stor_res, Sm2gw_grav, Hru_gvr_count, Hru_gvr_index, &
-     &    Gw2sm_grav, Gvr_hru_pct_adjusted
+     &    Gw2sm_grav, Gvr_hru_pct_adjusted, Gw2sm_grav_save
       USE PRMS_MODULE, ONLY: Dprst_flag, Print_debug
       USE PRMS_BASIN, ONLY: NEARZERO
       USE PRMS_SRUNOFF, ONLY: Dprst_seep_hru
@@ -1806,7 +1806,7 @@
               perc = depth
             ENDIF
             depth = depth - perc
-!            IF ( sm2gw_grav(igvr)>0.0 ) print*,'problem',sm2gw_grav(igvr),igvr
+            IF ( sm2gw_grav(igvr)>0.0 ) print*,'problem',sm2gw_grav(igvr),igvr
             Sm2gw_grav(igvr) = perc
             togw = togw + DBLE( perc )*frac
           ENDIF
@@ -1823,6 +1823,7 @@
         IF ( Dprst_flag==1 ) Sm2gw_grav(igvr) = Sm2gw_grav(igvr) + Dprst_seep_hru(Ihru)
 
       ENDDO ! end loop of GVRs in the HRU
+      Gw2sm_grav_save = Gw2sm_grav
 
       Gvr2pfr = SNGL( topfr )
       Slow_flow = SNGL( slflow )
