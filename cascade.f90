@@ -16,21 +16,21 @@
       REAL, SAVE, ALLOCATABLE :: Hru_down_frac(:, :)
 !     REAL, SAVE, ALLOCATABLE :: Gwr_down_fracwt(:, :)
 ! hru_down_frac: Fraction of HRU area used to compute flow routed
-!                to a down slope HRU or stream segment.
-! hru_down_fracwt: HRU area fraction, area weighted by down slope HRU
-!                  area, used to compute flow routed to a down slope
+!                to a downslope HRU or stream segment.
+! hru_down_fracwt: HRU area fraction, area weighted by downslope HRU
+!                  area, used to compute flow routed to a downslope
 !                  HRU or stream segment.
-! gwr_down_fracwt: GWR area fraction, area weighted by down slope GWR
-!                  area, used to compute flow routed to a down slope
+! gwr_down_fracwt: GWR area fraction, area weighted by downslope GWR
+!                  area, used to compute flow routed to a downslope
 !                  GWR or stream segment.
 ! gwr_down_frac: Fraction of GWR area used to compute flow routed
-!                to a down slope cascade area or stream segment from
+!                to a downslope cascade area or stream segment from
 !                each cascade area of an GWR.
 ! cascade_area: Cascade area within an HRU.
 ! cascade_gwr_area: Cascade area within an GWR.
-! hru_down: Indices of the down slope HRUs or stream segments to
+! hru_down: Indices of the downslope HRUs or stream segments to
 !           which the cascade area routes flow.
-! gwr_down: Indices of the down slope GWRs to which the cascade
+! gwr_down: Indices of the downslope GWRs to which the cascade
 !           area routes flow.
 !   Declared Parameters
       INTEGER, SAVE :: Cascade_flg, Circle_switch
@@ -110,8 +110,8 @@
         ALLOCATE ( Hru_down_id(Ncascade) )
         IF ( declparam(MODNAME, 'hru_down_id', 'ncascade', 'integer', &
      &       '0', 'bounded', 'nhru', &
-     &       'HRU index of down slope HRU', &
-     &       'Index number of the down slope HRU to which the upslope HRU contributes flow', &
+     &       'HRU index of downslope HRU', &
+     &       'Index number of the downslope HRU to which the upslope HRU contributes flow', &
      &       'none')/=0 ) CALL read_error(1, 'hru_down_id')
 
         ALLOCATE ( Hru_pct_up(Ncascade) )
@@ -119,7 +119,7 @@
      &       '1.0', '0.0', '1.0', &
      &       'Fraction of HRU area associated with cascade area', &
      &       'Fraction of HRU area used to compute flow contributed'// &
-     &       ' to a down slope HRU or stream segment for cascade area', &
+     &       ' to a downslope HRU or stream segment for cascade area', &
      &       'decimal fraction')/=0 ) CALL read_error(1, 'hru_pct_up')
       ENDIF
 
@@ -160,8 +160,8 @@
         ALLOCATE ( Gw_down_id(Ncascdgw) )
         IF ( declparam(MODNAME, 'gw_down_id', 'ncascdgw', 'integer', &
      &       '0', 'bounded', 'ngw', &
-     &       'GWR index of down slope GWR', &
-     &       'Index number of the down slope GWR to which the upslope GWR contributes flow', &
+     &       'GWR index of downslope GWR', &
+     &       'Index number of the downslope GWR to which the upslope GWR contributes flow', &
      &       'none')/=0 ) CALL read_error(1, 'gw_down_id')
 
         ALLOCATE ( Gw_pct_up(Ncascdgw) )
@@ -169,7 +169,7 @@
      &       '1.0', '0.0', '1.0', &
      &       'Fraction of GWR area associated with cascade area', &
      &       'Fraction of GWR area used to compute flow contributed'// &
-     &       ' to a down slope GWR or stream segment for cascade area', &
+     &       ' to a downslope GWR or stream segment for cascade area', &
      &       'decimal fraction')/=0 ) CALL read_error(1, 'gw_pct_up')
 
       ENDIF

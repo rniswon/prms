@@ -24,7 +24,7 @@
 !   Declared Variables - Transp
       INTEGER, SAVE :: Basin_transp_on
       INTEGER, SAVE, ALLOCATABLE :: Transp_on(:)
-!   Declared Parameters and Variables - Potetential ET
+!   Declared Parameters and Variables - Potential ET
       DOUBLE PRECISION, SAVE :: Basin_potet, Basin_humidity
       REAL, SAVE, ALLOCATABLE :: Potet(:)
       ! for potet_pt, potet_pm and potet_pm_sta
@@ -333,7 +333,7 @@
         ENDIF
         ALLOCATE ( Humidity_percent(Nhru,12) )
         IF ( declparam(Et_module, 'humidity_percent', 'nhru,nmonths', 'real', &
-     &       '0.0', '1.0', '1.0', &
+     &       '0.0', '0.0', '100.0', &
      &       'Monthy humidity for each HRU', &
      &       'Monthy humidity for each HRU', &
      &       'percentage')/=0 ) CALL read_error(1, 'humidity_percent')
