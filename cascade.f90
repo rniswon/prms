@@ -34,7 +34,7 @@
 !           area routes flow.
 !   Declared Parameters
       INTEGER, SAVE :: Cascade_flg, Circle_switch
-      REAL, SAVE :: Cascade_tol
+!      REAL, SAVE :: Cascade_tol
       INTEGER, SAVE, ALLOCATABLE :: Hru_up_id(:), Hru_strmseg_down_id(:), Hru_down_id(:)
       INTEGER, SAVE, ALLOCATABLE :: Gw_up_id(:), Gw_strmseg_down_id(:), Gw_down_id(:)
       REAL, SAVE, ALLOCATABLE:: Hru_pct_up(:), Gw_pct_up(:)
@@ -81,7 +81,7 @@
 !***********************************************************************
       cascdecl = 0
 
-      Version_cascade = 'cascade.f90 2016-07-19 13:51:00Z'
+      Version_cascade = 'cascade.f90 2017-11-08 12:14:00Z'
       CALL print_module(Version_cascade, 'Cascading Flow              ', 90)
       MODNAME = 'cascade'
 
@@ -123,11 +123,11 @@
      &       'decimal fraction')/=0 ) CALL read_error(1, 'hru_pct_up')
       ENDIF
 
-      IF ( declparam(MODNAME, 'cascade_tol', 'one', 'real', &
-     &     '5.0', '0.0', '99.0', &
-     &     'Cascade area below which a cascade link is ignored', &
-     &     'Cascade area below which a cascade link is ignored', &
-     &     'acres')/=0 ) CALL read_error(1, 'cascade_tol')
+!      IF ( declparam(MODNAME, 'cascade_tol', 'one', 'real', &
+!     &     '5.0', '0.0', '99.0', &
+!     &     'Cascade area below which a cascade link is ignored', &
+!     &     'Cascade area below which a cascade link is ignored', &
+!     &     'acres')/=0 ) CALL read_error(1, 'cascade_tol')
 
       IF ( declparam(MODNAME, 'cascade_flg', 'one', 'integer', &
      &     '0', '0', '1', &
@@ -192,7 +192,7 @@
 !***********************************************************************
       cascinit = 0
 
-      IF ( getparam(MODNAME, 'cascade_tol', 1, 'real', Cascade_tol)/=0 ) CALL read_error(2, 'cascade_tol')
+!      IF ( getparam(MODNAME, 'cascade_tol', 1, 'real', Cascade_tol)/=0 ) CALL read_error(2, 'cascade_tol')
       IF ( getparam(MODNAME, 'cascade_flg', 1, 'integer', Cascade_flg)/=0 ) CALL read_error(2, 'cascade_flg')
       IF ( getparam(MODNAME, 'circle_switch', 1, 'integer', Circle_switch)/=0 ) CALL read_error(2, 'circle_switch')
 
@@ -394,9 +394,10 @@
 
           carea = frac*Hru_area(kup)
           ! get rid of small cascades, redistribute fractions
-          IF ( carea<Cascade_tol .AND. frac<0.075 ) THEN
-            IF ( Print_debug==13 ) WRITE ( MSGUNT, 9005 ) i, kup, jdn, frac*100.0, carea
-          ELSEIF ( Cascade_flg==1 ) THEN
+!          IF ( carea<Cascade_tol .AND. frac<0.075 ) THEN
+!            IF ( Print_debug==13 ) WRITE ( MSGUNT, 9005 ) i, kup, jdn, frac*100.0, carea
+!          ELSEIF ( Cascade_flg==1 ) THEN
+          IF ( Cascade_flg==1 ) THEN
             IF ( frac>hru_frac(kup) ) THEN
               hru_frac(kup) = frac
               Ncascade_hru(kup) = 1
@@ -790,9 +791,10 @@
 
           carea = frac*Hru_area(kup)
           ! get rid of small cascades, redistribute fractions
-          IF ( carea<Cascade_tol .AND. frac<0.075 ) THEN
-            IF ( Print_debug==13 ) WRITE ( MSGUNT, 9005 ) i, kup, jdn, frac*100.0, carea
-          ELSEIF ( Cascade_flg==1 ) THEN
+!          IF ( carea<Cascade_tol .AND. frac<0.075 ) THEN
+!            IF ( Print_debug==13 ) WRITE ( MSGUNT, 9005 ) i, kup, jdn, frac*100.0, carea
+!          ELSEIF ( Cascade_flg==1 ) THEN
+          IF ( Cascade_flg==1 ) THEN
             IF ( frac>gwr_frac(kup) ) THEN
               gwr_frac(kup) = frac
               Ncascade_gwr(kup) = 1

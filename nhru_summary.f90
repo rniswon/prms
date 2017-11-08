@@ -57,7 +57,7 @@
       INTEGER :: i
       CHARACTER(LEN=80), SAVE :: Version_nhru_summary
 !***********************************************************************
-      Version_nhru_summary = 'nhru_summary.f90 2017-01-23 11:25:00Z'
+      Version_nhru_summary = 'nhru_summary.f90 2017-11-03 12:15:00Z'
       CALL print_module(Version_nhru_summary, 'Nhru Output Summary         ', 90)
       MODNAME = 'nhru_summary'
 
@@ -68,8 +68,6 @@
       IF ( NhruOutVars==0 ) THEN
         IF ( Model/=99 ) THEN
           PRINT *, 'ERROR, nhru_summary requested with nhruOutVars equal 0'
-!          PRINT *, 'no nhru_summary output is produced'
-!          NhruOutON_OFF = 0
           Inputerror_flag = 1
           RETURN
         ENDIF
@@ -156,7 +154,8 @@
         ALLOCATE ( Nhru_var_yearly(Nhru, NhruOutVars), Yearlyunit(NhruOutVars) )
         Nhru_var_yearly = 0.0D0
         WRITE ( Output_fmt3, 9003 ) Nhru
-      ELSEIF ( Monthly_flag==1 ) THEN
+      ENDIF
+      IF ( Monthly_flag==1 ) THEN
         Monthdays = 0.0D0
         ALLOCATE ( Nhru_var_monthly(Nhru, NhruOutVars), Monthlyunit(NhruOutVars) )
         Nhru_var_monthly = 0.0D0
@@ -204,7 +203,7 @@
       END SUBROUTINE nhru_summaryinit
 
 !***********************************************************************
-!     Output set of declared variables in R compatible format
+!     Output set of declared variables in CSV format
 !***********************************************************************
       SUBROUTINE nhru_summaryrun()
       USE PRMS_NHRU_SUMMARY
@@ -259,8 +258,8 @@
             Yeardays = 0
             Lastyear = Nowyear
           ENDIF
-         ENDIF
-         Yeardays = Yeardays + 1
+        ENDIF
+        Yeardays = Yeardays + 1
       ELSEIF ( Monthly_flag==1 ) THEN
         ! check for last day of month and simulation
         IF ( Nowday==Modays(Nowmonth) ) THEN

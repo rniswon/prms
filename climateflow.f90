@@ -465,7 +465,7 @@
      &     'cfs', Basin_sroff_cfs)/=0 ) CALL read_error(3, 'basin_sroff_cfs')
 
       IF ( declvar(Strmflow_module, 'basin_ssflow_cfs', 'one', 1, 'double', &
-     &     'Interflow leaving the basin through the stream network',  &
+     &     'Interflow leaving the basin through the stream network', &
      &     'cfs', Basin_ssflow_cfs)/=0 ) CALL read_error(3, 'basin_ssflow')
 
       IF ( declvar(Strmflow_module, 'basin_gwflow_cfs', 'one', 1, 'double', &
@@ -592,7 +592,7 @@
 
       ALLOCATE ( Adjmix_rain(Nhru,12) )
       IF ( declparam(Precip_module, 'adjmix_rain', 'nhru,nmonths', 'real', &
-     &     '1.0', '0.6', '1.4', &
+     &     '1.0', '0.0', '3.0', &
      &     'Adjustment factor for rain in a rain/snow mix', &
      &     'Monthly (January to December) factor to adjust rain proportion in a mixed rain/snow event', &
      &     'decimal fraction')/=0 ) CALL read_error(1, 'adjmix_rain')
@@ -782,7 +782,7 @@
 
       IF ( getparam(Temp_module, 'temp_units', 1, 'integer', Temp_units)/=0 ) CALL read_error(2, 'temp_units')
 
-      IF ( Temp_flag<5 ) THEN
+      IF ( Temp_flag<4 ) THEN
         IF ( getparam(Temp_module, 'basin_tsta', 1, 'integer', Basin_tsta)/=0 ) CALL read_error(2, 'basin_tsta')
         CALL checkdim_param_limits(1, 'basin_tsta', 'ntemp', Basin_tsta, 1, Ntemp, Inputerror_flag)
       ELSE
