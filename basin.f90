@@ -6,7 +6,7 @@
       INTRINSIC :: EPSILON
 !   Local Variables
       REAL, PARAMETER :: NEARZERO = EPSILON(0.0), INCH2CM = 2.54
-      REAL, PARAMETER :: CLOSEZERO = EPSILON(0.0)
+      REAL, PARAMETER :: CLOSEZERO = 1.0E-09
       DOUBLE PRECISION, PARAMETER :: DNEARZERO = EPSILON(0.0D0), FT2_PER_ACRE = 43560.0D0
       DOUBLE PRECISION, PARAMETER :: CFS2CMS_CONV = 0.028316847D0
       REAL, PARAMETER :: INCH2MM = 25.4, INCH2M = 0.0254, MAXTEMP = 200.0, MINTEMP = -150.0
@@ -14,15 +14,16 @@
       REAL, PARAMETER :: FEET2METERS = 0.3048
       REAL, PARAMETER :: METERS2FEET = 1.0/FEET2METERS
       CHARACTER(LEN=5), SAVE :: MODNAME
-      INTEGER, SAVE :: Numlake_hrus, Active_hrus, Active_gwrs, Numlakes_check
+      INTEGER, SAVE :: Active_hrus, Active_gwrs, Numlakes_check, Numlake_hrus
       INTEGER, SAVE :: Hemisphere, Dprst_clos_flag, Dprst_open_flag
       DOUBLE PRECISION, SAVE :: Land_area, Water_area
       DOUBLE PRECISION, SAVE :: Basin_area_inv, Basin_lat, Totarea, Active_area
       REAL, SAVE, ALLOCATABLE :: Hru_elev_feet(:), Hru_elev_meters(:)
       REAL, SAVE, ALLOCATABLE :: Dprst_frac_clos(:)
       INTEGER, SAVE, ALLOCATABLE :: Gwr_type(:), Hru_route_order(:), Gwr_route_order(:)
+      DOUBLE PRECISION, SAVE, ALLOCATABLE :: Lake_area(:)
       INTEGER, SAVE :: Weir_gate_flag, Puls_lin_flag
-      DOUBLE PRECISION, SAVE, ALLOCATABLE :: Hru_area_dble(:), Lake_area(:)
+      DOUBLE PRECISION, SAVE, ALLOCATABLE :: Hru_area_dble(:)
       CHARACTER(LEN=80), SAVE :: Version_basin
 !   Declared Variables
       REAL, SAVE, ALLOCATABLE :: Hru_frac_perv(:)
@@ -75,7 +76,7 @@
 !***********************************************************************
       basdecl = 0
 
-      Version_basin = 'basin.f90 2017-10-05 14:06:00Z'
+      Version_basin = 'basin.f90 2017-11-09 14:05:00Z'
       CALL print_module(Version_basin, 'Basin Definition            ', 90)
       MODNAME = 'basin'
 
@@ -309,8 +310,8 @@
         IF ( Hru_type(i)==0 ) CYCLE ! inactive
 ! ????????? need to fix for lakes with multiple HRUs and PRMS lake routing ????????
         IF ( Hru_type(i)==2 ) THEN ! lake
-          Numlake_hrus = Numlake_hrus + 1
           Water_area = Water_area + harea_dble
+          Numlake_hrus = Numlake_hrus + 1
           lakeid = Lake_hru_id(i)
           IF ( lakeid>0 ) THEN
             Lake_area(lakeid) = Lake_area(lakeid) + harea_dble
@@ -380,6 +381,15 @@
         ENDIF
       ENDDO
 
+      Active_hrus = j
+      Active_area = Land_area + Water_area
+
+      IF ( GSFLOW_flag==0 ) THEN
+        Active_gwrs = Active_hrus
+        Gwr_type = Hru_type
+        Gwr_route_order = Hru_route_order
+      ENDIF
+
       IF ( Nlake>0 ) THEN
         IF ( Numlake_hrus/=Nlake_hrus ) THEN
           PRINT *, 'ERROR, number of lake HRUs specified in hru_type'
@@ -402,15 +412,6 @@
       ENDIF
 
       IF ( basinit==1 ) STOP
-
-      Active_hrus = j
-      Active_area = Land_area + Water_area
-
-      IF ( GSFLOW_flag==0 ) THEN
-        Active_gwrs = Active_hrus
-        Gwr_type = Hru_type
-        Gwr_route_order = Hru_route_order
-      ENDIF
 
       Basin_area_inv = 1.0D0/Active_area
       Basin_lat = Basin_lat*Basin_area_inv

@@ -420,7 +420,7 @@
      &    Dprst_vol_open_frac, Dprst_vol_clos_frac, Dprst_vol_frac
       USE PRMS_SOILZONE, ONLY: Basin_soil_rechr, Soil_zone_max, Soil_moist_tot, &
      &    Soil_moist_frac, Cpr_stor_frac, Soil_lower_stor_max, Replenish_frac, &
-     &    Soil_lower_ratio, Soil_lower, Soil_rechr_ratio
+     &    Soil_lower_ratio, Soil_lower !, Soil_rechr_ratio
       IMPLICIT NONE
 ! Functions
       INTRINSIC SNGL, DBLE
@@ -778,7 +778,7 @@
           Soil_lower_stor_max(i) = Soil_moist_max(i) - Soil_rechr_max(i)
           Replenish_frac(i) = Soil_rechr_max(i)/Soil_moist_max(i)
           IF ( Soil_lower_stor_max(i)>0.0 ) Soil_lower_ratio(i) = Soil_lower(i)/Soil_lower_stor_max(i)
-          Soil_rechr_ratio(i) = Soil_rechr(i)/Soil_rechr_max(i)
+          !Soil_rechr_ratio(i) = Soil_rechr(i)/Soil_rechr_max(i)
         ENDDO
       ENDIF
       IF ( istop==1 ) STOP
