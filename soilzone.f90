@@ -63,7 +63,7 @@
       REAL, SAVE, ALLOCATABLE :: Potet_lower(:), Potet_rechr(:), Soil_lower_ratio(:), Interflow_max(:)
       REAL, SAVE, ALLOCATABLE :: Cap_upflow_max(:), Cascade_interflow(:), Cascade_dunnianflow(:)
       DOUBLE PRECISION, SAVE :: Basin_gvr2sm
-      REAL, SAVE, ALLOCATABLE :: Sm2gw_grav(:) !, Sm2gw_grav_old(:)
+      REAL, SAVE, ALLOCATABLE :: Sm2gw_grav(:)
       REAL, SAVE, ALLOCATABLE :: Gravity_stor_res(:), Gvr2sm(:), Unused_potet(:), Grav_gwin(:)
 !   Declared Parameters
       INTEGER, SAVE, ALLOCATABLE :: Soil_type(:), Gvr_hru_id(:)
@@ -462,11 +462,6 @@
         IF ( declvar(MODNAME, 'sm2gw_grav', 'nhrucell', Nhrucell, 'real', &
      &       'Drainage from each gravity reservoir to each MODFLOW cell', &
      &       'inches', Sm2gw_grav)/=0 ) CALL read_error(3, 'sm2gw_grav')
-
-!        ALLOCATE ( Sm2gw_grav_old(Nhrucell) )
-!        IF ( declvar(MODNAME, 'sm2gw_grav_old', 'nhrucell', Nhrucell, 'real', &
-!     &       'Drainage from each gravity reservoir to each MODFLOW cell from the previous iteration', &
-!     &       'inches', Sm2gw_grav_old)/=0 ) CALL read_error(3, 'sm2gw_grav_old')
 
         IF ( declvar(MODNAME, 'basin_gvr2sm', 'one', 1, 'double', &
      &       'Basin area-weighted average gravity flow to capillary reservoirs', &
@@ -882,7 +877,6 @@
         IF ( Model==0 ) THEN
           Gvr2sm = 0.0 ! dimension nhru
           Sm2gw_grav = 0.0 ! dimension nhrucell
-!          Sm2gw_grav_old = 0.0 ! dimension nhrucell
         ENDIF
       ENDIF
 
@@ -1005,7 +999,6 @@
             IF ( Hrucheck(Gvr_hru_id(i))==0 ) CYCLE
             It0_gravity_stor_res(i) = Gravity_stor_res(i)
             Sm2gw_grav(i) = 0.0
-!            Sm2gw_grav_old(i) = 0.0
             Gw2sm_grav(i) = 0.0
           ENDDO
           It0_strm_seg_in = Strm_seg_in
@@ -1027,7 +1020,6 @@
           DO i = 1, Nhrucell
             IF ( Hrucheck(Gvr_hru_id(i))==0 ) CYCLE
             Gravity_stor_res(i) = It0_gravity_stor_res(i)
-!            Sm2gw_grav_old(i) = Sm2gw_grav(i)
             Sm2gw_grav(i) = 0.0
           ENDDO
           Strm_seg_in = It0_strm_seg_in
@@ -1788,9 +1780,6 @@
           IF ( Ssr2gw_rate>NEARZERO ) THEN
 ! use VKS instead of rate  ???????????????
             perc = Ssr2gw_rate*(depth**Ssr2gw_exp)
-! assume best guess is halfway between last iteration and this iteration
-!            IF ( Kkiter>2 ) perc = perc - (perc-Sm2gw_grav_old(igvr))*0.5
-!            IF ( Kkiter>2 ) perc = (perc+Sm2gw_grav_old(igvr))*0.5
             IF ( perc<0.0 ) THEN
               perc = 0.0
             ELSEIF ( perc>depth ) THEN
@@ -1954,7 +1943,6 @@
           WRITE ( Restart_outunit ) Gravity_stor_res
           WRITE ( Restart_outunit ) Gvr2sm
           WRITE ( Restart_outunit ) Sm2gw_grav
-!          WRITE ( Restart_outunit ) Sm2gw_grav_old
           WRITE ( Restart_outunit ) Grav_gwin
         ENDIF
         IF ( Cascade_flag==1 ) THEN
@@ -1997,7 +1985,6 @@
           READ ( Restart_inunit ) Gravity_stor_res
           READ ( Restart_inunit ) Gvr2sm
           READ ( Restart_inunit ) Sm2gw_grav
-!          READ ( Restart_inunit ) Sm2gw_grav_old
           READ ( Restart_inunit ) Grav_gwin
         ENDIF
         IF ( Cascade_flag==1 ) THEN
