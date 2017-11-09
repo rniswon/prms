@@ -75,7 +75,7 @@
       REAL, SAVE, ALLOCATABLE :: Soil_rechr_init(:), Soil2gw_max(:)
       REAL, SAVE, ALLOCATABLE :: Lake_evap_adj(:, :)
 !   Declared Variables used by GSFLOW only, in so that soilzone can be one version
-      REAL, SAVE, ALLOCATABLE :: Gw2sm_grav(:), Gw_rejected(:)
+      REAL, SAVE, ALLOCATABLE :: Gw2sm_grav(:)
       END MODULE PRMS_SOILZONE
 
 !***********************************************************************
@@ -487,11 +487,6 @@
      &       'Groundwater discharge to gravity-flow reservoirs for each HRU', &
      &       'inches', Grav_gwin)/=0 ) CALL read_error(3, 'grav_gwin')
 
-        ALLOCATE ( Gw_rejected(Nhru) )
-        IF ( declvar(MODNAME, 'gw_rejected', 'nhru', Nhru, 'real', &
-     &       'HRU average recharge rejected by UZF', 'inches', &
-     &       Gw_rejected)/=0 ) CALL read_error(3, 'gw_rejected')
-
         ALLOCATE ( Gvr_hru_pct_adjusted(Nhrucell), Gw2sm_grav_save(Nhrucell) )
         ALLOCATE ( Hru_gvr_count(Nhru), Hrucheck(Nhru) )
         ALLOCATE ( It0_pref_flow_stor(Nhru), It0_ssres_stor(Nhru), It0_soil_rechr(Nhru), It0_soil_moist(Nhru) )
@@ -677,7 +672,6 @@
         ENDIF
         Grav_gwin = 0.0 ! dimension nhru
         Gw2sm_grav = 0.0
-        Gw_rejected = 0.0
         Gw2sm_grav_save = 0.0
       ENDIF
 
