@@ -60,6 +60,7 @@ LIBOBJS = \
         nhru_summary.o \
         write_climate_hru.o \
         nsub_summary.o \
+        nsegment_summary.o \
         basin_summary.o \
         basin_sum.o \
         utils_prms.o
@@ -115,6 +116,9 @@ nhru_summary.o: nhru_summary.f90 prms_module.mod prms_basin.mod prms_set_time.mo
 
 nsub_summary.o: nsub_summary.f90 prms_module.mod prms_basin.mod prms_set_time.mod
 	$(FC) -c $(FFLAGS) nsub_summary.f90
+
+nsegment_summary.o: nsegment_summary.f90 prms_module.mod prms_basin.mod prms_set_time.mod
+	$(FC) -c $(FFLAGS) nsegment_summary.f90
 
 basin_summary.o: basin_summary.f90 prms_module.mod prms_basin.mod prms_set_time.mod
 	$(FC) -c $(FFLAGS) basin_summary.f90
