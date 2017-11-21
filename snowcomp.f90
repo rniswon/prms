@@ -98,7 +98,7 @@
 !***********************************************************************
       snodecl = 0
 
-      Version_snowcomp = 'snowcomp.f90 2016-06-16 13:25:00Z'
+      Version_snowcomp = 'snowcomp.f90 2017-10-06 10:28:00Z'
       CALL print_module(Version_snowcomp, 'Snow Dynamics               ', 90)
       MODNAME = 'snowcomp'
 
@@ -519,7 +519,7 @@
           Pk_depth(i) = Pkwater_equiv(i)*Deninv
           Pk_den(i) = Pkwater_equiv(i)/Pk_depth(i)
           Pk_ice(i) = SNGL( Pkwater_equiv(i) )
-          Freeh2o = Pk_ice(i)*Freeh2o_cap(i)
+          Freeh2o(i) = Pk_ice(i)*Freeh2o_cap(i)
           Ai(i) = Pkwater_equiv(i) ! [inches]
           IF ( Ai(i)>Snarea_thresh(i) ) Ai = DBLE( Snarea_thresh(i) ) ! [inches]
           CALL sca_deplcrv(i, Snowcov_area(i))

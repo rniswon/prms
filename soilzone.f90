@@ -30,8 +30,8 @@
       REAL, SAVE, ALLOCATABLE :: It0_gravity_stor_res(:), It0_sroff(:)
       REAL, SAVE, ALLOCATABLE :: It0_slow_stor(:), It0_potet(:), Gw2sm_grav_save(:)
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: It0_strm_seg_in(:)
-      DOUBLE PRECISION, SAVE :: It0_basin_soil_moist, It0_basin_ssstor
-      DOUBLE PRECISION, SAVE :: Basin_sz_gwin, Last_soil_moist, Last_ssstor
+      DOUBLE PRECISION, SAVE :: Last_soil_moist, Last_ssstor
+      DOUBLE PRECISION, SAVE :: It0_basin_soil_moist, It0_basin_ssstor, Basin_sz_gwin
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Gvr_hru_pct_adjusted(:)
 !   Declared Variables
       DOUBLE PRECISION, SAVE :: Basin_sz2gw, Basin_cap_infil_tot
@@ -52,7 +52,7 @@
       REAL, SAVE, ALLOCATABLE :: Perv_actet(:), Pref_flow_thrsh(:) !, Perv_avail_et(:)
       REAL, SAVE, ALLOCATABLE :: Soil_moist_tot(:), Recharge(:)
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Upslope_interflow(:), Upslope_dunnianflow(:), Lakein_sz(:)
-!      REAL, SAVE, ALLOCATABLE :: Cpr_stor_frac(:), Pfr_stor_frac(:), Gvr_stor_frac(:), Soil_moist_frac(:)
+!      REAL, SAVE, ALLOCATABLE :: Cpr_stor_frac(:), Pfr_stor_frac(:), Gvr_stor_frac(:), Soil_moist_frac(:), Cap_upflow_max(:)
       REAL, SAVE, ALLOCATABLE :: Dunnian_flow(:), Cap_infil_tot(:)
       REAL, SAVE, ALLOCATABLE :: Pref_flow_stor(:), Pref_flow(:)
       REAL, SAVE, ALLOCATABLE :: Pref_flow_infil(:), Pref_flow_in(:)
@@ -321,6 +321,12 @@
         IF ( declvar(MODNAME, 'hru_sz_cascadeflow', 'nhru', Nhru, 'real', &
      &       'Cascading interflow and Dunnian surface runoff from each HRU', &
      &       'inches', Hru_sz_cascadeflow)/=0 ) CALL read_error(3, 'hru_sz_cascadeflow')
+
+!        ALLOCATE ( Cap_upflow_max(Nhru) )
+!        IF ( declvar(MODNAME, 'cap_upflow_max', 'nhru', Nhru, 'real', &
+!     &       'Maximum infiltration and any cascading interflow and'// &
+!     &       ' Dunnian surface runoff that can be added to capillary reservoir storage for each HRU', &
+!     &       'inches', Cap_upflow_max)/=0 ) CALL read_error(3, 'cap_upflow_max')
 
         ALLOCATE ( Cascade_interflow(Nhru) )
         IF ( declvar(MODNAME, 'cascade_interflow', 'nhru', Nhru, 'real', &
@@ -796,14 +802,18 @@
 !        Soil_moist_frac(i) = Soil_moist_tot(i)/Soil_zone_max(i)
 !        Cpr_stor_frac(i) = Soil_moist(i)/Soil_moist_max(i)
 !        IF ( Pref_flow_thrsh(i)>0.0 ) Gvr_stor_frac(i) = Slow_stor(i)/Pref_flow_thrsh(i)
+!        Basin_cpr_stor_frac = Basin_cpr_stor_frac + DBLE( Cpr_stor_frac(i)*hruperv )
+!        Basin_gvr_stor_frac = Basin_gvr_stor_frac + DBLE( Gvr_stor_frac(i)*hruarea )
         Basin_cpr_stor_frac = Basin_cpr_stor_frac + DBLE( Soil_moist(i)/Soil_moist_max(i)*hruperv )
         IF ( Pref_flow_thrsh(i)>0.0 ) Basin_gvr_stor_frac = Basin_gvr_stor_frac + DBLE( Slow_stor(i)/Pref_flow_thrsh(i)*hruarea )
         Soil_lower(i) = Soil_moist(i) - Soil_rechr(i)
         Soil_lower_stor_max(i) = Soil_moist_max(i) - Soil_rechr_max(i)
         IF ( Soil_lower_stor_max(i)>0.0 ) Soil_lower_ratio(i) = Soil_lower(i)/Soil_lower_stor_max(i)
 !        Soil_rechr_ratio(i) = Soil_rechr(i)/Soil_rechr_max(i)
+!        Basin_sz_stor_frac = Basin_sz_stor_frac + DBLE( Soil_moist_frac(i)*hruarea )
         Basin_sz_stor_frac = Basin_sz_stor_frac + DBLE( Soil_moist_tot(i)/Soil_zone_max(i)*hruarea )
         Basin_soil_lower_stor_frac = Basin_soil_lower_stor_frac + DBLE( Soil_lower_ratio(i)*hruperv )
+!        Basin_soil_rechr_stor_frac = Basin_soil_rechr_stor_frac + DBLE( Soil_rechr_ratio(i)*hruperv )
         Basin_soil_rechr_stor_frac = Basin_soil_rechr_stor_frac + DBLE( Soil_rechr(i)/Soil_rechr_max(i)*hruperv )
         Basin_soil_moist = Basin_soil_moist + DBLE( Soil_moist(i)*Hru_perv(i) )
         Basin_soil_moist_tot = Basin_soil_moist_tot + DBLE( Soil_moist_tot(i)*hruarea )
@@ -814,6 +824,7 @@
         IF ( Pref_flow_flag(i)==1 ) THEN
           Basin_pref_stor = Basin_pref_stor + DBLE( Pref_flow_stor(i)*hruarea )
 !          Pfr_stor_frac(i) = Pref_flow_stor(i)/Pref_flow_max(i)
+!          Basin_pfr_stor_frac = Basin_pfr_stor_frac + DBLE( Pfr_stor_frac(i)*hruarea )
           Basin_pfr_stor_frac = Basin_pfr_stor_frac + DBLE( Pref_flow_stor(i)/Pref_flow_max(i)*hruarea )
         ENDIF
       ENDDO
@@ -839,6 +850,7 @@
           Upslope_interflow = 0.0D0
           Upslope_dunnianflow = 0.0D0
           Hru_sz_cascadeflow = 0.0
+!          Cap_upflow_max = 0.0
           Cascade_interflow = 0.0
           Cascade_dunnianflow = 0.0
           IF ( Numlake_hrus>0 ) Lakein_sz = 0.0D0
@@ -858,10 +870,6 @@
         Unused_potet = 0.0 ! dimension nhru
         Interflow_max = 0.0
 !        Snowevap_aet_frac = 0.0
-        IF ( Print_debug==1 ) THEN
-          Soil_moist_ante = Soil_moist
-          Ssres_stor_ante = Ssres_stor
-        ENDIF
 
         ! initialize scalers
         CALL init_basin_vars()
@@ -871,6 +879,10 @@
           Gvr2sm = 0.0 ! dimension nhru
           Sm2gw_grav = 0.0 ! dimension nhrucell
         ENDIF
+      ENDIF
+      IF ( Print_debug==1 ) THEN
+        Soil_moist_ante = Soil_moist
+        Ssres_stor_ante = Ssres_stor
       ENDIF
 
 ! initialize arrays (dimensioned Nhrucell)
@@ -1134,6 +1146,9 @@
         ENDIF
 
         IF ( Cascade_flag==1 ) THEN
+!          Cap_upflow_max(i) = SNGL(Upslope_dunnianflow(i)+Upslope_interflow(i))/perv_frac
+!          capwater_maxin = capwater_maxin + Cap_upflow_max(i)
+!          Basin_cap_up_max = Basin_cap_up_max + Cap_upflow_max(i)*perv_area
           cap_upflow_max = SNGL(Upslope_dunnianflow(i)+Upslope_interflow(i))/perv_frac
           capwater_maxin = capwater_maxin + cap_upflow_max
           Basin_cap_up_max = Basin_cap_up_max + cap_upflow_max*perv_area
@@ -1218,6 +1233,7 @@
      &                                Pref_flow_in(i), Pref_flow_stor(i), prefflow)
           Basin_pref_stor = Basin_pref_stor + DBLE( Pref_flow_stor(i)*harea )
 !          Pfr_stor_frac(i) = Pref_flow_stor(i)/Pref_flow_max(i)
+!          Basin_pfr_stor_frac = Basin_pfr_stor_frac + Pfr_stor_frac(i)*harea
           Basin_pfr_stor_frac = Basin_pfr_stor_frac + Pref_flow_stor(i)/Pref_flow_max(i)*harea
         ELSEIF ( Hru_type(i)==1 ) THEN
           dunnianflw_gvr = topfr  !?? is this right
@@ -1361,10 +1377,14 @@
 !        Soil_moist_frac(i) = Soil_moist_tot(i)/Soil_zone_max(i)
 !        Cpr_stor_frac(i) = Soil_moist(i)/Soil_moist_max(i)
 !        IF ( Pref_flow_thrsh(i)>0.0 ) Gvr_stor_frac(i) = Slow_stor(i)/Pref_flow_thrsh(i)
+!        Basin_cpr_stor_frac = Basin_cpr_stor_frac + Cpr_stor_frac(i)*perv_area
+!        Basin_gvr_stor_frac = Basin_gvr_stor_frac + Gvr_stor_frac(i)*harea
+!        Basin_sz_stor_frac = Basin_sz_stor_frac + Soil_moist_frac(i)*harea
         Basin_cpr_stor_frac = Basin_cpr_stor_frac + Soil_moist(i)/Soil_moist_max(i)*perv_area
         IF ( Pref_flow_thrsh(i)>0.0 ) Basin_gvr_stor_frac = Basin_gvr_stor_frac + Slow_stor(i)/Pref_flow_thrsh(i)*harea
         Basin_sz_stor_frac = Basin_sz_stor_frac + Soil_moist_tot(i)/Soil_zone_max(i)*harea
         Basin_soil_lower_stor_frac = Basin_soil_lower_stor_frac + Soil_lower_ratio(i)*perv_area
+!        Basin_soil_rechr_stor_frac = Basin_soil_rechr_stor_frac + Soil_rechr_ratio(i)*perv_area
         Basin_soil_rechr_stor_frac = Basin_soil_rechr_stor_frac + Soil_rechr(i)/Soil_rechr_max(i)*perv_area
         Recharge(i) = Soil_to_gw(i) + Ssr_to_gw(i)
         IF ( Dprst_flag==1 ) Recharge(i) = Recharge(i) + Dprst_seep_hru(i)
@@ -1939,6 +1959,7 @@
           WRITE ( Restart_outunit ) Upslope_interflow
           WRITE ( Restart_outunit ) Upslope_dunnianflow
           WRITE ( Restart_outunit ) Hru_sz_cascadeflow
+!          WRITE ( Restart_outunit ) Cap_upflow_max
           IF ( Nlake>0 ) WRITE ( Restart_outunit ) Lakein_sz
         ENDIF
       ELSE
@@ -1980,6 +2001,7 @@
           READ ( Restart_inunit ) Upslope_interflow
           READ ( Restart_inunit ) Upslope_dunnianflow
           READ ( Restart_inunit ) Hru_sz_cascadeflow
+!          READ ( Restart_inunit ) Cap_upflow_max
           IF ( Nlake>0 ) READ ( Restart_inunit ) Lakein_sz
         ENDIF
       ENDIF
