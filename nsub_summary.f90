@@ -29,9 +29,12 @@
 !     ******************************************************************
       SUBROUTINE nsub_summary()
       USE PRMS_MODULE, ONLY: Process
+      USE PRMS_NSUB_SUMMARY
       IMPLICIT NONE
 ! Functions
       EXTERNAL :: nsub_summarydecl, nsub_summaryinit, nsub_summaryrun
+! Local Variables
+      INTEGER :: i
 !***********************************************************************
       IF ( Process(:3)=='run' ) THEN
         CALL nsub_summaryrun()
@@ -39,6 +42,18 @@
         CALL nsub_summarydecl()
       ELSEIF ( Process(:4)=='init' ) THEN
         CALL nsub_summaryinit()
+      ELSEIF ( Process(:5)=='clean' ) THEN
+        DO i = 1, NsubOutVars
+          IF ( Daily_flag==1 ) THEN
+            IF ( Dailyunit(i)>0 ) CLOSE ( Dailyunit(i) )
+          ENDIF
+          IF ( NsubOut_freq>4 ) THEN
+            IF ( Yearlyunit(i)>0 ) CLOSE ( Yearlyunit(i) )
+          ENDIF
+          IF ( Monthly_flag==1 ) THEN
+            IF ( Monthlyunit(i)>0 ) CLOSE ( Monthlyunit(i) )
+          ENDIF
+        ENDDO
       ENDIF
 
       END SUBROUTINE nsub_summary
@@ -58,7 +73,7 @@
       INTEGER :: i
       CHARACTER(LEN=80), SAVE :: Version_nsub_summary
 !***********************************************************************
-      Version_nsub_summary = 'nsub_summary.f90 2017-11-03 14:16:00Z'
+      Version_nsub_summary = 'nsub_summary.f90 2017-11-21 10:42:00Z'
       CALL print_module(Version_nsub_summary, 'Subbasin Output Summary     ', 90)
       MODNAME = 'nsub_summary'
 
@@ -148,6 +163,7 @@
       IF ( NsubOut_freq==1 .OR. NsubOut_freq==3 ) THEN
         Daily_flag = 1
         ALLOCATE ( Dailyunit(NsubOutVars) )
+        Dailyunit = 0
       ENDIF
 
       Monthly_flag = 0
@@ -157,12 +173,14 @@
         Yeardays = 0
         ALLOCATE ( Nsub_var_yearly(Nsub, NsubOutVars), Yearlyunit(NsubOutVars) )
         Nsub_var_yearly = 0.0D0
+        Yearlyunit = 0
         WRITE ( Output_fmt3, 9003 ) Nsub
       ENDIF
       IF ( Monthly_flag==1 ) THEN
         Monthdays = 0.0D0
         ALLOCATE ( Nsub_var_monthly(Nsub, NsubOutVars), Monthlyunit(NsubOutVars) )
         Nsub_var_monthly = 0.0D0
+        Monthlyunit = 0
       ENDIF
 
       WRITE ( Output_fmt2, 9002 ) Nsub

@@ -23,6 +23,7 @@
 !     ******************************************************************
       SUBROUTINE basin_summary()
       USE PRMS_MODULE, ONLY: Process
+      USE PRMS_BASIN_SUMMARY
       IMPLICIT NONE
 ! Functions
       EXTERNAL :: basin_summarydecl, basin_summaryinit, basin_summaryrun
@@ -33,6 +34,10 @@
         CALL basin_summarydecl()
       ELSEIF ( Process(:4)=='init' ) THEN
         CALL basin_summaryinit()
+      ELSEIF ( Process(:5)=='clean' ) THEN
+        IF ( Daily_flag==1 ) CLOSE ( Dailyunit )
+        IF ( BasinOut_freq>4 ) CLOSE ( Yearlyunit )
+        IF ( Monthly_flag==1 ) CLOSE ( Monthlyunit )
       ENDIF
 
       END SUBROUTINE basin_summary
@@ -52,7 +57,7 @@
       INTEGER :: i
       CHARACTER(LEN=80), SAVE :: Version_basin_summary
 !***********************************************************************
-      Version_basin_summary = 'basin_summary.f90 2017-06-29 16:11:00Z'
+      Version_basin_summary = 'basin_summary.f90 2017-11-21 11:06:00Z'
       CALL print_module(Version_basin_summary, 'Basin Output Summary        ', 90)
       MODNAME = 'basin_summary'
 

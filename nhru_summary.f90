@@ -28,9 +28,12 @@
 !     ******************************************************************
       SUBROUTINE nhru_summary()
       USE PRMS_MODULE, ONLY: Process
+      USE PRMS_NHRU_SUMMARY
       IMPLICIT NONE
 ! Functions
       EXTERNAL :: nhru_summarydecl, nhru_summaryinit, nhru_summaryrun
+! Local Variables
+      INTEGER :: i
 !***********************************************************************
       IF ( Process(:3)=='run' ) THEN
         CALL nhru_summaryrun()
@@ -38,6 +41,18 @@
         CALL nhru_summarydecl()
       ELSEIF ( Process(:4)=='init' ) THEN
         CALL nhru_summaryinit()
+      ELSEIF ( Process(:5)=='clean' ) THEN
+        DO i = 1, NhruOutVars
+          IF ( Daily_flag==1 ) THEN
+            IF ( Dailyunit(i)>0 ) CLOSE ( Dailyunit(i) )
+          ENDIF
+          IF ( NhruOut_freq>4 ) THEN
+            IF ( Yearlyunit(i)>0 ) CLOSE ( Yearlyunit(i) )
+          ENDIF
+          IF ( Monthly_flag==1 ) THEN
+            IF ( Monthlyunit(i)>0 ) CLOSE ( Monthlyunit(i) )
+          ENDIF
+        ENDDO
       ENDIF
 
       END SUBROUTINE nhru_summary
@@ -57,7 +72,7 @@
       INTEGER :: i
       CHARACTER(LEN=80), SAVE :: Version_nhru_summary
 !***********************************************************************
-      Version_nhru_summary = 'nhru_summary.f90 2017-11-03 12:15:00Z'
+      Version_nhru_summary = 'nhru_summary.f90 2017-11-20 12:59:00Z'
       CALL print_module(Version_nhru_summary, 'Nhru Output Summary         ', 90)
       MODNAME = 'nhru_summary'
 
@@ -144,6 +159,7 @@
       IF ( NhruOut_freq==1 .OR. NhruOut_freq==3 ) THEN
         Daily_flag = 1
         ALLOCATE ( Dailyunit(NhruOutVars) )
+        Dailyunit = 0
       ENDIF
 
       Monthly_flag = 0
@@ -153,12 +169,13 @@
         Yeardays = 0
         ALLOCATE ( Nhru_var_yearly(Nhru, NhruOutVars), Yearlyunit(NhruOutVars) )
         Nhru_var_yearly = 0.0D0
+        Yearlyunit = 0
         WRITE ( Output_fmt3, 9003 ) Nhru
-      ENDIF
-      IF ( Monthly_flag==1 ) THEN
+      ELSEIF ( Monthly_flag==1 ) THEN
         Monthdays = 0.0D0
         ALLOCATE ( Nhru_var_monthly(Nhru, NhruOutVars), Monthlyunit(NhruOutVars) )
         Nhru_var_monthly = 0.0D0
+        Monthlyunit = 0
       ENDIF
 
       WRITE ( Output_fmt2, 9002 ) Nhru
@@ -172,26 +189,29 @@
           IF ( ios/=0 ) STOP 'in nhru_summary'
           WRITE ( Dailyunit(jj), Output_fmt2 ) (j, j=1,Nhru)
         ENDIF
-        IF ( NhruOut_freq==5 ) THEN
-          fileName = NhruOutBaseFileName(:numchars(NhruOutBaseFileName))//NhruOutVar_names(jj)(:Nc_vars(jj))//'_meanyearly.csv'
-          CALL PRMS_open_output_file(Yearlyunit(jj), fileName, 'xxx', 0, ios)
-          IF ( ios/=0 ) STOP 'in nhru_summary, mean yearly'
+        IF ( NhruOut_freq>4 ) THEN
+          IF ( NhruOut_freq==5 ) THEN
+            fileName = NhruOutBaseFileName(:numchars(NhruOutBaseFileName))//NhruOutVar_names(jj)(:Nc_vars(jj))//'_meanyearly.csv'
+            CALL PRMS_open_output_file(Yearlyunit(jj), fileName, 'xxx', 0, ios)
+            IF ( ios/=0 ) STOP 'in nhru_summary, mean yearly'
+          ELSE  !IF ( NhruOut_freq==6 ) THEN
+            fileName = NhruOutBaseFileName(:numchars(NhruOutBaseFileName))//NhruOutVar_names(jj)(:Nc_vars(jj))//'_yearly.csv'
+            CALL PRMS_open_output_file(Yearlyunit(jj), fileName, 'xxx', 0, ios)
+            IF ( ios/=0 ) STOP 'in nhru_summary, yearly'
+          ENDIF
           WRITE ( Yearlyunit(jj), Output_fmt2 ) (j, j=1,Nhru)
-        ELSEIF ( NhruOut_freq==6 ) THEN
-          fileName = NhruOutBaseFileName(:numchars(NhruOutBaseFileName))//NhruOutVar_names(jj)(:Nc_vars(jj))//'_yearly.csv'
-          CALL PRMS_open_output_file(Yearlyunit(jj), fileName, 'xxx', 0, ios)
-          IF ( ios/=0 ) STOP 'in nhru_summary, yearly'
-          WRITE ( Yearlyunit(jj), Output_fmt2 ) (j, j=1,Nhru)
-        ELSEIF ( Monthly_flag==1 ) THEN
+        ENDIF
+        IF ( Monthly_flag==1 ) THEN
           IF ( NhruOut_freq==4 ) THEN
             fileName = NhruOutBaseFileName(:numchars(NhruOutBaseFileName))//NhruOutVar_names(jj)(:Nc_vars(jj))// &
      &                 '_meanmonthly.csv'
+            CALL PRMS_open_output_file(Monthlyunit(jj), fileName, 'xxx', 0, ios)
+            IF ( ios/=0 ) STOP 'in nhru_summary, mean monthly'
           ELSE
             fileName = NhruOutBaseFileName(:numchars(NhruOutBaseFileName))//NhruOutVar_names(jj)(:Nc_vars(jj))//'_monthly.csv'
+            CALL PRMS_open_output_file(Monthlyunit(jj), fileName, 'xxx', 0, ios)
+            IF ( ios/=0 ) STOP 'in nhru_summary, monthly'
           ENDIF
-          !print *, fileName
-          CALL PRMS_open_output_file(Monthlyunit(jj), fileName, 'xxx', 0, ios)
-          IF ( ios/=0 ) STOP 'in nhru_summary, monthly'
           WRITE ( Monthlyunit(jj), Output_fmt2 ) (j, j=1,Nhru)
         ENDIF
       ENDDO
