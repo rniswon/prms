@@ -91,7 +91,6 @@
       SUBROUTINE basin_summaryinit()
       USE PRMS_BASIN_SUMMARY
       USE PRMS_MODULE, ONLY: Inputerror_flag, MAXFILE_LENGTH, Start_year, End_year
-      USE PRMS_BASIN, ONLY: DNEARZERO
       IMPLICIT NONE
       INTRINSIC ABS
       INTEGER, EXTERNAL :: getvartype, numchars, getvarsize, getparam

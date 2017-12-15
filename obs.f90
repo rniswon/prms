@@ -72,7 +72,7 @@
 !***********************************************************************
       INTEGER FUNCTION obsdecl()
       USE PRMS_OBS
-      USE PRMS_MODULE, ONLY: Precip_flag, Model, Nratetbl, Ntemp, Nrain, Nsol, Nobs, Nevap
+      USE PRMS_MODULE, ONLY: Precip_flag, Model, Ntemp, Nrain, Nsol, Nobs, Nevap !, Nratetbl
       IMPLICIT NONE
 ! Functions
       INTEGER, EXTERNAL :: declvar, getdim, declparam
@@ -218,7 +218,7 @@
 !***********************************************************************
       INTEGER FUNCTION obsinit()
       USE PRMS_OBS
-      USE PRMS_MODULE, ONLY: Nratetbl, Ntemp, Nrain, Nsol, Nobs, Nevap, Init_vars_from_file
+      USE PRMS_MODULE, ONLY: Ntemp, Nrain, Nsol, Nobs, Nevap, Init_vars_from_file !, Nratetbl
       IMPLICIT NONE
 ! Functions
       INTEGER, EXTERNAL :: getparam
@@ -263,7 +263,7 @@
 ! **********************************************************************
       INTEGER FUNCTION obsrun()
       USE PRMS_OBS
-      USE PRMS_MODULE, ONLY: Nratetbl, Ntemp, Nrain, Nsol, Nobs, Nevap
+      USE PRMS_MODULE, ONLY: Ntemp, Nrain, Nsol, Nobs, Nevap !, Nratetbl
       USE PRMS_BASIN, ONLY: CFS2CMS_CONV
       USE PRMS_SET_TIME, ONLY: Nowmonth
       IMPLICIT NONE
@@ -340,7 +340,7 @@
 !     obs_restart - write or read obs restart file
 !***********************************************************************
       SUBROUTINE obs_restart(In_out)
-      USE PRMS_MODULE, ONLY: Restart_outunit, Restart_inunit, Nrain, Ntemp, Nsol, Nratetbl, Nobs, Nevap
+      USE PRMS_MODULE, ONLY: Restart_outunit, Restart_inunit, Nrain, Ntemp, Nsol, Nobs, Nevap !, Nratetbl
       USE PRMS_OBS
       IMPLICIT NONE
       ! Argument

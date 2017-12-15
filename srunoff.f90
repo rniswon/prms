@@ -897,7 +897,7 @@
 !     Compute cascading runoff (runoff in inche*acre/dt)
 !***********************************************************************
       SUBROUTINE run_cascade_sroff(Ncascade_hru, Runoff, Hru_sroff_down)
-!      USE PRMS_BASIN, ONLY: NEARZERO, CLOSEZERO
+!      USE PRMS_BASIN, ONLY: NEARZERO
       USE PRMS_SET_TIME, ONLY: Cfs_conv
       USE PRMS_SRUNOFF, ONLY: Ihru, Upslope_hortonian, Strm_seg_in
       USE PRMS_CASCADE, ONLY: Hru_down, Hru_down_frac, Hru_down_fracwt, Cascade_area
@@ -927,22 +927,23 @@
 
 ! reset Sroff as it accumulates flow to streams
       Runoff = Runoff - Hru_sroff_down
-!      IF ( ABS(Runoff)<CLOSEZERO ) Runoff = 0.0
-      IF ( Runoff<0.0 ) THEN
-!        IF ( Runoff<-NEARZERO ) PRINT *, 'runoff < NEARZERO', Runoff
-        IF ( Hru_sroff_down>ABS(Runoff) ) THEN
-          Hru_sroff_down = Hru_sroff_down - Runoff
-        ELSE
-          DO k = 1, Ncascade_hru
-            j = Hru_down(k, Ihru)
-            IF ( Strm_seg_in(j)>ABS(Runoff) ) THEN
-              Strm_seg_in(j) = Strm_seg_in(j) - Runoff
-              EXIT
-            ENDIF
-          ENDDO
-        ENDIF
-        Runoff = 0.0
-      ENDIF
+!      IF ( Runoff<0.0 ) THEN
+!        IF ( Runoff<-NEARZERO ) THEN
+!          IF ( Print_debug>-1 ) PRINT *, 'runoff < NEARZERO', Runoff
+!          IF ( Hru_sroff_down>ABS(Runoff) ) THEN
+!            Hru_sroff_down = Hru_sroff_down - Runoff
+!          ELSE
+!            DO k = 1, Ncascade_hru
+!              j = Hru_down(k, Ihru)
+!              IF ( Strm_seg_in(j)>ABS(Runoff) ) THEN
+!                Strm_seg_in(j) = Strm_seg_in(j) - Runoff
+!                EXIT
+!              ENDIF
+!            ENDDO
+!          ENDIF
+!        ENDIF
+!        Runoff = 0.0
+!      ENDIF
 
       END SUBROUTINE run_cascade_sroff
 
@@ -1109,7 +1110,7 @@
      &    Basin_dprst_volop, Basin_dprst_volcl, Basin_dprst_evap, Basin_dprst_seep, Basin_dprst_sroff, &
      &    Dprst_vol_open_frac, Dprst_vol_clos_frac, Dprst_vol_frac, Dprst_stor_hru, Hruarea_dble
       USE PRMS_MODULE, ONLY: Cascade_flag !, Print_debug
-      USE PRMS_BASIN, ONLY: NEARZERO, CLOSEZERO, DNEARZERO, Dprst_frac_open, Dprst_frac_clos
+      USE PRMS_BASIN, ONLY: NEARZERO, DNEARZERO, Dprst_frac_open, Dprst_frac_clos
       USE PRMS_INTCP, ONLY: Net_snow
       USE PRMS_CLIMATEVARS, ONLY: Potet
       USE PRMS_FLOWVARS, ONLY: Pkwater_equiv
