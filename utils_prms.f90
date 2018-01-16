@@ -1,4 +1,4 @@
-      ! utils_prms.f90 2017-10-26 16:54:00Z
+      ! utils_prms.f90 2018-01-16 13:48:00Z
 !***********************************************************************
 !     Read CBH File to current time
 !***********************************************************************
@@ -986,7 +986,7 @@
       INTEGER :: i, j, check_tsta, check_solsta, check_psta
 !***********************************************************************
       check_tsta = 0
-      IF ( Temp_flag==1 .OR. Temp_flag==2 ) check_tsta = 1
+      IF ( Temp_flag==1 .OR. Temp_flag==2 .OR. Temp_flag==8 ) check_tsta = 1
       check_solsta = 0
       IF ( (Solrad_flag==1 .OR. Solrad_flag==2) .AND. Nsol>0 ) THEN
         check_solsta = 1

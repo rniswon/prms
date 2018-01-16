@@ -114,7 +114,7 @@
             CALL temp_set(j, tmx, tmn, Tmaxf(j), Tminf(j), Tavgf(j), &
      &                    Tmaxc(j), Tminc(j), Tavgc(j), Hru_area(j))
           ENDDO
-        ELSE
+        ELSEIF ( Temp_flag==2 ) THEN
           DO jj = 1, Active_hrus
             j = Hru_route_order(jj)
             k = Hru_tsta(j)
@@ -124,6 +124,16 @@
             CALL temp_set(j, tmx, tmn, Tmaxf(j), Tminf(j), Tavgf(j), &
      &                    Tmaxc(j), Tminc(j), Tavgc(j), Hru_area(j))
           ENDDO
+        ELSE ! Temp_flag = 8
+          DO jj = 1, Active_hrus
+            j = Hru_route_order(jj)
+            k = Hru_tsta(j)
+            tmx = Tmax(k) + Tmax_aspect_adjust(j, Nowmonth)
+            tmn = Tmin(k) + Tmin_aspect_adjust(j, Nowmonth)
+            CALL temp_set(j, tmx, tmn, Tmaxf(j), Tminf(j), Tavgf(j), &
+     &                    Tmaxc(j), Tminc(j), Tavgc(j), Hru_area(j))
+          ENDDO
+        ELSE
         ENDIF
         Basin_tmax = Basin_tmax*Basin_area_inv
         Basin_tmin = Basin_tmin*Basin_area_inv
@@ -150,11 +160,13 @@
         ENDIF
 
       ELSEIF ( Process(:4)=='decl' ) THEN
-        Version_temp = 'temp_1sta_laps.f90 2017-09-27 12:13:00Z'
+        Version_temp = 'temp_1sta_laps.f90 2018-01-16 13:42:00Z'
         IF ( Temp_flag==1 ) THEN
           MODNAME = 'temp_1sta'
-        ELSE
+        ELSEIF ( Temp_flag==2 ) THEN
           MODNAME = 'temp_laps'
+        ELSE ! Temp_flag = 8
+          MODNAME = 'temp_sta '
         ENDIF
         Version_temp = MODNAME//'.f90 '//Version_temp(20:80)
         CALL print_module(Version_temp, 'Temperature Distribution    ', 90)
@@ -207,7 +219,7 @@
         IF ( Temp_flag==1 ) THEN
           IF ( getparam(MODNAME, 'tmin_lapse', Nhru*12, 'real', Tmin_lapse)/=0 ) CALL read_error(2, 'tmin_lapse')
           IF ( getparam(MODNAME, 'tmax_lapse', Nhru*12, 'real', Tmax_lapse)/=0 ) CALL read_error(2, 'tmax_lapse')
-        ELSE
+        ELSEIF ( Temp_flag==2 ) THEN
           IF ( getparam(MODNAME, 'hru_tlaps', Nhru, 'integer', Hru_tlaps)/=0 ) CALL read_error(2, 'hru_tlaps') 
         ENDIF
         IF ( getparam(MODNAME, 'max_missing', 1, 'integer', Max_missing)/=0 ) CALL read_error(2, 'max_missing')
@@ -226,7 +238,7 @@
             Tcrx(j) = Tmax_lapse(j, Start_month)*Elfac(j) - Tmax_aspect_adjust(j, Start_month)
             Tcrn(j) = Tmin_lapse(j, Start_month)*Elfac(j) - Tmin_aspect_adjust(j, Start_month)
           ENDDO
-        ELSE
+        ELSEIF ( Temp_flag==2 ) THEN
           DO i = 1, Active_hrus
             j = Hru_route_order(i)
             k = Hru_tsta(j)

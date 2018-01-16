@@ -134,7 +134,7 @@
 !***********************************************************************
       climateflow_decl = 0
 
-      Version_climateflow = 'climateflow.f90 2017-10-23 14:33:00Z'
+      Version_climateflow = 'climateflow.f90 2018-01-16 13:38:00Z'
       CALL print_module(Version_climateflow, 'Common States and Fluxes    ', 90)
       MODNAME = 'climateflow'
 
@@ -566,7 +566,7 @@
      &       'elev_units')/=0 ) CALL read_error(1, 'tsta_elev')
       ENDIF
 
-      IF ( Temp_flag==1 .OR. Temp_flag==2 .OR. Model==99 ) THEN
+      IF ( Temp_flag==1 .OR. Temp_flag==2 .OR. Temp_flag==8 .OR. Model==99 ) THEN
         ALLOCATE ( Hru_tsta(Nhru) )
         IF ( declparam(Temp_module, 'hru_tsta', 'nhru', 'integer', &
      &       '0', 'bounded', 'ntemp', &
@@ -576,7 +576,8 @@
       ENDIF
 
       ! 1sta, laps, xyz_dist, ide_dist, dist2
-      IF ( Temp_flag==1 .OR. Temp_flag==2 .OR. Temp_flag==3 .OR. Temp_flag==5 .OR. Temp_flag==6 .OR. Model==99 ) THEN
+      IF ( Temp_flag==1 .OR. Temp_flag==2 .OR. Temp_flag==3 .OR. Temp_flag==5 .OR. &
+     &     Temp_flag==6 .OR. Temp_flag==8 .OR. Model==99 ) THEN
         ALLOCATE ( Tmax_aspect_adjust(Nhru,12) )
         IF ( declparam(Temp_module, 'tmax_adj', 'nhru,nmonths', 'real', &
      &       '0.0', '-10.0', '10.0', &
@@ -823,7 +824,7 @@
 
       IF ( getparam('snowcomp', 'potet_sublim', Nhru, 'real', Potet_sublim)/=0 ) CALL read_error(2, 'potet_sublim')
 
-      IF ( Temp_flag==1 .OR. Temp_flag==2 .OR. Temp_flag==5 .OR. Temp_flag==6 ) THEN
+      IF ( Temp_flag==1 .OR. Temp_flag==2 .OR. Temp_flag==5 .OR. Temp_flag==6 .OR. Temp_flag==8 ) THEN
         IF ( getparam(Temp_module, 'tmax_adj', Nhru*12, 'real', Tmax_aspect_adjust)/=0 ) CALL read_error(2, 'tmax_adj')
         IF ( getparam(Temp_module, 'tmin_adj', Nhru*12, 'real', Tmin_aspect_adjust)/=0 ) CALL read_error(2, 'tmin_adj')
       ENDIF
@@ -836,7 +837,7 @@
         Basin_tsta = 0
       ENDIF
 
-      IF ( Temp_flag==1 .OR. Temp_flag==2 ) THEN
+      IF ( Temp_flag==1 .OR. Temp_flag==2 .OR. Temp_flag==8 ) THEN
         IF ( getparam(Temp_module, 'hru_tsta', Nhru, 'integer', Hru_tsta)/=0 ) CALL read_error(2, 'hru_tsta')
       ENDIF
 
