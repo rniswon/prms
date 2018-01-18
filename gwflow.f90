@@ -483,7 +483,7 @@
       IF ( In_out==0 ) THEN
         WRITE ( Restart_outunit ) MODNAME
         WRITE ( Restart_outunit ) Basin_gwstor, Basin_gwflow, Basin_gwsink, Basin_gwin, Basin_gwstor_minarea_wb, &
-     &          Gwminarea_flag, Basin_dnflow, Basin_gw_upslope, Basin_gwfarflow
+     &          Gwminarea_flag, Basin_dnflow, Basin_gw_upslope
         IF ( Gwminarea_flag==1 ) THEN
           WRITE ( Restart_outunit ) Gwstor_minarea_wb
           WRITE ( Restart_outunit ) Gwstor_minarea
@@ -504,7 +504,7 @@
         READ ( Restart_inunit ) module_name
         CALL check_restart(MODNAME, module_name)
         READ ( Restart_inunit ) Basin_gwstor, Basin_gwflow, Basin_gwsink, Basin_gwin, Basin_gwstor_minarea_wb, &
-     &         Gwminarea_flag, Basin_dnflow, Basin_gw_upslope, Basin_gwfarflow
+     &         Gwminarea_flag, Basin_dnflow, Basin_gw_upslope
         IF ( Gwminarea_flag==1 ) THEN ! could be error if someone turns off gwstor_min for restart
           READ ( Restart_inunit ) Gwstor_minarea_wb
           READ ( Restart_inunit ) Gwstor_minarea
