@@ -79,7 +79,7 @@
 !***********************************************************************
       gwflowdecl = 0
 
-      Version_gwflow = 'gwflow.f90 2017-06-29 11:49:00Z'
+      Version_gwflow = 'gwflow.f90 2018-01-18 16:59:00Z'
       CALL print_module(Version_gwflow, 'Groundwater                 ', 90)
       MODNAME = 'gwflow'
 
@@ -197,7 +197,7 @@
 
       IF ( declvar(MODNAME, 'basin_gwstor_minarea_wb', 'one', 1, 'double', &
      &     'Basin area-weighted average storage added to each GWR when storage is less than gwstor_min', &
-     &     'inches', Basin_gwstor_minarea_wb)/=0 ) CALL read_error(3, 'basin_gwstor_minarea_wbr_minarea_wb')
+     &     'inches', Basin_gwstor_minarea_wb)/=0 ) CALL read_error(3, 'basin_gwstor_minarea_wb')
 
       END FUNCTION gwflowdecl
 

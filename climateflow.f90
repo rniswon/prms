@@ -1164,7 +1164,7 @@
           WRITE ( Restart_outunit ) Vp_actual
           WRITE ( Restart_outunit ) Lwrad_net
           WRITE ( Restart_outunit ) Vp_slope
-          IF ( Et_flag==11.OR. Et_flag==6 ) WRITE ( Restart_outunit ) Vp_sat
+          IF ( Et_flag==11 .OR. Et_flag==6 ) WRITE ( Restart_outunit ) Vp_sat
         ENDIF
       ELSE
         READ ( Restart_inunit ) module_name
