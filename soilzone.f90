@@ -125,7 +125,7 @@
 !***********************************************************************
       szdecl = 0
 
-      Version_soilzone = 'soilzone.f90 2018-01-18 17:08:00Z'
+      Version_soilzone = 'soilzone.f90 2018-01-19 13:27:00Z'
       CALL print_module(Version_soilzone, 'Soil Zone Computations      ', 90 )
       MODNAME = 'soilzone'
 
@@ -1439,6 +1439,7 @@
       Basin_sz_stor_frac = Basin_sz_stor_frac*Basin_area_inv
       Basin_soil_lower_stor_frac = Basin_soil_lower_stor_frac*Basin_area_inv
       Basin_soil_rechr_stor_frac = Basin_soil_rechr_stor_frac*Basin_area_inv
+      IF ( Model==0 ) Gw2sm_grav_save = Gw2sm_grav
 
       END FUNCTION szrun
 
@@ -1723,7 +1724,7 @@
      &           Pref_flow_thrsh, Gvr2pfr, Ssr_to_gw, &
      &           Slow_flow, Slow_stor, Gvr2sm, Soil_to_gw, Gwin, Hru_type)
       USE PRMS_SOILZONE, ONLY: Gravity_stor_res, Sm2gw_grav, Hru_gvr_count, Hru_gvr_index, &
-     &    Gw2sm_grav, Gvr_hru_pct_adjusted, Gw2sm_grav_save
+     &    Gw2sm_grav, Gvr_hru_pct_adjusted
       USE PRMS_MODULE, ONLY: Dprst_flag, Print_debug
       USE PRMS_BASIN, ONLY: NEARZERO
       USE PRMS_SRUNOFF, ONLY: Dprst_seep_hru
@@ -1809,7 +1810,6 @@
         IF ( Dprst_flag==1 ) Sm2gw_grav(igvr) = Sm2gw_grav(igvr) + Dprst_seep_hru(Ihru)
 
       ENDDO ! end loop of GVRs in the HRU
-      Gw2sm_grav_save = Gw2sm_grav
 
       Gvr2pfr = SNGL( topfr )
       Slow_flow = SNGL( slflow )
