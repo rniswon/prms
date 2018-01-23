@@ -133,7 +133,6 @@
             CALL temp_set(j, tmx, tmn, Tmaxf(j), Tminf(j), Tavgf(j), &
      &                    Tmaxc(j), Tminc(j), Tavgc(j), Hru_area(j))
           ENDDO
-        ELSE
         ENDIF
         Basin_tmax = Basin_tmax*Basin_area_inv
         Basin_tmin = Basin_tmin*Basin_area_inv
