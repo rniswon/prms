@@ -125,7 +125,7 @@
 !***********************************************************************
       szdecl = 0
 
-      Version_soilzone = 'soilzone.f90 2018-01-23 14:01:00Z'
+      Version_soilzone = 'soilzone.f90 2018-01-24 16:03:00Z'
       CALL print_module(Version_soilzone, 'Soil Zone Computations      ', 90 )
       MODNAME = 'soilzone'
 
@@ -1793,9 +1793,9 @@
             Sm2gw_grav(igvr) = perc
             togw = togw + DBLE( perc )*frac
           ENDIF
-        ELSE
+!        ELSE ! GVRs can go negative if flux change in MODFLOW final iteration decreases, so don't set to 0
 !          if(depth<0.0) print *, 'depth<0', depth, ihru
-          depth = 0.0
+!          depth = 0.0
         ENDIF
 
         Gravity_stor_res(igvr) = depth
