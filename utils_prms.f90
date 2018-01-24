@@ -1,4 +1,4 @@
-      ! utils_prms.f90 2017-10-25 17:01:00Z
+      ! utils_prms.f90 2018-02-23 14:04:00Z
 !***********************************************************************
 !     Read CBH File to current time
 !***********************************************************************
@@ -831,7 +831,7 @@
 ! print module version information to user's screen
 !***********************************************************************
       SUBROUTINE print_module(Versn, Description, Ftntype)
-      USE PRMS_MODULE, ONLY: PRMS_output_unit, Model, Logunt
+      USE PRMS_MODULE, ONLY: PRMS_output_unit, Model, Logunt, Print_debug
       IMPLICIT NONE
       ! Arguments
       CHARACTER(LEN=*), INTENT(IN) :: Description, Versn
@@ -854,7 +854,7 @@
       blanks = ' '
       nb = 29 - (n + 3)
       string = Description//'   '//Versn(:n)//blanks(:nb)//Versn(n+is:nc)
-      PRINT '(A)', TRIM( string )
+      IF ( Print_debug>-1 ) PRINT '(A)', TRIM( string )
       WRITE ( Logunt, '(A)' ) TRIM( string )
       IF ( Model/=2 ) WRITE ( PRMS_output_unit, '(A)' ) TRIM( string )
       END SUBROUTINE print_module
@@ -980,6 +980,29 @@
         Iret = 1
       ENDIF
       END SUBROUTINE checkdim_param_limits
+
+!***********************************************************************
+!     Check parameter value against bounded dimension
+!***********************************************************************
+      SUBROUTINE checkdim_bounded_limits(Param, Bound, Param_value, Num_values, Lower_val, Upper_val, Iret)
+! Arguments
+      CHARACTER(LEN=*), INTENT(IN) :: Param, Bound
+      INTEGER, INTENT(IN) :: Num_values, Param_value(Num_values), Lower_val, Upper_val
+      INTEGER, INTENT(OUT) :: Iret
+! Local Variable
+      INTEGER :: i
+!***********************************************************************
+      Iret = 0
+      DO i = 1, Num_values
+        IF ( Param_value(i)<Lower_val .OR. Param_value(i)>Upper_val ) THEN
+          PRINT *, 'ERROR, out-of-bounds value for bounded parameter: ', Param
+          PRINT *, '       value:  ', Param_value(i), '; array index:', i
+          PRINT *, '       minimum:', Lower_val, '; maximum is dimension ', Bound, ' =', Upper_val
+          PRINT *, ' '
+          Iret = 1
+        ENDIF
+      ENDDO
+    END SUBROUTINE checkdim_bounded_limits
 
 !***********************************************************************
 !     Check parameter value < 0.0

@@ -129,7 +129,7 @@
 !***********************************************************************
       climateflow_decl = 0
 
-      Version_climateflow = 'climateflow.f90 2018-01-16 16:59:00Z'
+      Version_climateflow = 'climateflow.f90 2018-01-23 14:03:00Z'
       CALL print_module(Version_climateflow, 'Common States and Fluxes    ', 90)
       MODNAME = 'climateflow'
 
@@ -746,14 +746,14 @@
       INTEGER FUNCTION climateflow_init()
       USE PRMS_CLIMATEVARS
       USE PRMS_FLOWVARS
-      USE PRMS_MODULE, ONLY: Temp_flag, Precip_flag, Nhru, Temp_module, Precip_module, &
-     &    Solrad_module, Soilzone_module, Srunoff_module, Stream_order_flag, Ntemp, Nrain, Nsol, &
+      USE PRMS_MODULE, ONLY: Temp_flag, Precip_flag, Nhru, Temp_module, Precip_module, Parameter_check_flag, &
+     &    Solrad_module, Soilzone_module, Srunoff_module, Stream_order_flag, Ntemp, Nrain, Nsol, Nevap, &
      &    Init_vars_from_file, Inputerror_flag, Dprst_flag, Solrad_flag, Et_flag, Et_module, Humidity_cbh_flag
       USE PRMS_BASIN, ONLY: Elev_units, FEET2METERS, METERS2FEET, Active_hrus, Hru_route_order
       IMPLICIT NONE
 ! Functions
       INTEGER, EXTERNAL :: getparam
-      EXTERNAL :: checkdim_param_limits
+      EXTERNAL :: checkdim_param_limits, checkdim_bounded_limits
       REAL, EXTERNAL :: c_to_f, f_to_c
 ! Local variables
       INTEGER :: i, j, ierr
@@ -791,6 +791,7 @@
 
       IF ( Temp_flag==1 .OR. Temp_flag==2 ) THEN
         IF ( getparam(Temp_module, 'hru_tsta', Nhru, 'integer', Hru_tsta)/=0 ) CALL read_error(2, 'hru_tsta')
+        IF ( Parameter_check_flag>0 ) CALL checkdim_bounded_limits('hru_tsta', 'ntemp', Hru_tsta, Nhru, 1, Ntemp, ierr)
       ENDIF
 
       IF ( getparam(Precip_module, 'tmax_allsnow', Nhru*12, 'real', Tmax_allsnow)/=0 ) CALL read_error(2, 'tmax_allsnow')
@@ -836,19 +837,22 @@
         Solsta_flag = 0
         IF ( Nsol>0 ) THEN
           IF ( getparam(Solrad_module, 'basin_solsta', 1, 'integer', Basin_solsta)/=0 ) CALL read_error(2, 'basin_solsta')
-          CALL checkdim_param_limits(1, 'basin_solsta', 'nsol', Basin_solsta, 1, Nsol, Inputerror_flag)
 
           IF ( getparam(Solrad_module, 'rad_conv', 1, 'real', Rad_conv)/=0 ) CALL read_error(2, 'rad_conv')
 
           IF ( getparam(Solrad_module, 'hru_solsta', Nhru, 'integer', Hru_solsta)/=0 ) CALL read_error(2, 'hru_solsta')
+
+          IF ( Parameter_check_flag>0 ) THEN
+            CALL checkdim_param_limits(1, 'basin_solsta', 'nsol', Basin_solsta, 1, Nsol, Inputerror_flag)
+            CALL checkdim_bounded_limits('hru_solsta', 'nsol', Hru_solsta, Nhru, 0, Nsol, ierr)
+            IF ( ierr==1 ) Inputerror_flag = 1
+          ENDIF
+
           DO j = 1, Active_hrus
             i = Hru_route_order(j)
-            ierr = 0
-            CALL checkdim_param_limits(i, 'hru_solsta', 'nsol', Hru_solsta(i), 0, Nsol, ierr)
-            IF ( ierr==0 ) THEN
-              IF ( Hru_solsta(i)>0 ) Solsta_flag = 1
-            ELSE
-              Inputerror_flag = 1
+            IF ( Hru_solsta(i)>0 ) THEN
+              Solsta_flag = 1
+              EXIT
             ENDIF
           ENDDO
         ENDIF
@@ -863,6 +867,10 @@
 
       IF ( Use_pandata==1 ) THEN
         IF ( getparam(MODNAME, 'hru_pansta', Nhru, 'integer', Hru_pansta)/=0 ) CALL read_error(2, 'hru_pansta')
+        IF ( Parameter_check_flag>0 ) THEN
+          CALL checkdim_bounded_limits('hru_pansta', 'nevap', Hru_pansta, Nhru, 1, Nevap, ierr)
+          IF ( ierr==1 ) Inputerror_flag = 1
+        ENDIF
       ENDIF
 
       IF ( getparam('intcp', 'epan_coef', Nhru*12, 'real', Epan_coef)/=0 ) CALL read_error(2, 'epan_coef')

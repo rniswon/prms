@@ -75,7 +75,7 @@
 !***********************************************************************
       basdecl = 0
 
-      Version_basin = 'basin.f90 2017-10-25 16:59:00Z'
+      Version_basin = 'basin.f90 2018-01-23 14:04:00Z'
       CALL print_module(Version_basin, 'Basin Definition            ', 90)
       MODNAME = 'basin'
 
@@ -235,11 +235,11 @@
       USE PRMS_BASIN
       USE PRMS_MODULE, ONLY: Nhru, Nlake, Dprst_flag, &
      &    Print_debug, Model, PRMS_VERSION, Starttime, Endtime, &
-     &    Et_flag, Precip_flag, Cascadegw_flag
+     &    Et_flag, Precip_flag, Cascadegw_flag, Parameter_check_flag
       IMPLICIT NONE
 ! Functions
       INTEGER, EXTERNAL :: getparam
-      EXTERNAL write_outfile
+      EXTERNAL write_outfile, checkdim_bounded_limits
       INTRINSIC ABS, DBLE, SNGL
 ! Local Variables
       CHARACTER(LEN=69) :: buffer
@@ -274,6 +274,7 @@
       Lake_area = 0.0D0
       IF ( Nlake>0 ) THEN
         IF ( getparam(MODNAME, 'lake_hru_id', Nhru, 'integer', Lake_hru_id)/=0 ) CALL read_error(1, 'lake_hru_id')
+        IF ( Parameter_check_flag==1 ) CALL checkdim_bounded_limits('lake_hru_id', 'nlake', Lake_hru_id, Nhru, 0, Nlake, basinit)
       ELSE
         Lake_hru_id = 0
       ENDIF
