@@ -72,7 +72,7 @@
 !***********************************************************************
       map_resultsdecl = 0
 
-      Version_map_results = 'map_results.f90 2017-10-25 16:11:00Z'
+      Version_map_results = 'map_results.f90 2018-01-23 14:02:00Z'
       CALL print_module(Version_map_results, 'Output Summary              ', 90)
       MODNAME = 'map_results'
 
@@ -164,7 +164,7 @@
       IMPLICIT NONE
       INTRINSIC ABS, DBLE
       INTEGER, EXTERNAL :: getparam, getvartype, numchars, getvarsize
-      EXTERNAL read_error, PRMS_open_output_file
+      EXTERNAL read_error, PRMS_open_output_file, checkdim_bounded_limits
 ! Local Variables
       INTEGER :: i, jj, is, ios, ierr, size
       REAL, ALLOCATABLE, DIMENSION(:) :: map_frac
@@ -295,6 +295,7 @@
       IF ( Mapflg==0 ) THEN
         IF ( Nhru/=Nhrucell ) THEN
           IF ( getparam(MODNAME, 'gvr_hru_id', Nhrucell, 'integer', Gvr_hru_id)/=0 ) CALL read_error(2, 'gvr_hru_id')
+          IF ( Parameter_check_flag==1 ) CALL checkdim_bounded_limits('gvr_hru_id', 'nhru', Gvr_hru_id, Nhrucell, 1, Nhru, ierr)
         ELSE
           DO i = 1, Nhrucell
             Gvr_hru_id(i) = i
