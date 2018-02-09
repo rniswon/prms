@@ -122,14 +122,6 @@
             IF ( Soil_rechr_max_frac(i)>1.0 ) Soil_rechr_max_frac(i) = 1.0
             IF ( Soil_moist_init_frac(i)>1.0 ) Soil_moist_init_frac(i) = 1.0
             IF ( Ssstor_init_frac(i)>1.0 ) Ssstor_init_frac(i) = 1.0
-
-            DO j = 1, 12
-              IF ( Tmax_allrain_offset(i,j)<0.0 ) THEN
-                PRINT *, 'WARNING, negative tmax_allrain_offset:', Tmax_allrain_offset(i, j), ' set to 0'
-                PRINT *, 'allsnow:', Tmax_allsnow(i, j), 'allrain:',  Tmax_allrain(i, j), ' HRU:', i, ' month:', j
-                Tmax_allrain_offset(i, j) = 0.0
-              ENDIF
-            ENDDO
           ENDDO
 
           WRITE ( ounit, 100 ) 'soil_rechr_init_frac', Nhru
@@ -202,12 +194,12 @@
 
         IF ( Model_mode(:8)=='CONVERT4' ) THEN
           IF ( declparam(MODNAME, 'tmax_allrain_offset', 'nhru,nmonths', 'real', &
-     &       '1.0', '0.0', '50.0', &
-     &       'Precipitation is rain if HRU max temperature >= tmax_allsnow + this value', &
-     &       'Monthly (January to December) maximum air temperature'// &
-     &       ' when precipitation is assumed to be rain; if HRU air'// &
-     &       ' temperature is greater than or equal to tmax_allsnow plus this value, precipitation is rain', &
-     &       'temp_units')/=0 ) CALL read_error(1, 'tmax_allrain_offset')
+     &         '1.0', '0.0', '50.0', &
+     &         'Precipitation is rain if HRU max temperature >= tmax_allsnow + this value', &
+     &         'Monthly (January to December) maximum air temperature'// &
+     &         ' when precipitation is assumed to be rain; if HRU air'// &
+     &         ' temperature is greater than or equal to tmax_allsnow plus this value, precipitation is rain', &
+     &         'temp_units')/=0 ) CALL read_error(1, 'tmax_allrain_offset')
 
           IF ( declparam(MODNAME, 'soil_rechr_max_frac', 'nhru', 'real', &
      &         '1.0', '0.00001', '1.0', &

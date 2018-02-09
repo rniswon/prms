@@ -1,4 +1,4 @@
-      ! utils_prms.f90 2018-01-16 13:48:00Z
+      ! utils_prms.f90 2018-02-23 14:04:00Z
 !***********************************************************************
 !     Read CBH File to current time
 !***********************************************************************
@@ -858,7 +858,7 @@
       blanks = ' '
       nb = 29 - (n + 3)
       string = Description//'   '//Versn(:n)//blanks(:nb)//Versn(n+is:nc)
-      PRINT '(A)', TRIM( string )
+      IF ( Print_debug>-1 ) PRINT '(A)', TRIM( string )
       WRITE ( Logunt, '(A)' ) TRIM( string )
       IF ( Model/=2 ) WRITE ( PRMS_output_unit, '(A)' ) TRIM( string )
       END SUBROUTINE print_module
@@ -951,6 +951,29 @@
       END SUBROUTINE checkdim_param_limits
 
 !***********************************************************************
+!     Check parameter value against bounded dimension
+!***********************************************************************
+      SUBROUTINE checkdim_bounded_limits(Param, Bound, Param_value, Num_values, Lower_val, Upper_val, Iret)
+! Arguments
+      CHARACTER(LEN=*), INTENT(IN) :: Param, Bound
+      INTEGER, INTENT(IN) :: Num_values, Param_value(Num_values), Lower_val, Upper_val
+      INTEGER, INTENT(OUT) :: Iret
+! Local Variable
+      INTEGER :: i
+!***********************************************************************
+      Iret = 0
+      DO i = 1, Num_values
+        IF ( Param_value(i)<Lower_val .OR. Param_value(i)>Upper_val ) THEN
+          PRINT *, 'ERROR, out-of-bounds value for bounded parameter: ', Param
+          PRINT *, '       value:  ', Param_value(i), '; array index:', i
+          PRINT *, '       minimum:', Lower_val, '; maximum is dimension ', Bound, ' =', Upper_val
+          PRINT *, ' '
+          Iret = 1
+        ENDIF
+      ENDDO
+    END SUBROUTINE checkdim_bounded_limits
+
+!***********************************************************************
 !     Check parameter value < 0.0
 !***********************************************************************
       SUBROUTINE check_param_zero(Indx, Param, Param_value, Iret)
@@ -967,45 +990,3 @@
         Iret = 1
       ENDIF
       END SUBROUTINE check_param_zero
-
-!***********************************************************************
-! Sanity checks for bounded parameters
-!***********************************************************************
-      SUBROUTINE check_bounded_params()
-      USE PRMS_MODULE, ONLY: Temp_flag, Precip_flag, Ntemp, Nevap, Nsol, Nrain, Inputerror_flag, Et_flag, Solrad_flag
-      USE PRMS_BASIN, ONLY: Active_hrus, Hru_route_order
-      USE PRMS_CLIMATEVARS, ONLY: Hru_tsta, Hru_pansta, Use_pandata, Basin_solsta, Hru_solsta, Basin_tsta
-      USE PRMS_OBS, ONLY: Nwind, Nhumid
-      USE PRMS_PRECIP_1STA_LAPS, ONLY: Hru_psta, Hru_plaps
-      USE PRMS_TEMP_1STA_LAPS, ONLY: Hru_tlaps
-      USE PRMS_POTET_PM_STA, ONLY: Hru_windspeed_sta, Hru_humidity_sta
-      IMPLICIT NONE
-! Functions
-      EXTERNAL :: checkdim_param_limits
-! Local variables
-      INTEGER :: i, j, check_tsta, check_solsta, check_psta
-!***********************************************************************
-      check_tsta = 0
-      IF ( Temp_flag==1 .OR. Temp_flag==2 .OR. Temp_flag==8 ) check_tsta = 1
-      check_solsta = 0
-      IF ( (Solrad_flag==1 .OR. Solrad_flag==2) .AND. Nsol>0 ) THEN
-        check_solsta = 1
-        CALL checkdim_param_limits(1, 'basin_solsta', 'nsol', Basin_solsta, 1, Nsol, Inputerror_flag)
-      ENDIF
-      check_psta = 0
-      IF ( Precip_flag==1 .OR. Precip_flag==2 ) check_psta = 1
-      DO j = 1, Active_hrus
-        i = Hru_route_order(j)
-        IF ( check_tsta==1 ) CALL checkdim_param_limits(i, 'hru_tsta', 'ntemp', Hru_tsta(i), 1, Ntemp, Inputerror_flag)
-        IF ( check_psta==1 ) CALL checkdim_param_limits(i, 'hru_psta', 'nrain', Hru_psta(i), 1, Nrain, Inputerror_flag)
-        IF ( Use_pandata==1 ) CALL checkdim_param_limits(i, 'hru_pansta', 'nevap', Hru_pansta(i), 1, Nevap, Inputerror_flag)
-        IF ( check_solsta==1 ) CALL checkdim_param_limits(i, 'hru_solsta', 'nsol', Hru_solsta(i), 0, Nsol, Inputerror_flag)
-        IF ( Temp_flag==2 ) CALL checkdim_param_limits(i, 'hru_tlaps', 'ntemp', Hru_tlaps(j), 1, Ntemp, Inputerror_flag)
-        IF ( Precip_flag==2 ) CALL checkdim_param_limits(i, 'hru_plaps', 'nrain', Hru_plaps(i), 1, Nrain, Inputerror_flag)
-        IF ( Temp_flag<4 ) CALL checkdim_param_limits(1, 'basin_tsta', 'ntemp', Basin_tsta, 1, Ntemp, Inputerror_flag)
-        IF ( Et_flag==6 ) THEN
-          CALL checkdim_param_limits(i, 'hru_windspeed_sta', 'nwind', Hru_windspeed_sta(i), 1, Nwind, Inputerror_flag)
-          CALL checkdim_param_limits(i, 'hru_humidity_sta', 'nhumid', Hru_humidity_sta(i), 1, Nhumid, Inputerror_flag)
-        ENDIF
-      ENDDO
-      END SUBROUTINE check_bounded_params
