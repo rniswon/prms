@@ -6,8 +6,10 @@
 !   Local Variables
       CHARACTER(LEN=11), SAVE :: MODNAME
       INTEGER, SAVE, ALLOCATABLE :: Seg_hru_num(:), Seg_close(:)
-      REAL, SAVE, ALLOCATABLE ::  Tyear(:,:), T30(:,:), T_ss(:), Seg_carea_inv(:)
-      REAL, SAVE, ALLOCATABLE :: T_gw(:), T_ground(:), Tyr_avg(:), T30_avg(:) !, Flowsum(:)
+!      REAL, SAVE, ALLOCATABLE ::  Tyear(:,:), T30(:,:), T_ss(:), Seg_carea_inv(:)
+      REAL, SAVE, ALLOCATABLE ::  T_ss(:), Seg_carea_inv(:)
+!      REAL, SAVE, ALLOCATABLE :: T_gw(:), T_ground(:), Tyr_avg(:), T30_avg(:) !, Flowsum(:)
+      REAL, SAVE, ALLOCATABLE :: T_gw(:), T_ground(:), Flowsum(:)
       ! next variables only needed of strm_temp_shade_flag = 0
       REAL, SAVE, ALLOCATABLE :: Seg_lat(:), Shade_jday(:, :), Svi_jday(:, :)
       ! rsr, at some point it would be good to have option to input seg_lat and seg_elev
@@ -16,9 +18,13 @@
       REAL, SAVE, ALLOCATABLE :: Sin_declination(:, :), Sin_lat_decl(:, :), Cos_lat_decl(:, :), Sin_alrs(:, :)
       REAL, SAVE, ALLOCATABLE :: Max_solar_altitude(:, :), Level_sunset_azimuth(:, :)
       REAL, SAVE, ALLOCATABLE :: Local_sunset_hour_angle(:, :), Local_sunrise_hour_angle(:, :)
+      REAL, SAVE, ALLOCATABLE :: gw_sum(:), ss_sum(:)
+      REAL, SAVE, ALLOCATABLE ::  gw_silo(:,:), ss_silo(:,:)
+      INTEGER, SAVE ::  gw_index, ss_index
+
 !   Declared Variables
       REAL, SAVE, ALLOCATABLE :: Temp_avg(:), Upstrm_temp(:), Dlit(:)
-      REAL, SAVE, ALLOCATABLE :: Seg_humid(:), Seg_maxtemp(:), Seg_width(:), Seg_ccov(:)
+      REAL, SAVE, ALLOCATABLE :: Seg_humid(:), Seg_maxtemp(:), Seg_width(:), Seg_ccov(:), seg_shade(:)
       REAL, SAVE, ALLOCATABLE :: T_roff(:), Seg_melt(:), Seg_rain(:)
       DOUBLE PRECISION, ALLOCATABLE :: Seg_potet(:)
 !   Segment Parameters
@@ -113,7 +119,7 @@
 !***********************************************************************
       stream_temp_decl = 0
 
-      Version_stream_temp = 'stream_temp.f90 2017-09-27 15:39:00Z'
+      Version_stream_temp = 'stream_temp.f90 2018-02-08 15:05:00Z'
       CALL print_module(Version_stream_temp, 'Stream Temperature          ', 90)
       MODNAME = 'stream_temp'
 
@@ -130,63 +136,87 @@
       ALLOCATE ( Seg_width(Nsegment) )
       CALL declvar_real( MODNAME, 'seg_width', 'nsegment', Nsegment, 'real', &
      &     'Width of each segment', &
-     &     'meters', Seg_width)
+     &     'meters', Seg_width )
 
       ALLOCATE ( Temp_avg(Nsegment) ) ! previous ??
       CALL declvar_real( MODNAME, 'temp_avg', 'nsegment', Nsegment, 'real', &
      &     'Average stream temperature based on all inflows and previous temperature for each segment', &
-     &     'degrees Celsius', Temp_avg)
+     &     'degrees Celsius', Temp_avg )
 
       ALLOCATE ( Upstrm_temp(Nsegment) )
       CALL declvar_real( MODNAME, 'upstrm_temp', 'nsegment', Nsegment, 'real', &
      &     'Temperature of streamflow entering each segment', &
-     &     'degrees Celsius', Upstrm_temp)
+     &     'degrees Celsius', Upstrm_temp )
 
       ALLOCATE ( Seg_humid(Nsegment) )
       CALL declvar_real( MODNAME, 'seg_humid', 'nsegment', Nsegment, 'real', &
      &     'Area-weighted average relative humidity for each segment from HRUs contributing flow to the segment', &
-     &     'decimal fraction', Seg_humid)
+     &     'decimal fraction', Seg_humid )
 
       ALLOCATE ( Seg_maxtemp(Nsegment) )
       CALL declvar_real( MODNAME, 'seg_maxtemp', 'nsegment', Nsegment, 'real', &
      &     'Area-weighted average maximum air temperature for each segment from HRUs contributing flow to the segment', &
-     &     'degrees Celsius', Seg_maxtemp)
+     &     'degrees Celsius', Seg_maxtemp )
 
       ALLOCATE ( Seg_melt(Nsegment) )
       CALL declvar_real( MODNAME, 'seg_melt', 'nsegment', Nsegment, 'real', &
      &     'Area-weighted average snowmelt for each segment from HRUs contributing flow to the segment', &
-     &     'inches', Seg_melt)
+     &     'inches', Seg_melt )
 
       ALLOCATE ( Seg_rain(Nsegment) )
       CALL declvar_real( MODNAME, 'seg_rain', 'nsegment', Nsegment, 'real', &
      &     'Area-weighted average rainfall for each segment from HRUs contributing flow to the segment', &
-     &     'inches', Seg_rain)
+     &     'inches', Seg_rain )
 
       ALLOCATE ( T_roff(Nsegment) )
       CALL declvar_real( MODNAME, 't_roff', 'nsegment', Nsegment, 'real', &
      &     'Area-weighted average air temperature for each segment from HRUs contributing flow to the segment', &
-     &     'degrees Celsius', T_roff)
+     &     'degrees Celsius', T_roff )
 
       ALLOCATE ( Seg_potet(Nsegment) )
       CALL declvar_dble( MODNAME, 'seg_potet', 'nsegment', Nsegment, 'double', &
      &     'Hru area-weighted average potential ET for each segment', &
-     &     'inches', Seg_potet)
+     &     'inches', Seg_potet )
 
       ALLOCATE ( Seg_ccov(Nsegment) )
       CALL declvar_real( MODNAME, 'seg_ccov', 'nsegment', Nsegment, 'real', &
      &     'Area-weighted average cloud cover fraction for each segment from HRUs contributing flow to the segment', &
      &     'decimal fraction', Seg_ccov )
+      
+      ALLOCATE(Seg_shade(Nsegment))
+      CALL declvar_real( MODNAME, 'seg_shade', 'nsegment', Nsegment, 'real', &
+     &     'Area-weighted average shade fraction for each segment', &
+     &     'decimal fraction', seg_shade )
 
       ALLOCATE ( Dlit(Nsegment) )
       CALL declvar_real( MODNAME, 'dlit', 'nsegment', Nsegment, 'real', &
      &     'Hours of daylight', &
-     &     'hours', Dlit)
+     &     'hours', Dlit )
+      
+      ALLOCATE(t_gw(Nsegment))
+      CALL declvar_real( MODNAME, 't_gw', 'nsegment', Nsegment, 'real', &
+     &     'groundwater temperature', &
+     &     'degrees C', t_gw )
+      
+      ALLOCATE(t_ss(Nsegment))
+      CALL declvar_REAL( MODNAME, 't_ss', 'nsegment', Nsegment, 'real', &
+     &     'subsurface temperature', &
+     &     'degrees C', t_ss )
+      
+      ALLOCATE(T_ground(Nsegment))
+      CALL declvar_real( MODNAME, 't_ground', 'nsegment', Nsegment, 'real', &
+     &     'ground temperature', &
+     &     'degrees C', t_ground )
 
       ALLOCATE ( Seg_elev(Nsegment), Press(Nsegment) ) !, Flowsum(Nsegment) )
-      ALLOCATE ( T_ss(Nsegment), T_gw(Nsegment), T_ground(Nsegment) )
-      ALLOCATE ( Tyr_avg(Nsegment), T30_avg(Nsegment), Seg_hru_num(Nsegment) )
-      ALLOCATE ( Tyear(Nsegment, 365), T30(Nsegment, 300), Seg_carea_inv(Nsegment) )
+      ALLOCATE ( Seg_hru_num(Nsegment) )
+
+!      ALLOCATE ( Tyear(Nsegment, 365), T30(Nsegment, 300), Seg_carea_inv(Nsegment) )
+      ALLOCATE (Seg_carea_inv(Nsegment) )
+
       ALLOCATE ( Seg_close(Nsegment) )
+      ALLOCATE (gw_sum(Nsegment), ss_sum(Nsegment))
+      ALLOCATE (gw_silo(nsegment,365), ss_silo(nsegment,365))
 
       IF ( declparam( MODNAME, 'albedo', 'one', 'real', &
      &     '0.10', '0.0', '1.0', &
@@ -447,27 +477,36 @@
       IF ( getparam( MODNAME, 'width_values', Nsegment*width_dim, 'real', Width_values)/= 0 ) CALL read_error(2, 'width_values')
       IF ( getparam( MODNAME, 'albedo', 1, 'real', Albedo)/=0 ) CALL read_error(2, 'albedo')
       IF ( getparam( MODNAME, 'seg_length', Nsegment, 'real', Seg_length)/=0 ) CALL read_error(2, 'seg_length')
+
+! DANGER markstro
+! seems like meters need to be converted to km
+      write(*,*) "converting seg_length to km"
+      Seg_length = Seg_length / 1000.0 
+
 !      IF ( getparam( MODNAME, 'Mann_n', Nsegment, 'real', Mann_n)/=0 ) CALL read_error(2, 'Mann_n')
       IF ( getparam( MODNAME, 'seg_slope', Nsegment, 'real', Seg_slope)/=0 ) CALL read_error(2, 'seg_slope')
-      IF ( getparam( MODNAME, 'azrh', Nsegment, 'real', Azrh)/=0 ) CALL read_error(2, 'azrh')
-      IF ( getparam( MODNAME, 'alte', Nsegment, 'real', Alte)/=0 ) CALL read_error(2, 'alte')
-      IF ( getparam( MODNAME, 'altw', Nsegment, 'real', Altw)/=0 ) CALL read_error(2, 'altw')
-      IF ( getparam( MODNAME, 'vce', Nsegment, 'real', Vce)/=0 ) CALL read_error(2, 'vce')
-      IF ( getparam( MODNAME, 'vdemx', Nsegment, 'real', Vdemx)/=0 ) CALL read_error(2, 'vdemx')
-      IF ( getparam( MODNAME, 'vdemn', Nsegment, 'real', Vdemn)/=0 ) CALL read_error(2, 'vdemn')
-      IF ( getparam( MODNAME, 'vhe', Nsegment, 'real', Vhe)/=0 ) CALL read_error(2, 'vhe')
-      IF ( getparam( MODNAME, 'voe', Nsegment, 'real', Voe)/=0 ) CALL read_error(2, 'voe')
-      IF ( getparam( MODNAME, 'vcw', Nsegment, 'real', Vcw)/=0 ) CALL read_error(2, 'vcw')
-      IF ( getparam( MODNAME, 'vdwmx', Nsegment, 'real', Vdwmx)/=0 ) CALL read_error(2, 'vdwmx')
-      IF ( getparam( MODNAME, 'vdwmn', Nsegment, 'real', Vdwmn)/=0 ) CALL read_error(2, 'vdwmn')
-      IF ( getparam( MODNAME, 'vhw', Nsegment, 'real', Vhw)/=0 ) CALL read_error(2, 'vhw')
-      IF ( getparam( MODNAME, 'vow', Nsegment, 'real', Vow)/=0 ) CALL read_error(2, 'vow')
-      IF ( getparam( MODNAME, 'gw_init', Nsegment, 'real', Gw_init)/=0 ) CALL read_error(2, 'gw_init')
-      IF ( getparam( MODNAME, 'ss_init', Nsegment, 'real', Ss_init)/=0 ) CALL read_error(2, 'ss_init')
-      IF ( Stream_temp_shade_flag==1 ) THEN
+      
+      IF ( Stream_temp_shade_flag==0 ) THEN
+          IF ( getparam( MODNAME, 'azrh', Nsegment, 'real', Azrh)/=0 ) CALL read_error(2, 'azrh')
+          IF ( getparam( MODNAME, 'alte', Nsegment, 'real', Alte)/=0 ) CALL read_error(2, 'alte')
+          IF ( getparam( MODNAME, 'altw', Nsegment, 'real', Altw)/=0 ) CALL read_error(2, 'altw')
+          IF ( getparam( MODNAME, 'vce', Nsegment, 'real', Vce)/=0 ) CALL read_error(2, 'vce')
+          IF ( getparam( MODNAME, 'vdemx', Nsegment, 'real', Vdemx)/=0 ) CALL read_error(2, 'vdemx')
+          IF ( getparam( MODNAME, 'vdemn', Nsegment, 'real', Vdemn)/=0 ) CALL read_error(2, 'vdemn')
+          IF ( getparam( MODNAME, 'vhe', Nsegment, 'real', Vhe)/=0 ) CALL read_error(2, 'vhe')
+          IF ( getparam( MODNAME, 'voe', Nsegment, 'real', Voe)/=0 ) CALL read_error(2, 'voe')
+          IF ( getparam( MODNAME, 'vcw', Nsegment, 'real', Vcw)/=0 ) CALL read_error(2, 'vcw')
+          IF ( getparam( MODNAME, 'vdwmx', Nsegment, 'real', Vdwmx)/=0 ) CALL read_error(2, 'vdwmx')
+          IF ( getparam( MODNAME, 'vdwmn', Nsegment, 'real', Vdwmn)/=0 ) CALL read_error(2, 'vdwmn')
+          IF ( getparam( MODNAME, 'vhw', Nsegment, 'real', Vhw)/=0 ) CALL read_error(2, 'vhw')
+          IF ( getparam( MODNAME, 'vow', Nsegment, 'real', Vow)/=0 ) CALL read_error(2, 'vow')
+      ELSE
         IF ( getparam( MODNAME, 'segshade_sum', Nsegment, 'real', Segshade_sum)/=0 ) CALL read_error(2, 'segshade_sum')
         IF ( getparam( MODNAME, 'segshade_win', Nsegment, 'real', Segshade_win)/=0 ) CALL read_error(2, 'segshade_win')
       ENDIF
+      
+      IF ( getparam( MODNAME, 'gw_init', Nsegment, 'real', Gw_init)/=0 ) CALL read_error(2, 'gw_init')
+      IF ( getparam( MODNAME, 'ss_init', Nsegment, 'real', Ss_init)/=0 ) CALL read_error(2, 'ss_init')
       IF ( getparam( MODNAME, 'ss_tau', 1, 'integer', Ss_tau)/=0 ) CALL read_error(2, 'ss_tau')
       IF ( getparam( MODNAME, 'gw_tau', 1, 'integer', Gw_tau)/=0 ) CALL read_error(2, 'Gw_tau')
       ierr = 0
@@ -497,18 +536,35 @@
         Seg_humid = 0.0
         Seg_width = 0.0
         Seg_ccov = 0.0
-        T_roff = 0.0
-        T_ground = 0.0
-      ENDIF
-      IF ( Init_vars_from_file == 0 .OR. Init_vars_from_file==2 .OR. Init_vars_from_file==8 ) THEN
+! markstro
+!        DO i = 1, Nsegment
+!          DO j = 1, 365
+!            gw_silo(i,j) =  gw_init(i)
+!            ss_silo(i,j) =  ss_init(i)
+!          ENDDO
+!        ENDDO
+
         DO i = 1, Nsegment
           DO j = 1, 365
-            Tyear(i,j) =  Gw_init(i)
-          ENDDO
-          DO k = 1, 30
-            T30(i,k) = Ss_init(i)
+            gw_silo(i,j) =  0.0
+            ss_silo(i,j) =  0.0
           ENDDO
         ENDDO
+
+
+        T_roff = 0.0
+        T_ground = 0.0
+
+! markstro
+        T_gw = 0.0
+        T_ss = 0.0
+        gw_sum = 0.0
+        ss_sum = 0.0
+! these are set to zero because they will be incremented to 1 down in the run function
+        gw_index = 0
+        ss_index = 0
+
+! end markstro
       ENDIF
 
       IF ( Stream_temp_shade_flag==0 ) THEN
@@ -537,7 +593,7 @@
       ENDDO
       DO i = 1, Nsegment ! set values for all segments with HRUs so next loop has maximum possible values
         IF ( Seg_hru_num(i)>0 ) THEN
-          Seg_carea_inv(i) = 1.0/Segment_hruarea(i)
+          Seg_carea_inv(i) = SNGL(1.0/Segment_hruarea(i))
           IF ( Stream_temp_shade_flag==0 ) Seg_lat(i) = Seg_lat(i)*Seg_carea_inv(i) * DEG_TO_RAD
         ENDIF
         IF ( Seg_length(i)<NEARZERO ) THEN
@@ -646,6 +702,7 @@
 
       END FUNCTION stream_temp_init
 
+
 !***********************************************************************
 !     stream_temp_run - Computes stream temperatures
 !***********************************************************************
@@ -654,21 +711,29 @@
       USE PRMS_MODULE, ONLY: Nsegment
       USE PRMS_BASIN, ONLY: Active_hrus, Hru_route_order, Hru_area, NEARZERO
       USE PRMS_SET_TIME, ONLY: Summer_flag, Nowmonth
-      USE PRMS_CLIMATEVARS, ONLY: Tavgc, Tmaxc, Potet, Hru_rain, Basin_cloud_cover, Cloud_cover_hru, Tmax_hru, Tmin_hru
+!      USE PRMS_CLIMATEVARS, ONLY: Tavgc, Tmaxc, Potet, Hru_rain, Basin_cloud_cover, Cloud_cover_hru, Tmax_hru, Tmin_hru
+      USE PRMS_CLIMATEVARS, ONLY: Tavgc, Tmaxc, Potet, Hru_rain, Tmax_hru, Tmin_hru
       USE PRMS_FLOWVARS, ONLY: Seg_outflow
       USE PRMS_CLIMATE_HRU, ONLY: Humidity_hru
       USE PRMS_SNOW, ONLY: Snowmelt
       USE PRMS_ROUTING, ONLY: Hru_segment, Tosegment, Segment_order
       USE PRMS_OBS, ONLY: Humidity
+      USE PRMS_BASIN, ONLY: CFS2CMS_CONV
+
+      USE PRMS_SET_TIME, ONLY: Nowyear, Nowmonth, Nowday
+
       IMPLICIT NONE
 ! Functions
       INTRINSIC :: DBLE
       REAL, EXTERNAL :: twavg, twmax, get_segwidth
       EXTERNAL :: equilb, lat_inflow, shday
 ! Local Variables
-      REAL :: harea, carea, svi, flowsum
-      INTEGER :: i, j, k, yday, mday, xday, gday, toseg, iseg
-      REAL :: tlat, te, ak1, ak2, shade, ccov
+      REAL :: harea, carea, svi, fs
+      DOUBLE PRECISION :: basin_cloud_cover
+      INTEGER :: i, j, k, toseg, iseg
+      REAL :: tlat, te, ak1, ak2, ccov
+      REAL :: outflow
+      INTEGER :: index
       DOUBLE PRECISION :: qlat
 !***********************************************************************
       stream_temp_run = 0
@@ -693,7 +758,7 @@
       Seg_melt = 0.0
       Seg_rain = 0.0
       Basin_cloud_cover = 0.0D0
-      Flowsum = 0.0
+!      Flowsum = 0.0
       ! Compute segment lateral inflow temperatures and segment meteorological values
       DO k = 1, Active_hrus
         j = Hru_route_order(k)
@@ -703,22 +768,26 @@
         ELSEIF ( ccov>1.0 ) THEN
           ccov = 1.0
         ENDIF
-        Cloud_cover_hru(j) = ccov
+!        Cloud_cover_hru(j) = ccov
+
         harea = Hru_area(j)
         Basin_cloud_cover = Basin_cloud_cover + DBLE( ccov*harea )
         i = Hru_segment(j)
         IF ( i==0 ) CYCLE
+
         T_roff(i) = T_roff(i) + Tavgc(j)*harea
         Seg_maxtemp(i) = Seg_maxtemp(i) + Tmaxc(j)*harea
+        
         IF ( Strmtemp_humidity_flag==0 ) Seg_humid(i) = Seg_humid(i) + Humidity_hru(j)*harea
-        Seg_ccov(i) = Seg_ccov(i) + Cloud_cover_hru(j)*harea
+
+!        Seg_ccov(i) = Seg_ccov(i) + Cloud_cover_hru(j)*harea
+        Seg_ccov(i) = Seg_ccov(i) + ccov*harea
+
         Seg_potet(i) = Seg_potet(i) + DBLE( Potet(j)*harea )
         Seg_melt(i) = Seg_melt(i) + Snowmelt(j)*harea
         Seg_rain(i) = Seg_rain(i) + Hru_rain(j)*harea 
       ENDDO
 
-! Segment loop to find and assign temperatures.
-      Upstrm_temp = 0.0
       DO j = 1, Nsegment
         i = Segment_order(j)
         toseg = Tosegment(i)
@@ -741,53 +810,117 @@
           Seg_rain(i) = Seg_rain(iseg)
           IF ( Strmtemp_humidity_flag==0 ) Seg_humid(i) = Seg_humid(iseg)*Seg_carea_inv(iseg) ! ??
         ENDIF
-! Store temps in arrays over residence times
-        DO yday = 1, (Gw_tau - 1)
-          Tyear(i, yday) = Tyear(i, yday + 1)
-        ENDDO
-        Tyear(i, Gw_tau) = T_roff(i)
-        IF (Gw_tau < 365) THEN
-          DO  gday = (Gw_tau + 1), 365
-            Tyear (i, gday) = 0.0
-          ENDDO
-        ENDIF
-        DO mday = 1, (Ss_tau - 1)
-          T30 (i, mday) = T30 (i, mday + 1)
-        ENDDO
-        T30(i, Ss_tau) = T_roff(i)
-        IF (Ss_tau < 300) THEN
-          DO  xday = (Ss_tau + 1), 300
-            T30 (i, xday) = 0.0
-          ENDDO
-        ENDIF
-        Tyr_avg = (SUM ( Tyear, DIM = 2 ))/Gw_tau
-        T30_avg = (SUM ( T30 , DIM = 2 ))/Ss_tau
-        T_gw(i) = Tyr_avg(i)
-        T_ss(i) = T30_avg(i)
-        IF ( T_gw(i) < NEARZERO ) T_gw = NEARZERO
-        IF ( T_ss(i) < NEARZERO ) T_ss = NEARZERO
+      ENDDO
+
+! Segment loop to find and assign temperatures.
+      Upstrm_temp = 0.0
+
+      if (gw_index >= gw_tau) then
+         gw_index = 1
+      else
+         gw_index = gw_index + 1
+      endif
+
+      if (ss_index >= ss_tau) then
+         ss_index = 1
+      else
+         ss_index = ss_index + 1
+      endif
+
+      DO j = 1, Nsegment
+        i = Segment_order(j)
+        toseg = Tosegment(i)
+        
+! GW moving average       
+        gw_sum(i) = gw_sum(i) - gw_silo(i, gw_index)
+        gw_silo(i, gw_index) = T_roff(i)
+        gw_sum(i) = gw_sum(i) + gw_silo(i, gw_index)
+        T_gw(i) = gw_sum(i) / gw_tau
+
+! SS moving average
+        ss_sum(i) = ss_sum(i) - ss_silo(i, ss_index)
+        ss_silo(i, ss_index) = T_roff(i)
+        ss_sum(i) = ss_sum(i) + ss_silo(i, ss_index)
+        T_ss(i) = ss_sum(i) / ss_tau
+
+
+!        DO yday = 1, (Gw_tau - 1)
+!          Tyear(i, yday) = Tyear(i, yday + 1)
+!        ENDDO
+!        Tyear(i, Gw_tau) = T_roff(i)
+!        IF (Gw_tau < 365) THEN
+!          DO  gday = (Gw_tau + 1), 365
+!            Tyear (i, gday) = 0.0
+!          ENDDO
+!        ENDIF
+!        DO mday = 1, (Ss_tau - 1)
+!          T30 (i, mday) = T30 (i, mday + 1)
+!        ENDDO
+!        T30(i, Ss_tau) = T_roff(i)
+!        IF (Ss_tau < 300) THEN
+!          DO  xday = (Ss_tau + 1), 300
+!            T30 (i, xday) = 0.0
+!          ENDDO
+!        ENDIF
+!        Tyr_avg = (SUM ( Tyear, DIM = 2 ))/Gw_tau
+!        T30_avg = (SUM ( T30 , DIM = 2 ))/Ss_tau
+!        T_gw(i) = Tyr_avg(i)
+!        T_ss(i) = T30_avg(i)
+!        
+!        IF ( T_gw(i) < NEARZERO ) T_gw = NEARZERO
+!        IF ( T_ss(i) < NEARZERO ) T_ss = NEARZERO
+
+
+
 ! Find upstream intitial inflow temperature for segment i
+! i is the current segment
+! k is the upstream segment
         Upstrm_temp(i) = 0.0
-        flowsum = 0
+        fs = 0
         DO k = 1, Nsegment
           IF ( Tosegment(k)==i ) THEN
-            Upstrm_temp(i) = Upstrm_temp(i) + (Temp_avg(k) * Seg_outflow(i))
-            flowsum = flowsum + Seg_outflow(i)
+! markstro
+!            Upstrm_temp(i) = Upstrm_temp(i) + (Temp_avg(k) * Seg_outflow(i))
+!            fs = fs + Seg_outflow(i)
+            Upstrm_temp(i) = Upstrm_temp(i) + (Temp_avg(k) * SNGL(Seg_outflow(k)))
+            fs = fs + SNGL(Seg_outflow(k))
+
           ENDIF
         ENDDO
         IF ( Upstrm_temp(i) == 0.0 ) THEN
           Upstrm_temp(i) = Temp_avg(i)
           IF ( Upstrm_temp(i) <= 0 ) Upstrm_temp(i) = T_roff(i)
-        ELSEIF ( flowsum > 0 ) THEN
-          Upstrm_temp(i) = Upstrm_temp(i) / flowsum
+        ELSEIF ( fs > 0 ) THEN
+          Upstrm_temp(i) = Upstrm_temp(i) / fs
         ELSE
           Upstrm_temp(i) = T_roff(i)
         ENDIF
+        
+        ! DANGER this moved out of shday so that width is still calculated when shade is specified as parameter
+        ! Assign flow-dependent segment width value
+        DO k = 1, Nsegment
+            IF ( Width_dim == 1 ) THEN
+                Seg_width(k) = Width_values(k, 1)
+            ELSE
+                outflow = SNGL( Seg_outflow(k) * CFS2CMS_CONV )
+                IF ( (outflow > Width_flow(1)) .AND. (outflow < Width_flow(2)) ) THEN
+                    index = INT((outflow - Width_flow(1))/Width_flow(3))
+                    index = index + 1
+                    Seg_width(k) = Width_values(k, index)
+                ELSEIF ( outflow >= Width_flow(2) ) THEN
+                    Seg_width(k) = Width_values(k, Width_dim)
+                ELSE
+                    Seg_width(k) = Width_values(k, 1)
+                ENDIF
+            ENDIF
+        ENDDO
+        ! END DANGER
+      
         IF ( Stream_temp_shade_flag==1 ) THEN
           IF ( Summer_flag==0 ) THEN
-            shade = Segshade_win(i)
+            seg_shade(i) = Segshade_win(i)
           ELSE
-            shade = Segshade_sum(i)
+            seg_shade(i) = Segshade_sum(i)
           ENDIF
 !          svi = shade
            svi = 0.0
@@ -795,7 +928,7 @@
 !          shade = Shade_jday(i, Jday)
 !          svi = Svi_jday(i, Jday)
 !          Seg_width(i) = get_segwidth(i)
-          CALL shday(i, shade, svi)
+          CALL shday(i, seg_shade(i), svi)
         ENDIF
         qlat = 0.0D0
         tlat = 0.0
@@ -813,10 +946,18 @@
 !        ENDIF
 !        IF ( te < 0.0 ) te = 0.0
 !        Upstrm_temp(i) = te
+        
         CALL lat_inflow(qlat, tlat, i, T_ground(i), T_gw(i), T_roff(i), T_ss(i), Upstrm_temp(i), &
      &                  Seg_melt(i), Seg_rain(i))
-        CALL equilb(te, ak1, ak2, shade, svi, i)
-        Temp_avg(i) = twavg(Upstrm_temp(i), qlat, tlat, te, ak1, ak2, i, Seg_width(i), Seg_length(i))
+        CALL equilb(te, ak1, ak2, seg_shade(i), svi, i)
+        
+        Temp_avg(i) = twavg(upstrm_temp(i), qlat, tlat, te, ak1, ak2, i, seg_width(i), seg_length(i))
+        if (Temp_avg(i) .ne. Temp_avg(i)) then
+            write(*,*) "NaNi = ", i, nowyear, nowmonth, nowday
+        end if
+        
+        !print *, "DANGER adding 0.67"
+        !Temp_avg(i) = Temp_avg(i) + 0.67
 
 ! need temp_avg and t_roff ??
 !        IF ( Upstrm_temp(i) == 0.0 ) THEN
@@ -1159,10 +1300,9 @@
 !      Vow    = OFFSET, WEST SIDE VEGETATION
 !
       USE PRMS_SET_TIME, ONLY: Jday
-      USE PRMS_STRMTEMP, ONLY: Azrh, Alte, Altw, Dlit, Seg_width, Width_values, Width_dim, Width_flow, &
+      USE PRMS_STRMTEMP, ONLY: Azrh, Alte, Altw, Dlit, Seg_width, &
      &    PI, HALF_PI, Cos_seg_lat, Sin_seg_lat, Cos_lat_decl, Horizontal_hour_angle, &
      &    Level_sunset_azimuth, Max_solar_altitude, Sin_alrs, Sin_declination, Sin_lat_decl, Total_shade
-      USE PRMS_FLOWVARS, ONLY: Seg_outflow
       USE PRMS_BASIN, ONLY: CFS2CMS_CONV
       IMPLICIT NONE
 ! Functions
@@ -1173,31 +1313,31 @@
       INTEGER, INTENT(IN) :: Seg_id
       REAL, INTENT(OUT):: Shade, Svi
 ! Local Variables
-      REAL :: outflow, coso, cosod, sin_d, sino, sinod
+      REAL :: coso, cosod, sin_d, sino, sinod
       REAL :: altmx, alsmx, als, almn, almx
       REAL :: azso, azmn, azmx, azs, hrrs, hrsr, hrss, hrso, hrs, hrrh
       REAL :: temp, totsh, sti
       REAL :: altop(3), aztop(3)
 !      REAL :: alsr, alss, azsr, azss, altr, alts
-      INTEGER :: index
 ! PARAMETER
-      REAL, PARAMETER :: RADTOSECOND = 86400.0/(2.0 * PI)
+!      REAL, PARAMETER :: RADTOSECOND = 86400.0/(2.0 * PI)
+      REAL, PARAMETER :: RADTOHOUR = 24.0/(2.0 * PI)
 !*********************************************************************************
-! Assign flow-dependent segment width value
-      IF ( Width_dim == 1 ) THEN
-        Seg_width(Seg_id) = Width_values(Seg_id, 1)
-      ELSE
-        outflow = SNGL( Seg_outflow(Seg_id) * CFS2CMS_CONV )
-        IF ( (outflow > Width_flow(1)) .AND. (outflow < Width_flow(2)) ) THEN
-          index = (outflow - Width_flow(1))/Width_flow(3)
-          index = index + 1
-          Seg_width(Seg_id) = Width_values(Seg_id, index)
-        ELSEIF ( outflow >= Width_flow(2) ) THEN
-          Seg_width(Seg_id) = Width_values(Seg_id, Width_dim)
-        ELSE
-          Seg_width(Seg_id) = Width_values(Seg_id, 1)
-        ENDIF
-      ENDIF
+!! Assign flow-dependent segment width value
+!      IF ( Width_dim == 1 ) THEN
+!        Seg_width(Seg_id) = Width_values(Seg_id, 1)
+!      ELSE
+!        outflow = SNGL( Seg_outflow(Seg_id) * CFS2CMS_CONV )
+!        IF ( (outflow > Width_flow(1)) .AND. (outflow < Width_flow(2)) ) THEN
+!          index = (outflow - Width_flow(1))/Width_flow(3)
+!          index = index + 1
+!          Seg_width(Seg_id) = Width_values(Seg_id, index)
+!        ELSEIF ( outflow >= Width_flow(2) ) THEN
+!          Seg_width(Seg_id) = Width_values(Seg_id, Width_dim)
+!        ELSE
+!          Seg_width(Seg_id) = Width_values(Seg_id, 1)
+!        ENDIF
+!      ENDIF
 !
 !  LATITUDE TRIGONOMETRIC PARAMETERS 
       coso = Cos_seg_lat(Seg_id)
@@ -1329,7 +1469,10 @@
         ELSE
           hrrh = hrrs
         ENDIF
-        Dlit(Seg_id) = (hrss - hrsr) * RADTOSECOND
+! DANGER markstro
+!        Dlit(Seg_id) = (hrss - hrsr) * RADTOSECOND
+        Dlit(Seg_id) = (hrss - hrsr) * RADTOHOUR
+
         sti = 1.0 - ((((hrss - hrsr) * sinod) + ((SIN(hrss) - SIN(hrsr)) * cosod)) / (totsh))
 ! ??? seg_width changes with flow, so need to do each timestep ???????
         Svi = ((rprnvg(hrsr, hrrh, hrss, sino, coso, sin_d, cosod, sinod, Seg_id)) / (Seg_width(Seg_id)*totsh))
@@ -1566,7 +1709,7 @@
 !  PERFORM NUMERICAL INTEGRATION
           DO n = 1, NBHS
 !  CURRENT SOLAR HOUR ANGLE
-            hrs = Hrsr + (Epslon(n) * delhsr)
+            hrs = SNGL(Hrsr + (Epslon(n) * delhsr))
             coshrs = COS(hrs)
             sinhrs = SIN(hrs)
 !  CURRENT SOLAR ALTITUDE
@@ -1588,9 +1731,9 @@
             IF ( bs > Seg_width(Seg_id) ) bs = Seg_width(Seg_id)
 !  INCREMENT SUNRISE SIDE VEGETATIVE SHADE
             IF ( Summer_flag == 1 ) THEN ! put back spring and autumn
-               svri = svri + (Vdemx(Seg_id) * bs * sinals * Weight(n))
+               svri = svri + SNGL(Vdemx(Seg_id) * bs * sinals * Weight(n))
             ELSE
-               svri = svri + (Vdemn(Seg_id) * bs * sinals * Weight(n))
+               svri = svri + SNGL(Vdemn(Seg_id) * bs * sinals * Weight(n))
             ENDIF
           ENDDO
 !
@@ -1608,7 +1751,7 @@
 !  PERFORM NUMERICAL INTEGRATION
           DO n = 1, Nbhs
 !  CURRENT SOLAR HOUR ANGLE
-            hrs = Hrrs + (Epslon(n) * delhss)
+            hrs = SNGL(Hrrs + (Epslon(n) * delhss))
             coshrs = COS(hrs)
             sinhrs = SIN(hrs)
 !  CURRENT SOLAR ALTITUDE
@@ -1630,9 +1773,9 @@
             IF ( bs > Seg_width(Seg_id) ) bs = Seg_width(Seg_id)
 !  INCREMENT SUNSET SIDE VEGETATIVE SHADE
             IF ( Summer_flag == 1 ) THEN ! fix for seasons
-               svsi = svsi + (Vdwmx(Seg_id) * bs * sinals * Weight(n))
+               svsi = SNGL(svsi + (Vdwmx(Seg_id) * bs * sinals * Weight(n)))
             ELSE
-               svsi = svsi + (Vdwmn(Seg_id) * bs * sinals * Weight(n))
+               svsi = SNGL(svsi + (Vdwmn(Seg_id) * bs * sinals * Weight(n)))
             ENDIF
 !
           ENDDO

@@ -79,7 +79,7 @@
       USE PRMS_MODULE, ONLY: Nhru, Starttime, Dyn_imperv_flag, Dyn_dprst_flag, Dyn_intcp_flag, Dyn_covden_flag, &
      &    Dyn_covtype_flag, Dyn_potet_flag, Dyn_transp_flag, Dyn_soil_flag, Dyn_radtrncf_flag, Dyn_transp_on_flag, &
      &    Dyn_sro2dprst_perv_flag, Dyn_sro2dprst_imperv_flag, Transp_flag, Dprst_flag, Dyn_fallfrost_flag, &
-     &    Dyn_springfrost_flag, Dyn_snareathresh_flag, MAXFILE_LENGTH, Print_debug
+     &    Dyn_springfrost_flag, Dyn_snareathresh_flag, Print_debug
       IMPLICIT NONE
       INTEGER, EXTERNAL :: control_string, get_ftnunit
       EXTERNAL read_error, find_header_end, find_current_file_time
@@ -419,8 +419,9 @@
      &    Op_flow_thres, Dprst_vol_open_max, Dprst_vol_clos_max, Dprst_vol_thres_open, &
      &    Dprst_vol_open_frac, Dprst_vol_clos_frac, Dprst_vol_frac
       USE PRMS_SOILZONE, ONLY: Basin_soil_rechr, Soil_zone_max, Soil_moist_tot, &
-     &    Soil_moist_frac, Cpr_stor_frac, Soil_lower_stor_max, Replenish_frac, &
-     &    Soil_lower_ratio, Soil_lower !, Soil_rechr_ratio
+     &    Soil_lower_stor_max, Replenish_frac, Soil_lower_ratio, Soil_lower
+!     &    Soil_moist_frac, Cpr_stor_frac, Soil_lower_stor_max, Replenish_frac, &
+!     &    Soil_lower_ratio, Soil_lower, Soil_rechr_ratio
       IMPLICIT NONE
 ! Functions
       INTRINSIC SNGL, DBLE
@@ -773,12 +774,12 @@
           Soil_rechr_max(i) = Soil_moist_max(i)*Soil_rechr_max_frac(i)
           Soil_zone_max(i) = Sat_threshold(i) + Soil_moist_max(i)*Hru_frac_perv(i)
           Soil_moist_tot(i) = Ssres_stor(i) + Soil_moist(i)*Hru_frac_perv(i)
-          Soil_moist_frac(i) = Soil_moist_tot(i)/Soil_zone_max(i)
-          Cpr_stor_frac(i) = Soil_moist(i)/Soil_moist_max(i)
+!          Soil_moist_frac(i) = Soil_moist_tot(i)/Soil_zone_max(i)
+!          Cpr_stor_frac(i) = Soil_moist(i)/Soil_moist_max(i)
           Soil_lower_stor_max(i) = Soil_moist_max(i) - Soil_rechr_max(i)
           Replenish_frac(i) = Soil_rechr_max(i)/Soil_moist_max(i)
           IF ( Soil_lower_stor_max(i)>0.0 ) Soil_lower_ratio(i) = Soil_lower(i)/Soil_lower_stor_max(i)
-          !Soil_rechr_ratio(i) = Soil_rechr(i)/Soil_rechr_max(i)
+!          Soil_rechr_ratio(i) = Soil_rechr(i)/Soil_rechr_max(i)
         ENDDO
       ENDIF
       IF ( istop==1 ) STOP
