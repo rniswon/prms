@@ -816,7 +816,7 @@
         ENDDO
         ALLOCATE ( Hru_gvr_index(Max_gvrs, Nhru) )
         IF ( Nhru==Nhrucell ) THEN
-          IF ( Max_gvrs/=1 ) 
+          IF ( Max_gvrs/=1 ) THEN
             PRINT *, 'ERROR, nhru=nhrucell, but, gvr_hru_id array specifies more than one GVR for an HRU'
             STOP
           ENDIF

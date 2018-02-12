@@ -81,7 +81,7 @@
 !***********************************************************************
       gwflowdecl = 0
 
-      Version_gwflow = 'gwflow.f90 2017-10-27 13:46:00Z'
+      Version_gwflow = 'gwflow.f90 2018-01-18 16:59:00Z'
       CALL print_module(Version_gwflow, 'Groundwater                 ', 90)
       MODNAME = 'gwflow'
 
@@ -415,38 +415,39 @@
         ENDDO
         DO jj = 1, Active_gwrs
           j = Gwr_route_order(jj)
-          IF ( Gwr_type(j)/=2 ) CYCLE ! only if a weir gate lake
-          jjj = Lake_hru_id(j) !! jjj must be > zero due to check above
-          IF ( Lake_type(jjj)==4 .OR. Lake_type(jjj)==5 ) THEN
-            inch2acre_feet = Hru_area_dble(j)/12.0D0
-            seepage = Lake_seepage_max(jjj)
-            ! seepage added to GWR
-            !rsr, need seepage variable for WB
-            IF ( seepage<0.0D0 ) THEN
+          IF ( Gwr_type(j)==2 ) THEN ! only if a weir gate lake
+            jjj = Lake_hru_id(j) !! jjj must be > zero due to check above
+            IF ( Lake_type(jjj)==4 .OR. Lake_type(jjj)==5 ) THEN
+              inch2acre_feet = Hru_area_dble(j)/12.0D0
+              seepage = Lake_seepage_max(jjj)
+              ! seepage added to GWR
+              !rsr, need seepage variable for WB
+              IF ( seepage<0.0D0 ) THEN
 ! water to lake from GWR, negative value of seepage
-              IF ( DABS(seepage)>Gwres_stor(j) ) THEN
-                IF ( Print_debug>-1 ) THEN
-                  PRINT *, 'WARNING, GWR storage insufficient for discharge to lake:', jjj, ' GWR:', j
-                  CALL print_date(1)
-                  PRINT *, 'GWR storage:', Gwres_stor(j), ', computed discharge:', seepage
-                  PRINT *, 'Discharge set to available GWR storage'
+                IF ( DABS(seepage)>Gwres_stor(j) ) THEN
+                  IF ( Print_debug>-1 ) THEN
+                    PRINT *, 'WARNING, GWR storage insufficient for discharge to lake:', jjj, ' GWR:', j
+                    CALL print_date(1)
+                    PRINT *, 'GWR storage:', Gwres_stor(j), ', computed discharge:', seepage
+                    PRINT *, 'Discharge set to available GWR storage'
 !?? adjust lake storage and elevation
-                  PRINT *, 'Lake elevation, storage, and water balance not adjusted'
+                    PRINT *, 'Lake elevation, storage, and water balance not adjusted'
+                  ENDIF
+                  seepage = -Gwres_stor(j)
                 ENDIF
-                seepage = -Gwres_stor(j)
-              ENDIF
-              Gw_seep_lakein(jjj) = Gw_seep_lakein(jjj) - seepage*inch2acre_feet ! units, acre-feet
-            ELSE
+                Gw_seep_lakein(jjj) = Gw_seep_lakein(jjj) - seepage*inch2acre_feet ! units, acre-feet
+              ELSE
 ! water from lake to GWR, positive value of seepage
-              ! needed because lakes could go dry
+                ! needed because lakes could go dry
 ! DANGER, needed for multiple HRU lakes, if lake goes dry some GWRs won't receive seepage, withdrawn from lake based on route order
-              IF ( Lake_vol(jjj)<seepage*inch2acre_feet ) seepage = Lake_vol(jjj)/inch2acre_feet
-              Lake_seepage(jjj) = Lake_seepage(jjj) + seepage*inch2acre_feet ! units, acre-feet
-              Basin_lake_seep = Basin_lake_seep + seepage*Hru_area_dble(j) ! units, acre-inches
+                IF ( Lake_vol(jjj)<seepage*inch2acre_feet ) seepage = Lake_vol(jjj)/inch2acre_feet
+                Lake_seepage(jjj) = Lake_seepage(jjj) + seepage*inch2acre_feet ! units, acre-feet
+                Basin_lake_seep = Basin_lake_seep + seepage*Hru_area_dble(j) ! units, acre-inches
+              ENDIF
+              Gwres_stor(j) = Gwres_stor(j) + seepage
+              Lake_seepage_gwr(j) = seepage ! can be positive or negative value
+              Lake_vol(jjj) = Lake_vol(jjj) - seepage*inch2acre_feet
             ENDIF
-            Gwres_stor(j) = Gwres_stor(j) + seepage
-            Lake_seepage_gwr(j) = seepage ! can be positive or negative value
-            Lake_vol(jjj) = Lake_vol(jjj) - seepage*inch2acre_feet
           ENDIF
         ENDDO
         Basin_lake_seep = Basin_lake_seep*Basin_area_inv
@@ -498,9 +499,12 @@
           ENDIF
         ENDIF
 
-        gwflow = 0.0D0
         gwsink = 0.0D0
-        IF ( gwstor>DNEARZERO ) THEN
+        IF ( gwstor<0.0D0 ) THEN ! could happen with water use
+          IF ( Print_debug>-1 ) PRINT *, 'Warning, groundwater reservoir for HRU:', i, ' is < 0.0', gwstor
+          gwflow = 0.0D0
+        ELSE
+
 ! Compute groundwater discharge
           gwflow = gwstor*DBLE( Gwflow_coef(i) )
 
@@ -520,8 +524,6 @@
             ENDIF
           ENDIF
           Basin_gwsink = Basin_gwsink + gwsink
-        ELSEIF ( gwstor<0.0D0 ) THEN ! could happen with water use
-          IF ( Print_debug>-1 ) PRINT *, 'Warning, groundwater reservoir for HRU:', i, ' is < 0.0', gwstor
         ENDIF
         Gwres_sink(i) = SNGL( gwsink/gwarea )
         Basin_gwstor = Basin_gwstor + gwstor
