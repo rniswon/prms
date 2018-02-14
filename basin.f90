@@ -5,8 +5,8 @@
       IMPLICIT NONE
       INTRINSIC :: EPSILON
 !   Local Variables
-      REAL, PARAMETER :: NEARZERO = EPSILON(0.0), INCH2CM = 2.54
-      REAL, PARAMETER :: CLOSEZERO = 1.0E-09
+      REAL, PARAMETER :: NEARZERO = 1.0E-6, INCH2CM = 2.54
+      REAL, PARAMETER :: CLOSEZERO = EPSILON(0.0)
       DOUBLE PRECISION, PARAMETER :: DNEARZERO = EPSILON(0.0D0), FT2_PER_ACRE = 43560.0D0
       DOUBLE PRECISION, PARAMETER :: CFS2CMS_CONV = 0.028316847D0
       REAL, PARAMETER :: INCH2MM = 25.4, INCH2M = 0.0254, MAXTEMP = 200.0, MINTEMP = -150.0
@@ -21,9 +21,8 @@
       REAL, SAVE, ALLOCATABLE :: Hru_elev_feet(:), Hru_elev_meters(:)
       REAL, SAVE, ALLOCATABLE :: Dprst_frac_clos(:)
       INTEGER, SAVE, ALLOCATABLE :: Gwr_type(:), Hru_route_order(:), Gwr_route_order(:)
-      DOUBLE PRECISION, SAVE, ALLOCATABLE :: Lake_area(:)
       INTEGER, SAVE :: Weir_gate_flag, Puls_lin_flag
-      DOUBLE PRECISION, SAVE, ALLOCATABLE :: Hru_area_dble(:)
+      DOUBLE PRECISION, SAVE, ALLOCATABLE :: Hru_area_dble(:), Lake_area(:)
       CHARACTER(LEN=80), SAVE :: Version_basin
 !   Declared Variables
       REAL, SAVE, ALLOCATABLE :: Hru_frac_perv(:)
@@ -67,8 +66,8 @@
 !***********************************************************************
       INTEGER FUNCTION basdecl()
       USE PRMS_BASIN
-      USE PRMS_MODULE, ONLY: Model, Nhru, Dprst_flag, Lake_route_flag, &
-     &    Et_flag, Precip_flag, Nlake, GSFLOW_flag, Stream_temp_flag
+      USE PRMS_MODULE, ONLY: Model, Nhru, Nlake, Dprst_flag, Lake_route_flag, &
+     &    Et_flag, Precip_flag, Cascadegw_flag, GSFLOW_flag, Stream_temp_flag
       IMPLICIT NONE
 ! Functions
       INTEGER, EXTERNAL :: declparam
@@ -76,7 +75,7 @@
 !***********************************************************************
       basdecl = 0
 
-      Version_basin = 'basin.f90 2017-11-09 14:05:00Z'
+      Version_basin = 'basin.f90 2018-02-09 14:04:00Z'
       CALL print_module(Version_basin, 'Basin Definition            ', 90)
       MODNAME = 'basin'
 
@@ -133,11 +132,11 @@
       ALLOCATE ( Hru_route_order(Nhru) )
 ! gwflow inactive for GSFLOW mode so arrays not allocated
 ! when GSFLOW can run in multi-mode will need these arrays
-      IF ( GSFLOW_flag==0 ) ALLOCATE ( Gwr_route_order(Nhru), Gwr_type(Nhru) )
+      IF ( GSFLOW_flag/=0 .OR. Cascadegw_flag>0 ) ALLOCATE ( Gwr_route_order(Nhru), Gwr_type(Nhru) )
       ! potet_pm, potet_pm_sta, or potet_pt
       IF ( Et_flag==5 .OR. Et_flag==11 .OR. Et_flag==6 ) ALLOCATE ( Hru_elev_feet(Nhru) )
       ! ide_dist, potet_pm, potet_pm_sta, potet_pt, or stream_temp
-      IF ( Et_flag==5 .OR. Et_flag==11 .OR. Et_flag==6 .OR. Precip_flag==5 .OR. Stream_temp_flag==1 ) &
+      IF ( Precip_flag==5 .OR. Et_flag==5 .OR. Et_flag==11 .OR. Et_flag==6 .OR. Stream_temp_flag==1 ) &
      &     ALLOCATE ( Hru_elev_meters(Nhru) )
 
       ! Declared Parameters
@@ -200,7 +199,7 @@
      &     'decimal fraction')/=0 ) CALL read_error(1, 'covden_win')
 
       ALLOCATE ( Lake_hru_id(Nhru) )
-      IF ( Nlake>0 ) THEN
+      IF ( Nlake>0 .OR. Model==99 ) THEN
         ! Local array
         ALLOCATE ( Lake_area(Nlake) )
         ! parameters
@@ -231,13 +230,13 @@
 !**********************************************************************
       INTEGER FUNCTION basinit()
       USE PRMS_BASIN
-      USE PRMS_MODULE, ONLY: Nhru, Nlake, Dprst_flag, Nlake_hrus, &
+      USE PRMS_MODULE, ONLY: Nhru, Nlake, Nlake_hrus, Dprst_flag, &
      &    Print_debug, GSFLOW_flag, PRMS_VERSION, Starttime, Endtime, &
-     &    Lake_route_flag, Et_flag, Precip_flag, Prms_output_unit, Stream_temp_flag
+     &    Lake_route_flag, Et_flag, Precip_flag, Cascadegw_flag, Parameter_check_flag, Stream_temp_flag
       IMPLICIT NONE
 ! Functions
       INTEGER, EXTERNAL :: getparam
-      EXTERNAL write_outfile
+      EXTERNAL write_outfile, checkdim_bounded_limits
       INTRINSIC ABS, DBLE, SNGL
 ! Local Variables
       CHARACTER(LEN=69) :: buffer
@@ -270,6 +269,7 @@
       Numlake_hrus = 0
       IF ( Nlake>0 ) THEN
         IF ( getparam(MODNAME, 'lake_hru_id', Nhru, 'integer', Lake_hru_id)/=0 ) CALL read_error(1, 'lake_hru_id')
+        IF ( Parameter_check_flag==1 ) CALL checkdim_bounded_limits('lake_hru_id', 'nlake', Lake_hru_id, Nhru, 0, Nlake, basinit)
         IF ( Lake_route_flag==1 ) THEN ! Lake_route_flag set to 0 for GSFLOW mode and if muskingum_lake and nlake = 1
           IF ( getparam(MODNAME, 'lake_type', Nlake, 'integer', Lake_type)/=0 ) CALL read_error(2, 'lake_type')
           DO i = 1, Nlake
@@ -384,7 +384,7 @@
       Active_hrus = j
       Active_area = Land_area + Water_area
 
-      IF ( GSFLOW_flag==0 ) THEN
+      IF ( GSFLOW_flag==0 .OR. Cascadegw_flag>0 ) THEN
         Active_gwrs = Active_hrus
         Gwr_type = Hru_type
         Gwr_route_order = Hru_route_order
@@ -441,12 +441,12 @@
 !     print out start and end times
       IF ( Print_debug>-2 ) THEN
         !CALL write_outfile(' Surface Water and Energy Budgets Simulated by '//PRMS_VERSION)
-        WRITE ( Prms_output_unit, '(1X)' )
+        CALL write_outfile(' ')
         WRITE (buffer, 9002) 'Start time: ', Starttime
         CALL write_outfile(buffer(:31))
         WRITE (buffer, 9002) 'End time:   ', Endtime
         CALL write_outfile(buffer(:31))
-        WRITE ( Prms_output_unit, '(1X)' )
+        CALL write_outfile(' ')
         WRITE (buffer, 9003) 'Model domain area:   ', Totarea, '    Active basin area:', Active_area
         CALL write_outfile(buffer)
         WRITE (buffer, 9004) 'Fraction impervious:  ', basin_imperv, '    Fraction pervious: ', basin_perv
@@ -464,7 +464,7 @@
 
  9002 FORMAT (A, I4.2, 2('/', I2.2), I3.2, 2(':', I2.2))
  9003 FORMAT (2(A,F13.2))
- 9004 FORMAT (2(A,F12.5))
+ 9004 FORMAT (2(A,F12.4))
  9005 FORMAT (A, F13.2, A, F13.4)
 
       END FUNCTION basinit

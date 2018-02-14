@@ -13,7 +13,7 @@
       CHARACTER(LEN=48) :: Buffer48
       CHARACTER(LEN=80) :: Buffer80
       CHARACTER(LEN=120) :: Buffer120
-      CHARACTER(LEN=160) :: Buffer160
+      CHARACTER(LEN=151) :: Buffer151
       CHARACTER(LEN=151), PARAMETER :: DASHS = ' --------------------------------------------------------'// &
      &  '----------------------------------------------------------------------------------------------'
       CHARACTER(LEN=151), PARAMETER :: STARS = ' ********************************************************'// &
@@ -95,7 +95,7 @@
 !***********************************************************************
       sumbdecl = 0
 
-      Version_basin_sum = 'basin_sum.f90 2017-10-03 15:40:00Z'
+      Version_basin_sum = 'basin_sum.f90 2017-10-21 14:18:00Z'
       CALL print_module(Version_basin_sum, 'Summary                     ', 90)
       MODNAME = 'basin_sum'
 
@@ -562,14 +562,14 @@
           CALL write_outfile(Buffer80)
 
         ELSEIF ( Print_type==2 ) THEN
-          WRITE ( Buffer160, 9001 ) Nowyear, Nowmonth, Nowday, Basin_swrad, &
+          WRITE ( Buffer151, 9001 ) Nowyear, Nowmonth, Nowday, Basin_swrad, &
      &            Basin_tmax, Basin_tmin, Basin_ppt, Basin_net_ppt, &
      &            Basin_intcp_stor, Basin_intcp_evap, Basin_potet, &
      &            Basin_actet, Basin_soil_moist, Basin_pweqv, &
      &            Basin_snowmelt, Basin_gwstor, Basin_ssstor, &
      &            Basin_gwflow, Basin_ssflow, Basin_sroff, &
      &            Basin_stflow_out, Basin_cfs, obsrunoff, Basin_lakeevap
-          CALL write_outfile(Buffer160)
+          CALL write_outfile(Buffer151)
 
         ENDIF
       ENDIF
@@ -641,16 +641,16 @@
             IF ( Dprt ) CALL write_outfile(DASHS(:62))
 
           ELSEIF ( Print_type==2 ) THEN
-            IF ( Dprt ) CALL write_outfile(DASHS(:148))
-            WRITE ( Buffer160, 9006 ) Nowyear, Nowmonth, Basin_swrad_mo, Basin_max_temp_mo, &
+            IF ( Dprt ) CALL write_outfile(DASHS)
+            WRITE ( Buffer151, 9006 ) Nowyear, Nowmonth, Basin_swrad_mo, Basin_max_temp_mo, &
      &              Basin_min_temp_mo, Basin_ppt_mo, Basin_net_ppt_mo, &
      &              Basin_intcp_evap_mo, Basin_potet_mo, Basin_actet_mo, &
      &              Basin_soil_moist, Basin_pweqv, Basin_snowmelt_mo, &
      &              Basin_gwstor, Basin_ssstor, Basin_gwflow_mo, &
      &              Basin_ssflow_mo, Basin_sroff_mo, Basin_stflow_mo, &
      &              Basin_cfs_mo, Obs_runoff_mo, Basin_lakeevap_mo
-            CALL write_outfile(Buffer160(:155))
-            IF ( Dprt ) CALL write_outfile(DASHS(:148))
+            CALL write_outfile(Buffer151)
+            IF ( Dprt ) CALL write_outfile(DASHS)
           ENDIF
 
         ENDIF
@@ -706,14 +706,14 @@
             Obs_runoff_yr = Obs_runoff_yr/Yrdays
             Basin_cfs_yr = Basin_cfs_yr/Yrdays
             IF ( Mprt .OR. Dprt ) CALL write_outfile(EQULS)
-            WRITE ( Buffer160, 9007 ) Nowyear, Basin_swrad_yr, Basin_max_temp_yr, &
+            WRITE ( Buffer151, 9007 ) Nowyear, Basin_swrad_yr, Basin_max_temp_yr, &
      &              Basin_min_temp_yr, Basin_ppt_yr, Basin_net_ppt_yr, &
      &              Basin_intcp_stor, Basin_intcp_evap_yr, Basin_potet_yr, Basin_actet_yr, &
      &              Basin_soil_moist, Basin_pweqv, Basin_snowmelt_yr, &
      &              Basin_gwstor, Basin_ssstor, Basin_gwflow_yr, &
      &              Basin_ssflow_yr, Basin_sroff_yr, Basin_stflow_yr, &
      &              Basin_cfs_yr, Obs_runoff_yr, Basin_lakeevap_yr
-            CALL write_outfile(Buffer160)
+            CALL write_outfile(Buffer151)
             IF ( Mprt .OR. Dprt ) CALL write_outfile(EQULS)
           ENDIF
 
@@ -787,23 +787,23 @@
             Obs_runoff_tot = Obs_runoff_tot/Totdays
             Basin_cfs_tot = Basin_cfs_tot/Totdays
             CALL write_outfile(STARS)
-            WRITE ( Buffer160, 9004 ) ' Total for run', Basin_ppt_tot, &
+            WRITE ( Buffer151, 9004 ) ' Total for run', Basin_ppt_tot, &
      &              Basin_net_ppt_tot, Basin_intcp_evap_tot, &
      &              Basin_potet_tot, Basin_actet_tot, Basin_soil_moist, &
      &              Basin_pweqv, Basin_snowmelt_tot, Basin_gwstor, &
      &              Basin_ssstor, Basin_gwflow_tot, Basin_ssflow_tot, &
      &              Basin_sroff_tot, Basin_stflow_tot, Basin_cfs_tot, Obs_runoff_tot, Basin_lakeevap_yr
-            CALL write_outfile(Buffer160)
+            CALL write_outfile(Buffer151)
             CALL write_outfile(STARS)
           ENDIF
         ENDIF
       ENDIF
 
- 9001 FORMAT (I6, 2I3, F5.0, 2F5.1, 2F7.2, 2F6.2, 2F7.2, F6.2, F6.3, F7.3, 2F6.3, 3F7.2, F7.4, 2F9.2, F7.2)
- 9004 FORMAT (A, 13X, 2F7.2, F12.1, 2F7.2, 2F6.2, F7.2, 2F6.2, 4F7.2, 2F9.2, F7.2)
+ 9001 FORMAT (I6, 2I3, F5.0, 2F5.1, 2F7.2, 2F6.2, 2F7.2, F6.2, F6.3, F7.3, 2F6.3, 3F7.2, F7.4, F9.1, F9.2, F7.2)
+ 9004 FORMAT (A, 13X, 2F7.2, F12.1, 2F7.2, 2F6.2, F7.2, 2F6.2, 4F7.2, F9.1, F9.2, F7.2)
  9005 FORMAT (A, 3X, 6F9.3)
- 9006 FORMAT (I6, I3, 3X, 3F5.1, 2F7.2, F12.1, 2F7.2, 2F6.2, F7.2, 2F6.2, 3F7.2, 2F9.2, 2F7.2)
- 9007 FORMAT (I6, 6X, 3F5.1, 2F7.2, 2F6.2, 2F7.2, 2F6.2, F7.2, 2F6.2, 3F7.2, 2F9.2, 2F7.2)
+ 9006 FORMAT (I6, I3, 3X, 3F5.1, 2F7.2, F12.1, 2F7.2, 2F6.2, F7.2, 2F6.2, 3F7.2, F9.1, F9.2, 2F7.2)
+ 9007 FORMAT (I6, 6X, 3F5.1, 2F7.2, 2F6.2, 2F7.2, 2F6.2, F7.2, 2F6.2, 3F7.2, F9.2, F9.2, 2F7.2)
 
       END FUNCTION sumbrun
 
@@ -845,9 +845,9 @@
 !  This writes the detailed table header.
       ELSEIF ( Print_type==2 ) THEN
         CALL write_outfile(' Year mo day srad  tmx  tmn    ppt  n-ppt  ints  intl  potet'// &
-     &    '  actet  smav pweqv   melt gwsto sssto gwflow ssflow  sroff    tot-fl      sim  meas lkevap')
+     &    '  actet  smav pweqv   melt gwsto sssto gwflow ssflow  sroff tot-fl     sim     meas  lkevap')
         CALL write_outfile('             (ly) (F/C)(F/C)  (in)   (in)  (in)  (in)   (in)'// &
-     &    '   (in)  (in)  (in)   (in)  (in)  (in)   (in)   (in)   (in)      (in)    (cfs) (cfs)   (in)')
+     &    '   (in)  (in)  (in)   (in)  (in)  (in)   (in)   (in)   (in)   (in)    (cfs)    (cfs)   (in)')
         CALL write_outfile(DASHS)
 
       ENDIF

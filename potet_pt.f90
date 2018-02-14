@@ -44,7 +44,11 @@
 !******Compute "EQUIVALENT" EVAPOTRANSPIRATION, EEQ (IN./DAY),
 !...USING PRIESTLY-TAYLOR METHOD. THE VARIBLES ARE CALCULATED
 !...USING FORMULAS GIVEN IN JENSEN, 1990.
-        IF ( Humidity_cbh_flag==0 ) Humidity_hru = Humidity_percent(1, Nowmonth) 
+        IF ( Humidity_cbh_flag==0 ) Humidity_hru = Humidity_percent(1, Nowmonth)
+        ! next three lines were in loop, moved out since just setting constants
+        A1 = 17.625
+        B1 = 243.04
+        heat_flux = 0.0 ! Irmak and others (2012) says equal to zero for daily time step ! G
         Basin_potet = 0.0D0
         Basin_humidity = 0.0D0
         DO j = 1, Active_hrus
@@ -82,15 +86,15 @@
 
 !   heat flux density to the ground,  MJ / m2 / day
 !          heat_flux = -4.2 * (Tavgc_ante(i)-Tavgc(i)) ! could use solrad_tmax or running avg instead of Tavgc_ante
-          heat_flux = 0.0 ! Irmak and others (2012) says equal to zero for daily time step ! G
+          !heat_flux = 0.0 ! Irmak and others (2012) says equal to zero for daily time step ! G, moved outside loop
 
 ! Dew point temperature (Irmak eqn. 13), degrees C
 ! Humidity_hru is input as percent so divided by 100 to be in units of decimal fraction
 !          Tempc_dewpt(i) = 237.3 / (1.0/(LOG(Humidity_hru(i)/100.0)/17.26939) + (Tavgc(i)/237.3+Tavgc(i)))
 
 ! Dew point temperature (Lawrence(2005) eqn. 8), degrees C
-          A1 = 17.625
-          B1 = 243.04
+          !A1 = 17.625 !moved outside loop
+          !B1 = 243.04 !moved outside loop
           t1 = A1 * Tavgc(i) / (B1 + Tavgc(i))
           num = B1 * (LOG(Humidity_hru(i)/100.0) + t1) 
           den = A1 - LOG(Humidity_hru(i)/100.0) - t1 
@@ -124,7 +128,6 @@
 
 ! Net radiation (Irmak eqn. 8) MJ / m2 / day
 ! 1 Langley = 0.04184 MJ/m2
-!          net_rad = ((Swrad(i)*0.04184 - Lwrad_net(i)) / 0.2389) - heat_flux
           net_rad = Swrad(i)*0.04184 - Lwrad_net(i) - heat_flux
           
 !...COMPUTE EEQ, CM/DAY
@@ -148,7 +151,7 @@
         Basin_humidity = Basin_humidity*Basin_area_inv
 
       ELSEIF ( Process(:4)=='decl' ) THEN
-        Version_potet = 'potet_pt.f90 2017-10-24 12:24:00Z'
+        Version_potet = 'potet_pt.f90 2018-01-23 14:02:00Z'
         CALL print_module(Version_potet, 'Potential Evapotranspiration', 90)
         MODNAME = 'potet_pt'
 

@@ -83,7 +83,7 @@
 
 ! Declare procedure
       ELSEIF ( Process(:4)=='decl' ) THEN
-        Version_prms_summary = 'prms_summary.f90 2017-09-27 14:02:00Z'
+        Version_prms_summary = 'prms_summary.f90 2017-11-20 13:03:00Z'
         CALL print_module(Version_prms_summary, 'Output Summary              ', 90)
         MODNAME = 'prms_summary'
 
@@ -167,11 +167,11 @@
             IF ( Gageid_len(i)<1 ) Gageid_len(i) = 0
             IF ( Gageid_len(i)>0 ) THEN
               IF ( Gageid_len(i)>15 ) Gageid_len(i) = 15
-              WRITE (Streamflow_pairs(i), '(A,I4.4,2A)' ) ',seg_outflow_', Poi_gage_segment(i), '_gage_', &
+              WRITE (Streamflow_pairs(i), '(A,I5.5,2A)' ) ',seg_outflow_', Poi_gage_segment(i), '_gage_', &
      &                                                    Poi_gage_id(i)(:Gageid_len(i))
             ELSE
               Gageid_len(i) = -6
-              WRITE (Streamflow_pairs(i), '(2(A,I4.4))' ) ',seg_outflow_', Poi_gage_segment(i)
+              WRITE (Streamflow_pairs(i), '(2(A,I5.5))' ) ',seg_outflow_', Poi_gage_segment(i)
             ENDIF
           ENDDO
           !print *, 'pairs', streamflow_pairs

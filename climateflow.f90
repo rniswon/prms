@@ -261,17 +261,21 @@
      &     'Shortwave radiation distributed to each HRU', &
      &     'Langleys', Swrad)
 
+      CALL declvar_real(Solrad_module, 'orad', 'one', 1, 'real', &
+     &     'Measured or computed solar radiation on a horizontal surface', &
+     &     'Langleys', Orad)
+
       CALL declvar_dble(Solrad_module, 'basin_horad', 'one', 1, 'double', &
      &     'Potential shortwave radiation for the basin centroid', &
      &     'Langleys', Basin_horad)
 
-      CALL declvar_dble(Solrad_module, 'basin_potsw', 'one', 1, 'double', &
-     &     'Basin area-weighted average shortwave radiation', &
-     &     'Langleys', Basin_potsw)
-
       CALL declvar_dble(Solrad_module, 'basin_swrad', 'one', 1, 'double', &
      &     'Basin area-weighted average shortwave radiation', &
      &     'Langleys', Basin_swrad)
+
+      CALL declvar_dble(Solrad_module, 'basin_potsw', 'one', 1, 'double', &
+     &     'Basin area-weighted average shortwave radiation', &
+     &     'Langleys', Basin_potsw)
 
       IF ( Solrad_flag==1 .OR. Solrad_flag==2 .OR. Model==99 ) THEN
         CALL declvar_dble(Solrad_module, 'basin_orad', 'one', 1, 'double', &
@@ -795,17 +799,18 @@
       INTEGER FUNCTION climateflow_init()
       USE PRMS_CLIMATEVARS
       USE PRMS_FLOWVARS
-      USE PRMS_MODULE, ONLY: Temp_flag, Precip_flag, Nhru, Nssr, Temp_module, Precip_module, &
-     &    Solrad_module, Soilzone_module, Srunoff_module, Stream_order_flag, Ntemp, Nrain, Nsol, &
-     &    Init_vars_from_file, Dprst_flag, Solrad_flag, Et_flag, Stream_temp_flag, Nlake, &
-     &    Et_module, Humidity_cbh_flag
+      USE PRMS_MODULE, ONLY: Temp_flag, Precip_flag, Nhru, Nssr, Temp_module, Precip_module, Parameter_check_flag, &
+     &    Solrad_module, Soilzone_module, Srunoff_module, Stream_order_flag, Ntemp, Nrain, Nsol, Nevap, &
+     &    Init_vars_from_file, Inputerror_flag, Dprst_flag, Solrad_flag, Et_flag, Nlake, Et_module, Humidity_cbh_flag, &
+     &    Stream_temp_flag
       USE PRMS_BASIN, ONLY: Elev_units, FEET2METERS, METERS2FEET, Active_hrus, Hru_route_order
       IMPLICIT NONE
 ! Functions
       INTEGER, EXTERNAL :: getparam
+      EXTERNAL :: checkdim_param_limits, checkdim_bounded_limits
       REAL, EXTERNAL :: c_to_f, f_to_c
 ! Local variables
-      INTEGER :: i, j
+      INTEGER :: i, j, ierr
 !***********************************************************************
       climateflow_init = 0
 
@@ -824,7 +829,7 @@
 
       IF ( getparam('snowcomp', 'potet_sublim', Nhru, 'real', Potet_sublim)/=0 ) CALL read_error(2, 'potet_sublim')
 
-      IF ( Temp_flag==1 .OR. Temp_flag==2 .OR. Temp_flag==5 .OR. Temp_flag==6 .OR. Temp_flag==8 ) THEN
+      IF ( Temp_flag==1 .OR. Temp_flag==2 .OR. Temp_flag==3 .OR. Temp_flag==5 .OR. Temp_flag==6 .OR. Temp_flag==8 ) THEN
         IF ( getparam(Temp_module, 'tmax_adj', Nhru*12, 'real', Tmax_aspect_adjust)/=0 ) CALL read_error(2, 'tmax_adj')
         IF ( getparam(Temp_module, 'tmin_adj', Nhru*12, 'real', Tmin_aspect_adjust)/=0 ) CALL read_error(2, 'tmin_adj')
       ENDIF
@@ -833,12 +838,14 @@
 
       IF ( Temp_flag<4 ) THEN
         IF ( getparam(Temp_module, 'basin_tsta', 1, 'integer', Basin_tsta)/=0 ) CALL read_error(2, 'basin_tsta')
+        CALL checkdim_param_limits(1, 'basin_tsta', 'ntemp', Basin_tsta, 1, Ntemp, Inputerror_flag)
       ELSE
         Basin_tsta = 0
       ENDIF
 
       IF ( Temp_flag==1 .OR. Temp_flag==2 .OR. Temp_flag==8 ) THEN
         IF ( getparam(Temp_module, 'hru_tsta', Nhru, 'integer', Hru_tsta)/=0 ) CALL read_error(2, 'hru_tsta')
+        IF ( Parameter_check_flag>0 ) CALL checkdim_bounded_limits('hru_tsta', 'ntemp', Hru_tsta, Nhru, 1, Ntemp, ierr)
       ENDIF
 
       IF ( getparam(Precip_module, 'tmax_allsnow', Nhru*12, 'real', Tmax_allsnow)/=0 ) CALL read_error(2, 'tmax_allsnow')
@@ -891,9 +898,17 @@
           IF ( getparam(Solrad_module, 'basin_solsta', 1, 'integer', Basin_solsta)/=0 ) CALL read_error(2, 'basin_solsta')
           IF ( getparam(Solrad_module, 'rad_conv', 1, 'real', Rad_conv)/=0 ) CALL read_error(2, 'rad_conv')
           IF ( getparam(Solrad_module, 'hru_solsta', Nhru, 'integer', Hru_solsta)/=0 ) CALL read_error(2, 'hru_solsta')
+          IF ( Parameter_check_flag>0 ) THEN
+            CALL checkdim_param_limits(1, 'basin_solsta', 'nsol', Basin_solsta, 1, Nsol, Inputerror_flag)
+            CALL checkdim_bounded_limits('hru_solsta', 'nsol', Hru_solsta, Nhru, 0, Nsol, ierr)
+            IF ( ierr==1 ) Inputerror_flag = 1
+          ENDIF
           DO j = 1, Active_hrus
             i = Hru_route_order(j)
-            IF ( Hru_solsta(i)>0 ) Solsta_flag = 1
+            IF ( Hru_solsta(i)>0 ) THEN
+              Solsta_flag = 1
+              EXIT
+            ENDIF
           ENDDO
         ENDIF
         IF ( getparam(Solrad_module, 'radj_sppt', Nhru, 'real', Radj_sppt)/=0 ) CALL read_error(2, 'radj_sppt')
@@ -907,6 +922,10 @@
 
       IF ( Use_pandata==1 ) THEN
         IF ( getparam(MODNAME, 'hru_pansta', Nhru, 'integer', Hru_pansta)/=0 ) CALL read_error(2, 'hru_pansta')
+        IF ( Parameter_check_flag>0 ) THEN
+          CALL checkdim_bounded_limits('hru_pansta', 'nevap', Hru_pansta, Nhru, 1, Nevap, ierr)
+          IF ( ierr==1 ) Inputerror_flag = 1
+        ENDIF
       ENDIF
 
       IF ( getparam('intcp', 'epan_coef', Nhru*12, 'real', Epan_coef)/=0 ) CALL read_error(2, 'epan_coef')
@@ -919,8 +938,7 @@
       IF ( getparam(Soilzone_module, 'soil_rechr_max_frac', Nhru, 'real', Soil_rechr_max_frac)/=0 ) &
      &     CALL read_error(2, 'soil_rechr_max_frac')
 
-      DO j = 1, Active_hrus
-        i = Hru_route_order(j)
+      DO i = 1, Nhru
         Soil_rechr_max(i) = Soil_rechr_max_frac(i)*Soil_moist_max(i)
       ENDDO
       IF ( Init_vars_from_file==0 .OR. Init_vars_from_file==2 .OR. Init_vars_from_file==5 ) THEN
@@ -930,8 +948,7 @@
      &       CALL read_error(2, 'soil_rechr_init_frac')
         IF ( getparam(Soilzone_module, 'ssstor_init_frac', Nssr, 'real', Ssstor_init_frac)/=0 ) &
      &       CALL read_error(2, 'ssstor_init_frac')
-        DO j = 1, Active_hrus
-          i = Hru_route_order(j)
+        DO i = 1, Nhru
           Soil_rechr(i) = Soil_rechr_init_frac(i)*Soil_rechr_max(i)
           Soil_moist(i) = Soil_moist_init_frac(i)*Soil_moist_max(i)
           Ssres_stor(i) = Ssstor_init_frac(i)*Sat_threshold(i)
@@ -1239,7 +1256,7 @@
           WRITE ( Restart_outunit ) Vp_actual
           WRITE ( Restart_outunit ) Lwrad_net
           WRITE ( Restart_outunit ) Vp_slope
-          IF ( Et_flag==11.OR. Et_flag==6 ) WRITE ( Restart_outunit ) Vp_sat
+          IF ( Et_flag==11 .OR. Et_flag==6 ) WRITE ( Restart_outunit ) Vp_sat
         ENDIF
         IF ( Solrad_flag==2 .OR. Stream_temp_flag==1 ) THEN
           WRITE ( Restart_outunit ) Basin_cloud_cover
