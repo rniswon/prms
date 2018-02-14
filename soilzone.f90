@@ -851,7 +851,8 @@
       INTEGER FUNCTION szrun(AFR)
       USE PRMS_SOILZONE
       USE PRMS_MODULE, ONLY: Dprst_flag, Print_debug, Kkiter, &
-     &    Nlake, Cascade_flag, Dprst_flag, Frozen_flag, GSFLOW_flag
+     &    Nlake, Cascade_flag, Dprst_flag, Frozen_flag, GSFLOW_flag, &
+     &    soilzone_gain
       USE PRMS_BASIN, ONLY: Hru_type, Hru_perv, Hru_frac_perv, &
      &    Hru_route_order, Active_hrus, Basin_area_inv, Hru_area, &
      &    NEARZERO, Lake_hru_id, Cov_type, Numlake_hrus, Hru_area_dble
@@ -912,7 +913,7 @@
           DO k = 1, Active_hrus
             i = Hru_route_order(k)
             Soil_rechr(i) = It0_soil_rechr(i)
-            Soil_moist(i) = It0_soil_moist(i)
+            Soil_moist(i) = It0_soil_moist(i) + soilzone_gain(i)
             Ssres_stor(i) = It0_ssres_stor(i)
             Pref_flow_stor(i) = It0_pref_flow_stor(i)
             Slow_stor(i) = It0_slow_stor(i)
