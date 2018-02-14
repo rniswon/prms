@@ -860,7 +860,7 @@
       string = Description//'   '//Versn(:n)//blanks(:nb)//Versn(n+is:nc)
       IF ( Print_debug>-1 ) PRINT '(A)', TRIM( string )
       WRITE ( Logunt, '(A)' ) TRIM( string )
-      IF ( Model/=2 ) WRITE ( PRMS_output_unit, '(A)' ) TRIM( string )
+      IF ( Model/=2 .AND. Model/=12 ) WRITE ( PRMS_output_unit, '(A)' ) TRIM( string )
       END SUBROUTINE print_module
 
 !***********************************************************************
