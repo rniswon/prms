@@ -69,7 +69,7 @@
 !***********************************************************************
       intdecl = 0
 
-      Version_intcp = 'intcp.f90 2017-09-27 13:53:00Z'
+      Version_intcp = 'intcp.f90 2018-02-26 12:28:00Z'
       CALL print_module(Version_intcp, 'Canopy Interception         ', 90)
       MODNAME = 'intcp'
 
@@ -214,36 +214,32 @@
       IF ( Use_transfer_intcp==1 ) THEN
         IF ( getparam(MODNAME, 'irr_type', Nhru, 'integer', Irr_type)/=0 ) CALL read_error(1, 'irr_type')
         Gain_inches = 0.0
+        Net_apply = 0.0
       ENDIF
 
       Intcp_changeover = 0.0
+      Intcp_form = 0
+      Intcp_evap = 0.0
+      Net_rain = 0.0
+      Net_snow = 0.0
+      Net_ppt = 0.0
+      Hru_intcpevap = 0.0
+      Canopy_covden = 0.0
       IF ( Init_vars_from_file==0 ) THEN
         Intcp_transp_on = Transp_on
         Intcp_stor = 0.0
         Intcp_on = 0
-        Intcp_form = 0
-        Intcp_evap = 0.0
         Hru_intcpstor = 0.0
-        Net_rain = 0.0
-        Net_snow = 0.0
-        Net_ppt = 0.0
-        Hru_intcpevap = 0.0
-        Canopy_covden = 0.0
         Basin_changeover = 0.0D0
         Basin_net_ppt = 0.0D0
         Basin_net_snow = 0.0D0
         Basin_net_rain = 0.0D0
         Basin_intcp_evap = 0.0D0
         Basin_intcp_stor = 0.0D0
-      ENDIF
-      IF ( Print_debug==1 ) THEN
-        ALLOCATE ( Intcp_stor_ante(Nhru) )
-        Intcp_stor_ante = Hru_intcpstor
-        Last_intcp_stor = 0.0D0
         Basin_net_apply = 0.0D0
         Basin_hru_apply = 0.0D0
-        IF ( Use_transfer_intcp==1 ) Net_apply = 0.0
       ENDIF
+      IF ( Print_debug==1 ) ALLOCATE ( Intcp_stor_ante(Nhru) )
 
       END FUNCTION intinit
 
@@ -571,41 +567,19 @@
       IF ( In_out==0 ) THEN
         WRITE ( Restart_outunit ) MODNAME
         WRITE ( Restart_outunit ) Basin_net_ppt, Basin_intcp_stor, Basin_intcp_evap, Basin_changeover, &
-     &                            Basin_net_snow, Basin_net_rain
+     &                            Basin_net_snow, Basin_net_rain, Basin_net_apply, Basin_hru_apply
         WRITE ( Restart_outunit ) Intcp_transp_on
         WRITE ( Restart_outunit ) Intcp_on
-        WRITE ( Restart_outunit ) Intcp_form
-        WRITE ( Restart_outunit ) Net_rain
-        WRITE ( Restart_outunit ) Net_snow
-        WRITE ( Restart_outunit ) Net_ppt
         WRITE ( Restart_outunit ) Intcp_stor
-        WRITE ( Restart_outunit ) Intcp_evap
         WRITE ( Restart_outunit ) Hru_intcpstor
-        WRITE ( Restart_outunit ) Hru_intcpevap
-        WRITE ( Restart_outunit ) Canopy_covden
-        IF ( Use_transfer_intcp==1 ) THEN
-          WRITE ( Restart_outunit ) Basin_net_apply, Basin_hru_apply
-          WRITE ( Restart_outunit ) Net_apply
-        ENDIF
       ELSE
         READ ( Restart_inunit ) module_name
         CALL check_restart(MODNAME, module_name)
         READ ( Restart_inunit ) Basin_net_ppt, Basin_intcp_stor, Basin_intcp_evap, Basin_changeover, &
-     &                          Basin_net_snow, Basin_net_rain
+     &                          Basin_net_snow, Basin_net_rain, Basin_net_apply, Basin_hru_apply
         READ ( Restart_inunit ) Intcp_transp_on
         READ ( Restart_inunit ) Intcp_on
-        READ ( Restart_inunit ) Intcp_form
-        READ ( Restart_inunit ) Net_rain
-        READ ( Restart_inunit ) Net_snow
-        READ ( Restart_inunit ) Net_ppt
         READ ( Restart_inunit ) Intcp_stor
-        READ ( Restart_inunit ) Intcp_evap
         READ ( Restart_inunit ) Hru_intcpstor
-        READ ( Restart_inunit ) Hru_intcpevap
-        READ ( Restart_inunit ) Canopy_covden
-        IF ( Use_transfer_intcp==1 ) THEN
-          READ ( Restart_inunit ) Basin_net_apply, Basin_hru_apply
-          READ ( Restart_inunit ) Net_apply
-        ENDIF
       ENDIF
       END SUBROUTINE intcp_restart

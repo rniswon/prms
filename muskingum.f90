@@ -159,7 +159,7 @@
       USE PRMS_MUSKINGUM
       USE PRMS_MODULE, ONLY: Nsegment, Init_vars_from_file
       USE PRMS_BASIN, ONLY: NEARZERO, Basin_area_inv
-      USE PRMS_FLOWVARS, ONLY: Seg_inflow, Seg_outflow
+      USE PRMS_FLOWVARS, ONLY: Seg_outflow
       USE PRMS_SET_TIME, ONLY: Cfs_conv
       USE PRMS_ROUTING, ONLY: Basin_segment_storage
       IMPLICIT NONE
@@ -179,10 +179,7 @@
         ENDDO
         DEALLOCATE ( Segment_flow_init )
       ENDIF
-      IF ( Init_vars_from_file==0 ) THEN
-        Seg_inflow = 0.0D0
-        Outflow_ts = 0.0D0
-      ENDIF
+      IF ( Init_vars_from_file==0 ) Outflow_ts = 0.0D0
 
       Basin_segment_storage = 0.0D0
       DO i = 1, Nsegment
@@ -400,13 +397,9 @@
       IF ( In_out==0 ) THEN
         WRITE ( Restart_outunit ) MODNAME
         WRITE ( Restart_outunit ) Outflow_ts
-        WRITE ( Restart_outunit ) Pastin
-        WRITE ( Restart_outunit ) Pastout
       ELSE
         READ ( Restart_inunit ) module_name
         CALL check_restart(MODNAME, module_name)
         READ ( Restart_inunit ) Outflow_ts
-        READ ( Restart_inunit ) Pastin
-        READ ( Restart_inunit ) Pastout
       ENDIF
       END SUBROUTINE muskingum_restart

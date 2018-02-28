@@ -109,7 +109,7 @@
 !***********************************************************************
       srunoffdecl = 0
 
-      Version_srunoff = 'srunoff.f90 2017-11-08 12:16:00Z'
+      Version_srunoff = 'srunoff.f90 2018-02-23 16:06:00Z'
       IF ( Sroff_flag==1 ) THEN
         MODNAME = 'srunoff_smidx'
       ELSE
@@ -473,8 +473,7 @@
       INTEGER FUNCTION srunoffinit()
       USE PRMS_SRUNOFF
       USE PRMS_MODULE, ONLY: Dprst_flag, Nhru, Nlake, Cascade_flag, Sroff_flag, &
-     &    Parameter_check_flag, Print_debug, Init_vars_from_file, Call_cascade, &
-     &    Water_use_flag, Frozen_flag
+     &    Parameter_check_flag, Init_vars_from_file, Call_cascade, Water_use_flag, Frozen_flag
       USE PRMS_BASIN, ONLY: Active_hrus, Hru_route_order
       USE PRMS_FLOWVARS, ONLY: Soil_moist_max
       IMPLICIT NONE
@@ -490,11 +489,21 @@
       Use_sroff_transfer = 0
       IF ( Water_use_flag==1 ) Use_sroff_transfer = 1
 
+      Imperv_evap = 0.0
+      Hortonian_flow = 0.0
+      Hru_sroffi = 0.0
+      Hru_sroffp = 0.0
+      Contrib_fraction = 0.0
+      Hru_impervevap = 0.0
+      Hru_impervstor = 0.0
+      IF ( Call_cascade==1 ) Strm_seg_in = 0.0D0
+      IF ( Cascade_flag==1 ) THEN
+        Upslope_hortonian = 0.0D0
+        Hru_hortn_cascflow = 0.0D0
+        IF ( Nlake>0 ) Hortonian_lakes = 0.0D0
+      ENDIF
+
       IF ( Init_vars_from_file==0 ) THEN
-        Imperv_evap = 0.0
-        Hortonian_flow = 0.0
-        Hru_sroffi = 0.0
-        Hru_sroffp = 0.0
         Basin_sroffi = 0.0D0
         Basin_sroffp = 0.0D0
         Basin_infil = 0.0D0
@@ -511,18 +520,8 @@
         Basin_sroff_down = 0.0D0
         Basin_hortonian_lakes = 0.0D0
         Basin_contrib_fraction = 0.0D0
-        Contrib_fraction = 0.0
-        Hru_impervevap = 0.0
-        Hru_impervstor = 0.0
         Srp = 0.0
         Sri = 0.0
-
-        IF ( Call_cascade==1 ) Strm_seg_in = 0.0D0
-        IF ( Cascade_flag==1 ) THEN
-          Upslope_hortonian = 0.0D0
-          Hru_hortn_cascflow = 0.0D0
-          IF ( Nlake>0 ) Hortonian_lakes = 0.0D0
-        ENDIF
 
         IF ( Frozen_flag==1 ) THEN
           Frozen = 0
@@ -585,11 +584,6 @@
 
 ! Depression Storage parameters and variables:
       IF ( Dprst_flag==1 ) CALL dprst_init()
-
-      IF ( Print_debug==1 ) THEN
-        Imperv_stor_ante = Hru_impervstor
-        IF ( Dprst_flag==1 ) Dprst_stor_ante = Dprst_stor_hru
-      ENDIF
 
       END FUNCTION srunoffinit
 
@@ -729,10 +723,10 @@
               runoff = runoff + apply_sroff
             ENDIF
           ENDIF
-          ENDIF
+        ENDIF
 
-          CALL compute_infil(Net_rain(i), Net_ppt(i), Imperv_stor(i), Imperv_stor_max(i), Snowmelt(i), &
-     &                       Snowinfil_max(i), Net_snow(i), Pkwater_equiv(i), Infil(i), Hru_type(i))
+        CALL compute_infil(Net_rain(i), Net_ppt(i), Imperv_stor(i), Imperv_stor_max(i), Snowmelt(i), &
+     &                     Snowinfil_max(i), Net_snow(i), Pkwater_equiv(i), Infil(i), Hru_type(i))
 
         ENDIF
 
@@ -1099,12 +1093,10 @@
       INTEGER :: i, j
       REAL :: frac_op_ar, frac_cl_ar, open_vol_r, clos_vol_r
 !***********************************************************************
-      IF ( Init_vars_from_file==0 ) THEN
-        Dprst_evap_hru = 0.0
-        Dprst_seep_hru = 0.0D0
-        Dprst_sroff_hru = 0.0D0
-        Dprst_insroff_hru = 0.0
-      ENDIF
+      Dprst_evap_hru = 0.0
+      Dprst_seep_hru = 0.0D0
+      Dprst_sroff_hru = 0.0D0
+      Dprst_insroff_hru = 0.0
       IF ( Init_vars_from_file==0 .OR. Init_vars_from_file==2 .OR. Init_vars_from_file==7 ) THEN
         IF ( getparam(MODNAME, 'dprst_frac_init', Nhru, 'real', Dprst_frac_init)/=0 ) CALL read_error(2, 'dprst_frac_init')
       ENDIF
@@ -1467,8 +1459,7 @@
 !     srunoff_restart - write or read srunoff restart file
 !***********************************************************************
       SUBROUTINE srunoff_restart(In_out)
-      USE PRMS_MODULE, ONLY: Restart_outunit, Restart_inunit, Nlake, Dprst_flag, &
-     &    Cascade_flag, Call_cascade, Frozen_flag
+      USE PRMS_MODULE, ONLY: Restart_outunit, Restart_inunit, Dprst_flag, Frozen_flag
       USE PRMS_SRUNOFF
       IMPLICIT NONE
       ! Argument
@@ -1484,25 +1475,8 @@
      &                            Sri, Srp, Basin_hortonian_lakes
         WRITE ( Restart_outunit ) Basin_dprst_sroff, Basin_dprst_evap, Basin_dprst_seep, &
      &                            Basin_dprst_volop, Basin_dprst_volcl, Basin_contrib_fraction
-        WRITE ( Restart_outunit ) Hru_sroffp
-        WRITE ( Restart_outunit ) Imperv_evap
-        WRITE ( Restart_outunit ) Hru_impervevap
-        WRITE ( Restart_outunit ) Hru_impervstor
-        WRITE ( Restart_outunit ) Hru_sroffi
-        WRITE ( Restart_outunit ) Hortonian_flow
-        WRITE ( Restart_outunit ) Contrib_fraction
-        IF ( Call_cascade==1 ) WRITE ( Restart_outunit ) Strm_seg_in
-        IF ( Cascade_flag==1 ) THEN
-          WRITE ( Restart_outunit ) Upslope_hortonian
-          WRITE ( Restart_outunit ) Hru_hortn_cascflow
-          IF ( Nlake>0 ) WRITE ( Restart_outunit ) Hortonian_lakes
-        ENDIF
         IF ( Dprst_flag==1 ) THEN
-          WRITE ( Restart_outunit ) Dprst_evap_hru
-          WRITE ( Restart_outunit ) Dprst_seep_hru
           WRITE ( Restart_outunit ) Dprst_area_open
-          WRITE ( Restart_outunit ) Dprst_sroff_hru
-          WRITE ( Restart_outunit ) Dprst_insroff_hru
           WRITE ( Restart_outunit ) Dprst_area_clos
           WRITE ( Restart_outunit ) Dprst_stor_hru
           WRITE ( Restart_outunit ) Dprst_vol_thres_open
@@ -1520,25 +1494,8 @@
      &                          Sri, Srp, Basin_hortonian_lakes
         READ ( Restart_inunit ) Basin_dprst_sroff, Basin_dprst_evap, Basin_dprst_seep, &
      &                          Basin_dprst_volop, Basin_dprst_volcl, Basin_contrib_fraction
-        READ ( Restart_inunit ) Hru_sroffp
-        READ ( Restart_inunit ) Imperv_evap
-        READ ( Restart_inunit ) Hru_impervevap
-        READ ( Restart_inunit ) Hru_impervstor
-        READ ( Restart_inunit ) Hru_sroffi
-        READ ( Restart_inunit ) Hortonian_flow
-        READ ( Restart_inunit ) Contrib_fraction
-        IF ( Call_cascade==1 ) READ ( Restart_inunit ) Strm_seg_in
-        IF ( Cascade_flag==1 ) THEN
-          READ ( Restart_inunit ) Upslope_hortonian
-          READ ( Restart_inunit ) Hru_hortn_cascflow
-          IF ( Nlake>0 ) READ ( Restart_inunit ) Hortonian_lakes
-        ENDIF
         IF ( Dprst_flag==1 ) THEN
-          READ ( Restart_inunit ) Dprst_evap_hru
-          READ ( Restart_inunit ) Dprst_seep_hru
           READ ( Restart_inunit ) Dprst_area_open
-          READ ( Restart_inunit ) Dprst_sroff_hru
-          READ ( Restart_inunit ) Dprst_insroff_hru
           READ ( Restart_inunit ) Dprst_area_clos
           READ ( Restart_inunit ) Dprst_stor_hru
           READ ( Restart_inunit ) Dprst_vol_thres_open

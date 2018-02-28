@@ -65,7 +65,7 @@
 !***********************************************************************
       routingdecl = 0
 
-      Version_routing = 'routing.f90 2017-10-06 11:58:00Z'
+      Version_routing = 'routing.f90 2018-02-23 15:45:00Z'
       CALL print_module(Version_routing, 'Routing Initialization      ', 90)
       MODNAME = 'routing'
 
@@ -277,31 +277,32 @@
       IF ( Water_use_flag==1 .AND. Segment_transferON_OFF==1 ) Use_transfer_segment = 1
 
       IF ( Init_vars_from_file==0 ) THEN
-        IF ( Cascade_flag==0 ) THEN
-          Seginc_potet = 0.0D0
-          Seginc_gwflow = 0.0D0
-          Seginc_ssflow = 0.0D0
-          Seginc_sroff = 0.0D0
-          Seginc_swrad = 0.0D0
-          Seg_gwflow = 0.0D0
-          Seg_ssflow = 0.0D0
-          Seg_sroff = 0.0D0
-        ENDIF
-        Hru_outflow = 0.0D0
         Basin_segment_storage = 0.0D0
         Segment_delta_flow = 0.0D0
-        Flow_to_ocean = 0.0D0
-        Flow_to_great_lakes = 0.0D0
-        Flow_out_region = 0.0D0
-        Flow_out_NHM = 0.0D0
-        Flow_terminus = 0.0D0
-        Flow_to_lakes = 0.0D0
-        Flow_in_nation = 0.0D0
-        Flow_in_region = 0.0D0
-        Flow_headwater = 0.0D0
-        Flow_in_great_lakes = 0.0D0
-        Flow_replacement = 0.0D0
       ENDIF
+
+      IF ( Cascade_flag==0 ) THEN
+        Seginc_potet = 0.0D0
+        Seginc_gwflow = 0.0D0
+        Seginc_ssflow = 0.0D0
+        Seginc_sroff = 0.0D0
+        Seginc_swrad = 0.0D0
+        Seg_gwflow = 0.0D0
+        Seg_ssflow = 0.0D0
+        Seg_sroff = 0.0D0
+      ENDIF
+      Hru_outflow = 0.0D0
+      Flow_to_ocean = 0.0D0
+      Flow_to_great_lakes = 0.0D0
+      Flow_out_region = 0.0D0
+      Flow_out_NHM = 0.0D0
+      Flow_terminus = 0.0D0
+      Flow_to_lakes = 0.0D0
+      Flow_in_nation = 0.0D0
+      Flow_in_region = 0.0D0
+      Flow_headwater = 0.0D0
+      Flow_in_great_lakes = 0.0D0
+      Flow_replacement = 0.0D0
 
       Cfs2acft = Timestep_seconds/FT2_PER_ACRE
 
@@ -645,32 +646,12 @@
 !***********************************************************************
       IF ( In_out==0 ) THEN
         WRITE ( Restart_outunit ) MODNAME
-        WRITE ( Restart_outunit ) Cfs2acft
-        WRITE ( Restart_outunit ) Seginc_ssflow
-        WRITE ( Restart_outunit ) Seginc_sroff
-        WRITE ( Restart_outunit ) Seginc_gwflow
-        WRITE ( Restart_outunit ) Seginc_swrad
-        WRITE ( Restart_outunit ) Seginc_potet
-        WRITE ( Restart_outunit ) Hru_outflow
         WRITE ( Restart_outunit ) Basin_segment_storage
         WRITE ( Restart_outunit ) Segment_delta_flow
-        WRITE ( Restart_outunit ) Flow_to_ocean, Flow_to_great_lakes, Flow_out_region, Flow_out_NHM, Flow_terminus
-        WRITE ( Restart_outunit ) Flow_to_lakes, Flow_in_nation, Flow_in_region, Flow_headwater
-        WRITE ( Restart_outunit ) Flow_in_great_lakes, Flow_replacement
       ELSE
         READ ( Restart_inunit ) module_name
         CALL check_restart(MODNAME, module_name)
-        READ ( Restart_inunit ) Cfs2acft
-        READ ( Restart_inunit ) Seginc_ssflow
-        READ ( Restart_inunit ) Seginc_sroff
-        READ ( Restart_inunit ) Seginc_gwflow
-        READ ( Restart_inunit ) Seginc_swrad
-        READ ( Restart_inunit ) Seginc_potet
-        READ ( Restart_inunit ) Hru_outflow
         READ ( Restart_inunit ) Basin_segment_storage
         READ ( Restart_inunit ) Segment_delta_flow
-        READ ( Restart_inunit ) Flow_to_ocean, Flow_to_great_lakes, Flow_out_region, Flow_out_NHM, Flow_terminus
-        READ ( Restart_inunit ) Flow_to_lakes, Flow_in_nation, Flow_in_region, Flow_headwater
-        READ ( Restart_inunit ) Flow_in_great_lakes, Flow_replacement
       ENDIF
       END SUBROUTINE routing_restart

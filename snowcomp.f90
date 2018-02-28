@@ -98,7 +98,7 @@
 !***********************************************************************
       snodecl = 0
 
-      Version_snowcomp = 'snowcomp.f90 2018-02-08 15:23:00Z'
+      Version_snowcomp = 'snowcomp.f90 2018-02-23 16:04:00Z'
       CALL print_module(Version_snowcomp, 'Snow Dynamics               ', 90)
       MODNAME = 'snowcomp'
 
@@ -497,6 +497,15 @@
       IF ( getparam(MODNAME, 'freeh2o_cap', Nhru, 'real', Freeh2o_cap)/=0 ) CALL read_error(2, 'freeh2o_cap')
       IF ( getparam(MODNAME, 'tstorm_mo', Nhru*12, 'integer', Tstorm_mo)/=0 ) CALL read_error(2, 'tstorm_mo')
 
+      Pk_precip = 0.0
+      Snowmelt = 0.0
+      Snow_evap = 0.0
+      Pptmix_nopack = 0
+      Tcal = 0.0
+      Frac_swe = 0.0
+      Acum = acum_init
+      Amlt = amlt_init
+
       IF ( Init_vars_from_file==0 .OR. Init_vars_from_file==2 .OR. Init_vars_from_file==3 ) THEN
         IF ( getparam(MODNAME, 'snowpack_init', Nhru, 'real', Snowpack_init)/=0 ) CALL read_error(2, 'snowpack_init')
         Pkwater_equiv = 0.0D0
@@ -505,7 +514,6 @@
         Pk_ice = 0.0
         Freeh2o = 0.0
         Ai = 0.0D0
-        Frac_swe = 0.0
         Snowcov_area = 0.0
         Basin_pweqv = 0.0D0
         Basin_snowdepth = 0.0D0
@@ -536,10 +544,6 @@
         Pst = Pkwater_equiv
       ENDIF
       IF ( Init_vars_from_file>0 ) RETURN
-      Snowmelt = 0.0
-      Snow_evap = 0.0
-      Pptmix_nopack = 0
-      Tcal = 0.0
       Basin_tcal = 0.0D0
       Iasw = 0
       Iso = 1
@@ -556,13 +560,9 @@
       Snowcov_areasv = 0.0
       Scrv = 0.0D0
       Pksv = 0.0D0
-      Pk_precip = 0.0
       Basin_snowmelt = 0.0D0
       Basin_snowevap = 0.0D0
       Basin_pk_precip = 0.0D0
-
-      Acum = acum_init
-      Amlt = amlt_init
 
       END FUNCTION snoinit
 
@@ -639,6 +639,7 @@
         Snow_evap(i) = 0.0 ! [inches]
         Frac_swe(i) = 0.0
         Ai(i) = 0.0D0
+        Tcal(i) = 0.0
 
         ! By default, there has not been a mixed event without a
         ! snowpack
@@ -1806,7 +1807,7 @@
       cecsub = 0.0 ! [cal/cm^2] or [Langleys]
       IF ( Temp>0.0 ) THEN
         IF ( Hru_ppt>0.0 ) cecsub = Cec*Temp ! [cal/cm^2]
-                                             ! or [Langleys]
+                                                     ! or [Langleys]
       ENDIF
 
       ! Total energy potentially available from atmosphere: longwave,
@@ -2306,16 +2307,11 @@
         WRITE ( Restart_outunit ) Snowcov_areasv
         WRITE ( Restart_outunit ) Salb
         WRITE ( Restart_outunit ) Slst
-        WRITE ( Restart_outunit ) Acum
-        WRITE ( Restart_outunit ) Amlt
-        WRITE ( Restart_outunit ) Pptmix_nopack
         WRITE ( Restart_outunit ) Lst
         WRITE ( Restart_outunit ) Iasw
         WRITE ( Restart_outunit ) Iso
         WRITE ( Restart_outunit ) Mso
         WRITE ( Restart_outunit ) Lso
-        WRITE ( Restart_outunit ) Snowmelt
-        WRITE ( Restart_outunit ) Snow_evap
         WRITE ( Restart_outunit ) Albedo
         WRITE ( Restart_outunit ) Pk_temp
         WRITE ( Restart_outunit ) Pk_den
@@ -2323,14 +2319,11 @@
         WRITE ( Restart_outunit ) Pk_ice
         WRITE ( Restart_outunit ) Freeh2o
         WRITE ( Restart_outunit ) Snowcov_area
-        WRITE ( Restart_outunit ) Tcal
         WRITE ( Restart_outunit ) Pss
         WRITE ( Restart_outunit ) Pst
         WRITE ( Restart_outunit ) Snsv
-        WRITE ( Restart_outunit ) Pk_precip
         WRITE ( Restart_outunit ) Pk_depth
         WRITE ( Restart_outunit ) Pkwater_ante
-        WRITE ( Restart_outunit ) Frac_swe
       ELSE
         READ ( Restart_inunit ) module_name
         CALL check_restart(MODNAME, module_name)
@@ -2342,16 +2335,11 @@
         READ ( Restart_inunit ) Snowcov_areasv
         READ ( Restart_inunit ) Salb
         READ ( Restart_inunit ) Slst
-        READ ( Restart_inunit ) Acum
-        READ ( Restart_inunit ) Amlt
-        READ ( Restart_inunit ) Pptmix_nopack
         READ ( Restart_inunit ) Lst
         READ ( Restart_inunit ) Iasw
         READ ( Restart_inunit ) Iso
         READ ( Restart_inunit ) Mso
         READ ( Restart_inunit ) Lso
-        READ ( Restart_inunit ) Snowmelt
-        READ ( Restart_inunit ) Snow_evap
         READ ( Restart_inunit ) Albedo
         READ ( Restart_inunit ) Pk_temp
         READ ( Restart_inunit ) Pk_den
@@ -2359,13 +2347,10 @@
         READ ( Restart_inunit ) Pk_ice
         READ ( Restart_inunit ) Freeh2o
         READ ( Restart_inunit ) Snowcov_area
-        READ ( Restart_inunit ) Tcal
         READ ( Restart_inunit ) Pss
         READ ( Restart_inunit ) Pst
         READ ( Restart_inunit ) Snsv
-        READ ( Restart_inunit ) Pk_precip
         READ ( Restart_inunit ) Pk_depth
         READ ( Restart_inunit ) Pkwater_ante
-        READ ( Restart_inunit ) Frac_swe
       ENDIF
       END SUBROUTINE snowcomp_restart

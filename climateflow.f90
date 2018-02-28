@@ -122,9 +122,9 @@
       USE PRMS_CLIMATEVARS
       USE PRMS_FLOWVARS
       USE PRMS_MODULE, ONLY: Temp_flag, Precip_flag, Model, Nhru, Nssr, Nevap, Nlake, &
-     &    Nsegment, Strmflow_module, Temp_module, Ntemp, Stream_order_flag, &
+     &    Nsegment, Strmflow_module, Temp_module, Ntemp, Stream_order_flag, Stream_temp_flag, &
      &    Precip_module, Solrad_module, Transp_module, Et_module, Init_vars_from_file, &
-     &    Soilzone_module, Srunoff_module, Nrain, Nsol, Call_cascade, Et_flag, Dprst_flag, Solrad_flag, Stream_temp_flag
+     &    Soilzone_module, Srunoff_module, Nrain, Nsol, Call_cascade, Et_flag, Dprst_flag, Solrad_flag
       IMPLICIT NONE
 ! Functions
       INTEGER, EXTERNAL :: declparam
@@ -134,7 +134,7 @@
 !***********************************************************************
       climateflow_decl = 0
 
-      Version_climateflow = 'climateflow.f90 2018-01-16 13:38:00Z'
+      Version_climateflow = 'climateflow.f90 2018-02-23 16:03:00Z'
       CALL print_module(Version_climateflow, 'Common States and Fluxes    ', 90)
       MODNAME = 'climateflow'
 
@@ -896,13 +896,17 @@
         Solsta_flag = 0
         IF ( Nsol>0 ) THEN
           IF ( getparam(Solrad_module, 'basin_solsta', 1, 'integer', Basin_solsta)/=0 ) CALL read_error(2, 'basin_solsta')
+
           IF ( getparam(Solrad_module, 'rad_conv', 1, 'real', Rad_conv)/=0 ) CALL read_error(2, 'rad_conv')
+
           IF ( getparam(Solrad_module, 'hru_solsta', Nhru, 'integer', Hru_solsta)/=0 ) CALL read_error(2, 'hru_solsta')
+
           IF ( Parameter_check_flag>0 ) THEN
             CALL checkdim_param_limits(1, 'basin_solsta', 'nsol', Basin_solsta, 1, Nsol, Inputerror_flag)
             CALL checkdim_bounded_limits('hru_solsta', 'nsol', Hru_solsta, Nhru, 0, Nsol, ierr)
             IF ( ierr==1 ) Inputerror_flag = 1
           ENDIF
+
           DO j = 1, Active_hrus
             i = Hru_route_order(j)
             IF ( Hru_solsta(i)>0 ) THEN
@@ -961,8 +965,7 @@
 
       IF ( getparam(Srunoff_module, 'imperv_stor_max', Nhru, 'real', Imperv_stor_max)/=0 ) CALL read_error(2, 'imperv_stor_max')
 
-      IF ( Init_vars_from_file>0 ) RETURN
-
+! initialize arrays (dimensioned Nhru)
       Tmaxf = 0.0
       Tminf = 0.0
       Tavgf = 0.0
@@ -971,31 +974,27 @@
       Tavgc = 0.0
       Tmax_hru = 0.0
       Tmin_hru = 0.0
-      Solrad_tmax = 0.0
-      Solrad_tmin = 0.0
-      Basin_temp = 0.0D0
-      Basin_tmax = 0.0D0
-      Basin_tmin = 0.0D0
       Pptmix = 0
       Newsnow = 0
       Prmx = 0.0
-      Basin_ppt = 0.0D0
-      Basin_obs_ppt = 0.0D0
-      Basin_rain = 0.0D0
-      Basin_snow = 0.0D0
       Hru_ppt = 0.0
       Hru_rain = 0.0
       Hru_snow = 0.0
       Swrad = 0.0
       Orad = 0.0
-      Basin_horad = 0.0D0
-      Basin_potsw = 0.0D0
-      Basin_swrad = 0.0D0
-      Transp_on = 0
-      Basin_transp_on = 0
-      Basin_potet = 0.0D0
       Potet = 0.0
-      Basin_humidity = 0.0D0
+      Slow_flow = 0.0
+      Soil_to_gw = 0.0
+      Soil_to_ssr = 0.0
+      Hru_actet = 0.0
+      Infil = 0.0
+      Sroff = 0.0
+      IF ( Solrad_flag==2 .OR. Stream_temp_flag==1 ) Cloud_cover_hru = 0.0
+! initialize arrays (dimensioned Nssr)
+      Ssr_to_gw = 0.0
+      Ssres_in = 0.0
+      Ssres_flow = 0.0
+      IF ( Solrad_flag==1 .OR. Solrad_flag==2 ) Orad_hru = 0.0
       IF ( Et_flag==5 .OR. Et_flag==11 .OR. Et_flag==6 ) THEN
         Tempc_dewpt = 0.0
         Vp_actual = 0.0
@@ -1009,15 +1008,30 @@
           Humidity_percent = 1.0
         ENDIF
       ENDIF
-      Basin_orad = 0.0D0
-      IF ( Solrad_flag==1 .OR. Solrad_flag==2 ) Orad_hru = 0.0
-! Cloud cover
-      IF ( Solrad_flag==2 .OR. Stream_temp_flag==1 ) THEN
-        Cloud_cover_hru = 0.0
-        Basin_cloud_cover = 0.0D0
+! initialize arrays (dimensioned Nsegment)
+      IF ( Stream_order_flag==1 ) THEN
+        Seg_upstream_inflow = 0.0D0
+        Seg_lateral_inflow = 0.0D0
       ENDIF
 
+      IF ( Init_vars_from_file==1 ) RETURN
+
 ! initialize scalers
+      Basin_temp = 0.0D0
+      Basin_tmax = 0.0D0
+      Basin_tmin = 0.0D0
+      Basin_ppt = 0.0D0
+      Basin_obs_ppt = 0.0D0
+      Basin_rain = 0.0D0
+      Basin_snow = 0.0D0
+      Basin_horad = 0.0D0
+      Basin_potsw = 0.0D0
+      Basin_swrad = 0.0D0
+      Basin_transp_on = 0
+      Basin_potet = 0.0D0
+      Basin_humidity = 0.0D0
+      Basin_orad = 0.0D0
+      Basin_cloud_cover = 0.0D0
       Basin_perv_et = 0.0D0
       Basin_actet = 0.0D0
       Basin_lakeevap = 0.0D0
@@ -1027,24 +1041,8 @@
       Basin_soil_moist = 0.0D0
       Basin_ssstor = 0.0D0
       Basin_lake_stor = 0.0D0
-! initialize arrays (dimensioned Nssr)
-      Ssr_to_gw = 0.0
-      Ssres_in = 0.0
-      Ssres_flow = 0.0
-! initialize arrays (dimensioned Nhru)
-      Slow_flow = 0.0
-      Soil_to_gw = 0.0
-      Soil_to_ssr = 0.0
-      Hru_actet = 0.0
-      Infil = 0.0
-      Sroff = 0.0
-      Imperv_stor = 0.0
-      Pkwater_equiv = 0.0D0
-      Gwres_stor = 0.0D0
-      IF ( Dprst_flag==1 ) THEN
-        Dprst_vol_open = 0.0D0
-        Dprst_vol_clos = 0.0D0
-      ENDIF
+      Solrad_tmax = 0.0
+      Solrad_tmin = 0.0
       Basin_cfs = 0.0D0
       Basin_cms = 0.0D0
       Basin_stflow_in = 0.0D0
@@ -1057,8 +1055,15 @@
       IF ( Stream_order_flag==1 ) THEN
         Seg_inflow = 0.0D0
         Seg_outflow = 0.0D0
-        Seg_upstream_inflow = 0.0D0
-        Seg_lateral_inflow = 0.0D0
+      ENDIF
+      Transp_on = 0
+! initialize storage variables
+      Imperv_stor = 0.0
+      Pkwater_equiv = 0.0D0
+      Gwres_stor = 0.0D0
+      IF ( Dprst_flag==1 ) THEN
+        Dprst_vol_open = 0.0D0
+        Dprst_vol_clos = 0.0D0
       ENDIF
 ! initialize arrays (dimensioned nlake)
       IF ( Nlake>0 ) Lake_vol = 0.0D0
@@ -1188,8 +1193,7 @@
 !     Write or read restart file
 !***********************************************************************
       SUBROUTINE climateflow_restart(In_out)
-      USE PRMS_MODULE, ONLY: Restart_outunit, Restart_inunit, Stream_order_flag, &
-     &    Dprst_flag, Solrad_flag, Et_flag, Stream_temp_flag
+      USE PRMS_MODULE, ONLY: Restart_outunit, Restart_inunit, Stream_order_flag, Dprst_flag, Nlake
       USE PRMS_CLIMATEVARS
       USE PRMS_FLOWVARS
       IMPLICIT NONE
@@ -1203,44 +1207,18 @@
         WRITE ( Restart_outunit ) MODNAME
         WRITE ( Restart_outunit ) Basin_ppt, Basin_rain, Basin_snow, Basin_obs_ppt, Basin_temp, Basin_orad, &
      &          Basin_tmax, Basin_tmin, Solrad_tmax, Solrad_tmin, Basin_transp_on, Basin_potet, Basin_horad, &
-     &          Basin_swrad, Orad, Flow_out
+     &          Basin_swrad, Orad, Flow_out, Basin_cloud_cover
         WRITE ( Restart_outunit ) Basin_cfs, Basin_cms, Basin_ssflow_cfs, Basin_sroff_cfs, Basin_stflow_in, &
      &          Basin_gwflow_cfs, Basin_stflow_out, Basin_ssflow, Basin_soil_to_gw, Basin_actet, &
      &          Basin_swale_et, Basin_perv_et, Basin_soil_moist, Basin_ssstor, Basin_lakeevap, Basin_lake_stor
-        WRITE ( Restart_outunit ) Tmax_hru
-        WRITE ( Restart_outunit ) Tmin_hru
-        WRITE ( Restart_outunit ) Newsnow
-        WRITE ( Restart_outunit ) Pptmix
-        WRITE ( Restart_outunit ) Hru_ppt
-        WRITE ( Restart_outunit ) Hru_rain
-        WRITE ( Restart_outunit ) Hru_snow
-        WRITE ( Restart_outunit ) Prmx
-        WRITE ( Restart_outunit ) Tmaxf
-        WRITE ( Restart_outunit ) Tminf
-        WRITE ( Restart_outunit ) Tavgf
-        WRITE ( Restart_outunit ) Tmaxc
-        WRITE ( Restart_outunit ) Tminc
-        WRITE ( Restart_outunit ) Tavgc
         WRITE ( Restart_outunit ) Transp_on
-        WRITE ( Restart_outunit ) Potet
-        WRITE ( Restart_outunit ) Swrad
         WRITE ( Restart_outunit ) Pkwater_equiv
-        WRITE ( Restart_outunit ) Hru_actet
-        WRITE ( Restart_outunit ) Soil_to_gw
-        WRITE ( Restart_outunit ) Slow_flow
         WRITE ( Restart_outunit ) Soil_moist
-        WRITE ( Restart_outunit ) Soil_to_ssr
-        WRITE ( Restart_outunit ) Ssres_in
-        WRITE ( Restart_outunit ) Ssr_to_gw
         WRITE ( Restart_outunit ) Slow_stor
         WRITE ( Restart_outunit ) Ssres_stor
-        WRITE ( Restart_outunit ) Ssres_flow
         WRITE ( Restart_outunit ) Soil_rechr
-        WRITE ( Restart_outunit ) Sroff
         WRITE ( Restart_outunit ) Imperv_stor
-        WRITE ( Restart_outunit ) Infil
         WRITE ( Restart_outunit ) Gwres_stor
-        IF ( Solrad_flag==1 .OR. Solrad_flag==2 ) WRITE ( Restart_outunit ) Orad_hru
         IF ( Dprst_flag==1 ) THEN
           WRITE ( Restart_outunit ) Dprst_vol_open
           WRITE ( Restart_outunit ) Dprst_vol_clos
@@ -1248,63 +1226,25 @@
         IF ( Stream_order_flag==1 ) THEN
           WRITE ( Restart_outunit ) Seg_inflow
           WRITE ( Restart_outunit ) Seg_outflow
-          WRITE ( Restart_outunit ) Seg_lateral_inflow
-          WRITE ( Restart_outunit ) Seg_upstream_inflow
         ENDIF
-        IF ( Et_flag==5 .OR. Et_flag==11 .OR. Et_flag==6 ) THEN
-          WRITE ( Restart_outunit ) Tempc_dewpt
-          WRITE ( Restart_outunit ) Vp_actual
-          WRITE ( Restart_outunit ) Lwrad_net
-          WRITE ( Restart_outunit ) Vp_slope
-          IF ( Et_flag==11 .OR. Et_flag==6 ) WRITE ( Restart_outunit ) Vp_sat
-        ENDIF
-        IF ( Solrad_flag==2 .OR. Stream_temp_flag==1 ) THEN
-          WRITE ( Restart_outunit ) Basin_cloud_cover
-          WRITE ( Restart_outunit ) Cloud_cover_hru
-        ENDIF
+        IF ( Nlake>0 ) WRITE ( Restart_outunit ) Lake_vol
       ELSE
         READ ( Restart_inunit ) module_name
         CALL check_restart(MODNAME, module_name)
         READ ( Restart_inunit ) Basin_ppt, Basin_rain, Basin_snow, Basin_obs_ppt, Basin_temp, Basin_orad, &
      &         Basin_tmax, Basin_tmin, Solrad_tmax, Solrad_tmin, Basin_transp_on, Basin_potet, Basin_horad, &
-     &         Basin_swrad, Orad, Flow_out
+     &         Basin_swrad, Orad, Flow_out, Basin_cloud_cover
         READ ( Restart_inunit ) Basin_cfs, Basin_cms, Basin_ssflow_cfs, Basin_sroff_cfs, Basin_stflow_in, &
      &         Basin_gwflow_cfs, Basin_stflow_out, Basin_ssflow, Basin_soil_to_gw, Basin_actet, &
      &         Basin_swale_et, Basin_perv_et, Basin_soil_moist, Basin_ssstor, Basin_lakeevap, Basin_lake_stor
-        READ ( Restart_inunit ) Tmax_hru
-        READ ( Restart_inunit ) Tmin_hru
-        READ ( Restart_inunit ) Newsnow
-        READ ( Restart_inunit ) Pptmix
-        READ ( Restart_inunit ) Hru_ppt
-        READ ( Restart_inunit ) Hru_rain
-        READ ( Restart_inunit ) Hru_snow
-        READ ( Restart_inunit ) Prmx
-        READ ( Restart_inunit ) Tmaxf
-        READ ( Restart_inunit ) Tminf
-        READ ( Restart_inunit ) Tavgf
-        READ ( Restart_inunit ) Tmaxc
-        READ ( Restart_inunit ) Tminc
-        READ ( Restart_inunit ) Tavgc
         READ ( Restart_inunit ) Transp_on
-        READ ( Restart_inunit ) Potet
-        READ ( Restart_inunit ) Swrad
         READ ( Restart_inunit ) Pkwater_equiv
-        READ ( Restart_inunit ) Hru_actet
-        READ ( Restart_inunit ) Soil_to_gw
-        READ ( Restart_inunit ) Slow_flow
         READ ( Restart_inunit ) Soil_moist
-        READ ( Restart_inunit ) Soil_to_ssr
-        READ ( Restart_inunit ) Ssres_in
-        READ ( Restart_inunit ) Ssr_to_gw
         READ ( Restart_inunit ) Slow_stor
         READ ( Restart_inunit ) Ssres_stor
-        READ ( Restart_inunit ) Ssres_flow
         READ ( Restart_inunit ) Soil_rechr
-        READ ( Restart_inunit ) Sroff
         READ ( Restart_inunit ) Imperv_stor
-        READ ( Restart_inunit ) Infil
         READ ( Restart_inunit ) Gwres_stor
-        IF ( Solrad_flag==1 .OR. Solrad_flag==2 ) READ ( Restart_inunit ) Orad_hru
         IF ( Dprst_flag==1 ) THEN
           READ ( Restart_inunit ) Dprst_vol_open
           READ ( Restart_inunit ) Dprst_vol_clos
@@ -1312,19 +1252,7 @@
         IF ( Stream_order_flag==1 ) THEN
           READ ( Restart_inunit ) Seg_inflow
           READ ( Restart_inunit ) Seg_outflow
-          READ ( Restart_inunit ) Seg_lateral_inflow
-          READ ( Restart_inunit ) Seg_upstream_inflow
         ENDIF
-        IF ( Et_flag==5 .OR. Et_flag==11 .OR. Et_flag==6 ) THEN
-          READ ( Restart_inunit ) Tempc_dewpt
-          READ ( Restart_inunit ) Vp_actual
-          READ ( Restart_inunit ) Lwrad_net
-          READ ( Restart_inunit ) Vp_slope
-          IF ( Et_flag==11 .OR. Et_flag==6 ) READ ( Restart_inunit ) Vp_sat
-        ENDIF
-        IF ( Solrad_flag==2 .OR. Stream_temp_flag==1 ) THEN
-          READ ( Restart_inunit ) Basin_cloud_cover
-          READ ( Restart_inunit ) Cloud_cover_hru
-        ENDIF
+        IF ( Nlake>0 ) READ ( Restart_inunit ) Lake_vol
       ENDIF
       END SUBROUTINE climateflow_restart
