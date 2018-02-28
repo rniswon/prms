@@ -211,7 +211,7 @@
 !***********************************************************************
       muskingum_lake_decl = 0
 
-      Version_muskingum_lake = 'muskingum_lake.f90 2017-10-26 16:58:00Z'
+      Version_muskingum_lake = 'muskingum_lake.f90 2018-02-26 13:26:00Z'
       CALL print_module(Version_muskingum_lake, 'Streamflow Routing          ', 90)
       MODNAME = 'muskingum_lake'
 
@@ -626,7 +626,7 @@
       USE PRMS_MODULE, ONLY: Nsegment, Inputerror_flag, Init_vars_from_file, Nratetbl, Nhru, Cascade_flag, Nlake
       USE PRMS_BASIN, ONLY: NEARZERO, Basin_area_inv, DNEARZERO, Active_hrus, Hru_route_order, Gwr_type, &
      &    CFS2CMS_CONV, Lake_hru_id, Weir_gate_flag, Lake_type, Puls_lin_flag
-      USE PRMS_FLOWVARS, ONLY: Seg_inflow, Seg_outflow, Basin_lake_stor, Lake_vol
+      USE PRMS_FLOWVARS, ONLY: Seg_outflow, Basin_lake_stor, Lake_vol
       USE PRMS_SET_TIME, ONLY: Cfs_conv
       USE PRMS_ROUTING, ONLY: Basin_segment_storage, Segment_type, Hru_segment
       IMPLICIT NONE
@@ -648,10 +648,7 @@
         ENDDO
         DEALLOCATE ( Segment_flow_init )
       ENDIF
-      IF ( Init_vars_from_file==0 ) THEN
-        Seg_inflow = 0.0D0
-        Outflow_ts = 0.0D0
-      ENDIF
+      IF ( Init_vars_from_file==0 ) Outflow_ts = 0.0D0
 
       Basin_segment_storage = 0.0D0
       DO i = 1, Nsegment
@@ -667,7 +664,7 @@
       Puls_flag = 0
       DO i = 1, Nlake
         IF ( Lake_type(i)==1 ) THEN
-          Puls_flag = 1
+           Puls_flag = 1
         ELSEIF ( Lake_type(i)==2 ) THEN
           Linear_flag = 1
         ELSEIF ( Lake_type(i)==4 ) THEN
@@ -689,26 +686,25 @@
           Lake_outcms(j) = Lake_qro(j)*CFS2CMS_CONV
         ENDDO
       ENDIF
-      IF ( Init_vars_from_file==0 ) THEN
-        Lake_outvol = 0.0D0
-        Lake_outvol_ts = 0.0D0
-        Lake_invol = 0.0D0
-        Lake_precip = 0.0D0
-        Lake_seep_in = 0.0D0
-        Lake_evap = 0.0D0
-        Lake_2gw = 0.0D0
-        Lake_inflow = 0.0D0
-        Lake_outflow = 0.0D0
-        IF ( Gate_flag==1 ) Lake_outq2 = 0.0D0
-        Basin_2ndstflow = 0.0D0
-        Lake_stream_in = 0.0D0
-        Basin_lake_stor = 0.0D0
-        IF ( Cascade_flag==1 ) THEN
-          Lake_lateral_inflow = 0.0D0
-          Lake_sroff = 0.0D0
-          Lake_interflow = 0.0D0
-          Lake_gwflow = 0.0D0
-        ENDIF
+
+      Lake_outvol = 0.0D0
+      Lake_outvol_ts = 0.0D0
+      Lake_invol = 0.0D0
+      Lake_precip = 0.0D0
+      Lake_seep_in = 0.0D0
+      Lake_evap = 0.0D0
+      Lake_2gw = 0.0D0
+      Lake_inflow = 0.0D0
+      Lake_outflow = 0.0D0
+      IF ( Gate_flag==1 ) Lake_outq2 = 0.0D0
+      Basin_2ndstflow = 0.0D0
+      Lake_stream_in = 0.0D0
+      Basin_lake_stor = 0.0D0
+      IF ( Cascade_flag==1 ) THEN
+        Lake_lateral_inflow = 0.0D0
+        Lake_sroff = 0.0D0
+        Lake_interflow = 0.0D0
+        Lake_gwflow = 0.0D0
       ENDIF
 
       IF ( Cascade_flag==0 ) THEN ! when cascades are active, hru_segment is not used
@@ -912,7 +908,7 @@
      &    Flow_to_lakes, Flow_replacement, Flow_in_region, Flow_in_nation, Flow_headwater, Flow_in_great_lakes
       USE PRMS_SRUNOFF, ONLY: Basin_sroff, Hortonian_lakes
       USE PRMS_SOILZONE, ONLY: Upslope_dunnianflow, Upslope_interflow
-      USE PRMS_GWFLOW, ONLY: Basin_gwflow, Lake_seepage, Gw_seep_lakein, Gw_upslope, elevlake
+      USE PRMS_GWFLOW, ONLY: Basin_gwflow, Lake_seepage, Gw_seep_lakein, Gw_upslope
       IMPLICIT NONE
 ! Functions
       INTRINSIC MOD, DBLE
@@ -1155,7 +1151,7 @@
       Basin_2ndstflow = Basin_2ndstflow*Basin_area_inv
       Basin_lake_stor = Basin_lake_stor*Basin_area_inv
 
-      write(77,'(10f11.3)') lake_vol, lake_outflow, lake_stream_in, lake_outcfs, elevlake
+!      write(77,'(10f11.3)') lake_vol, lake_outflow, lake_stream_in, lake_outcfs, elevlake
       END FUNCTION muskingum_lake_run
 
 !     ***********************************
@@ -1199,8 +1195,9 @@
       IF ( Laketype==1 ) THEN
         !rsr, why half of current in and last in???
         avin = (Lake_inflow(Lakeid)+Din1(Lakeid))*0.5D0
-        s2o2 = lake_storage - (Lake_outflow(Lakeid)+Lake_outcfs(Lakeid))*0.5D0 ! ???
+        s2o2 = lake_storage - (Lake_outflow(Lakeid)+Lake_outcfs(Lakeid))*0.5D0
         s2o2 = s2o2 + avin
+        Din1(Lakeid) = Lake_inflow(Lakeid)
         n = Nsos(Lakeid)
         DO jjj = 2, n
           IF ( s2o2<Wvd(jjj, Lakeid) ) THEN
@@ -1210,7 +1207,6 @@
         ENDDO
         q2 = S24(n, Lakeid)*s2o2 + C24(n, Lakeid)
         Lake_outcfs(Lakeid) = 0.0D0 ! set to q2 below
-
         lake_storage = s2o2 - q2*0.5D0
         Lake_sto(Lakeid) = lake_storage
 
@@ -1221,6 +1217,7 @@
         xkt = DBLE( Lake_coef(Lakeid) )
         coef2 = 1.0D0 - EXP(-xkt)
         q2 = (avin*(1.0D0-(coef2/xkt))) + lake_storage*coef2
+        Din1(Lakeid) = Lake_inflow(Lakeid)
         lake_storage = lake_storage + avin - q2
         Lake_sto(Lakeid) = lake_storage
 
@@ -1437,9 +1434,8 @@
 !     muskingum_lake_restart - write or read restart file
 !***********************************************************************
       SUBROUTINE muskingum_lake_restart(In_out)
-      USE PRMS_MODULE, ONLY: Restart_outunit, Restart_inunit, Cascade_flag
-      USE PRMS_BASIN, ONLY: Weir_gate_flag, Puls_lin_flag
-      USE PRMS_FLOWVARS, ONLY: Lake_vol
+      USE PRMS_MODULE, ONLY: Restart_outunit, Restart_inunit
+      USE PRMS_BASIN, ONLY: Puls_lin_flag
       USE PRMS_MUSKINGUM_LAKE
       IMPLICIT NONE
       ! Argument
@@ -1451,66 +1447,18 @@
 !***********************************************************************
       IF ( In_out==0 ) THEN
         WRITE ( Restart_outunit ) MODNAME
-        WRITE ( Restart_outunit ) Basin_2ndstflow
         WRITE ( Restart_outunit ) Outflow_ts
-        WRITE ( Restart_outunit ) Pastin
-        WRITE ( Restart_outunit ) Pastout
         IF ( Puls_lin_flag==1 ) THEN
           WRITE ( Restart_outunit ) Din1
           WRITE ( Restart_outunit ) Lake_sto
         ENDIF
-        WRITE ( Restart_outunit ) Lake_stream_in
-        WRITE ( Restart_outunit ) Lake_precip
-        WRITE ( Restart_outunit ) Lake_outcfs
-        WRITE ( Restart_outunit ) Lake_outcms
-        WRITE ( Restart_outunit ) Lake_outvol
-        WRITE ( Restart_outunit ) Lake_inflow
-        WRITE ( Restart_outunit ) Lake_outflow
-        IF ( Weir_gate_flag==1 ) THEN
-          WRITE ( Restart_outunit ) Lake_vol
-          WRITE ( Restart_outunit ) Lake_invol
-          WRITE ( Restart_outunit ) Lake_2gw
-          WRITE ( Restart_outunit ) Lake_seep_in
-        ENDIF
-        WRITE ( Restart_outunit ) Lake_evap
-        IF ( Cascade_flag==1 ) THEN
-          WRITE ( Restart_outunit ) Lake_sroff
-          WRITE ( Restart_outunit ) Lake_interflow
-          WRITE ( Restart_outunit ) Lake_lateral_inflow
-          WRITE ( Restart_outunit ) Lake_gwflow
-        ENDIF
-        IF ( Secondoutflow_flag==1 ) WRITE ( Restart_outunit ) Lake_outq2
       ELSE
         READ ( Restart_inunit ) module_name
         CALL check_restart(MODNAME, module_name)
-        READ ( Restart_inunit ) Basin_2ndstflow
         READ ( Restart_inunit ) Outflow_ts
-        READ ( Restart_inunit ) Pastin
-        READ ( Restart_inunit ) Pastout
         IF ( Puls_lin_flag==1 ) THEN
           READ ( Restart_inunit ) Din1
           READ ( Restart_inunit ) Lake_sto
         ENDIF
-        READ ( Restart_inunit ) Lake_stream_in
-        READ ( Restart_inunit ) Lake_precip
-        READ ( Restart_inunit ) Lake_outcfs
-        READ ( Restart_inunit ) Lake_outcms
-        READ ( Restart_inunit ) Lake_outvol
-        READ ( Restart_inunit ) Lake_inflow
-        READ ( Restart_inunit ) Lake_outflow
-        IF ( Weir_gate_flag==1 ) THEN
-          READ ( Restart_inunit ) Lake_vol
-          READ ( Restart_inunit ) Lake_invol
-          READ ( Restart_inunit ) Lake_2gw
-          READ ( Restart_inunit ) Lake_seep_in
-        ENDIF
-        READ ( Restart_inunit ) Lake_evap
-        IF ( Cascade_flag==1 ) THEN
-          READ ( Restart_inunit ) Lake_sroff
-          READ ( Restart_inunit ) Lake_interflow
-          READ ( Restart_inunit ) Lake_lateral_inflow
-          READ ( Restart_inunit ) Lake_gwflow
-        ENDIF
-        IF ( Secondoutflow_flag==1 ) READ ( Restart_inunit ) Lake_outq2
       ENDIF
       END SUBROUTINE muskingum_lake_restart

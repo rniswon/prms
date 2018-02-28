@@ -125,7 +125,7 @@
 !***********************************************************************
       szdecl = 0
 
-      Version_soilzone = 'soilzone.f90 2018-02-08 14:44:00Z'
+      Version_soilzone = 'soilzone.f90 2018-02-23 16:10:00Z'
       CALL print_module(Version_soilzone, 'Soil Zone Computations      ', 90 )
       MODNAME = 'soilzone'
 
@@ -593,7 +593,7 @@
       INTEGER FUNCTION szinit()
       USE PRMS_SOILZONE
       USE PRMS_MODULE, ONLY: Nhru, Nssr, Nlake, Nhrucell, &
-     &    Inputerror_flag, Cascade_flag, Init_vars_from_file, GSFLOW_flag, Parameter_check_flag
+     &    Parameter_check_flag, Cascade_flag, Init_vars_from_file, GSFLOW_flag
       USE PRMS_BASIN, ONLY: Hru_type, Hru_perv, &
      &    Basin_area_inv, Hru_area, Hru_frac_perv, Numlake_hrus
       USE PRMS_FLOWVARS, ONLY: Soil_moist_max, Soil_rechr_max, &
@@ -756,42 +756,40 @@
       Basin_soil_lower_stor_frac = Basin_soil_lower_stor_frac*Basin_area_inv
       Basin_soil_rechr_stor_frac = Basin_soil_rechr_stor_frac*Basin_area_inv
 
-      IF ( Init_vars_from_file==0 ) THEN
 ! initialize arrays (dimensioned Nhru)
-        Dunnian_flow = 0.0
-        IF ( Cascade_flag==1 ) THEN
-          Upslope_interflow = 0.0D0
-          Upslope_dunnianflow = 0.0D0
-          Hru_sz_cascadeflow = 0.0
-!          Cap_upflow_max = 0.0
-!          Cascade_interflow = 0.0
-!          Cascade_dunnianflow = 0.0
-          IF ( Numlake_hrus>0 ) Lakein_sz = 0.0D0
-        ENDIF
-        Cap_infil_tot = 0.0
-        Pref_flow_infil = 0.0
-        Pref_flow_in = 0.0
-        Pref_flow = 0.0
-        Gvr2pfr = 0.0
-        Swale_actet = 0.0
-        Perv_actet = 0.0
-!        Perv_avail_et = 0.0
-        Recharge = 0.0
-        Cap_waterin = 0.0
-        Potet_lower = 0.0
-        Potet_rechr = 0.0
-        Unused_potet = 0.0 ! dimension nhru
-!        Interflow_max = 0.0
-!        Snowevap_aet_frac = 0.0
+      Dunnian_flow = 0.0
+      IF ( Cascade_flag==1 ) THEN
+        Upslope_interflow = 0.0D0
+        Upslope_dunnianflow = 0.0D0
+        Hru_sz_cascadeflow = 0.0
+!        Cap_upflow_max = 0.0
+!        Cascade_interflow = 0.0
+!        Cascade_dunnianflow = 0.0
+        IF ( Numlake_hrus>0 ) Lakein_sz = 0.0D0
+      ENDIF
+      Cap_infil_tot = 0.0
+      Pref_flow_infil = 0.0
+      Pref_flow_in = 0.0
+      Pref_flow = 0.0
+      Gvr2pfr = 0.0
+      Swale_actet = 0.0
+      Perv_actet = 0.0
+!      Perv_avail_et = 0.0
+      Recharge = 0.0
+      Cap_waterin = 0.0
+      Potet_lower = 0.0
+      Potet_rechr = 0.0
+      Unused_potet = 0.0 ! dimension nhru
+!      Interflow_max = 0.0
+!      Snowevap_aet_frac = 0.0
 
-        ! initialize scalers
-        CALL init_basin_vars()
+      ! initialize scalers
+      IF ( Init_vars_from_file==0 ) CALL init_basin_vars()
 
 ! initialize arrays (dimensioned Nhrucell)
-        IF ( GSFLOW_flag==1 ) THEN
-          Gvr2sm = 0.0 ! dimension nhru
-          Sm2gw_grav = 0.0 ! dimension nhrucell
-        ENDIF
+      IF ( GSFLOW_flag==1 ) THEN
+        Gvr2sm = 0.0 ! dimension nhru
+        Sm2gw_grav = 0.0 ! dimension nhrucell
       ENDIF
 
 ! initialize arrays (dimensioned Nhrucell)
@@ -1826,7 +1824,7 @@
 !     soilzone_restart - write or read soilzone restart file
 !***********************************************************************
       SUBROUTINE soilzone_restart(In_out)
-      USE PRMS_MODULE, ONLY: Restart_outunit, Restart_inunit, Nlake, GSFLOW_flag, Cascade_flag
+      USE PRMS_MODULE, ONLY: Restart_outunit, Restart_inunit, GSFLOW_flag
       USE PRMS_SOILZONE
       IMPLICIT NONE
       ! Argument
@@ -1841,41 +1839,9 @@
      &          Basin_soil_rechr, Basin_dunnian_gvr, Basin_recharge, Basin_ssin, Basin_sm2gvr, Basin_capwaterin, Basin_dunnian, &
      &          Basin_slowflow, Basin_slstor, Basin_cap_up_max, Basin_soil_moist_tot, Basin_gvr2sm, Et_type, Basin_lakeprecip
         WRITE ( Restart_outunit ) Basin_prefflow, Basin_pref_flow_infil, Basin_pref_stor, Basin_gvr2pfr, Basin_dunnian_pfr
-        WRITE ( Restart_outunit ) Basin_dndunnianflow, Basin_dninterflow, Basin_dncascadeflow
-        WRITE ( Restart_outunit ) Basin_lakeinsz, Basin_lakeprecip
-        WRITE ( Restart_outunit ) Perv_actet
-        WRITE ( Restart_outunit ) Soil_moist_tot
-!        WRITE ( Restart_outunit ) Soil_moist_frac
-        WRITE ( Restart_outunit ) Recharge
-        WRITE ( Restart_outunit ) Cap_infil_tot
-        WRITE ( Restart_outunit ) Swale_actet
-        WRITE ( Restart_outunit ) Snow_free
-        WRITE ( Restart_outunit ) Cap_waterin
-        WRITE ( Restart_outunit ) Soil_lower
-!        WRITE ( Restart_outunit ) Soil_rechr_ratio
-        WRITE ( Restart_outunit ) Potet_lower
-        WRITE ( Restart_outunit ) Potet_rechr
-        WRITE ( Restart_outunit ) Soil_lower_ratio
-        WRITE ( Restart_outunit ) Dunnian_flow
-        WRITE ( Restart_outunit ) Pref_flow_infil
-        WRITE ( Restart_outunit ) Pref_flow_in
+        WRITE ( Restart_outunit ) Basin_dndunnianflow, Basin_dninterflow, Basin_dncascadeflow, Basin_lakeinsz, Basin_lakeprecip
         WRITE ( Restart_outunit ) Pref_flow_stor
-        WRITE ( Restart_outunit ) Pref_flow
-!        WRITE ( Restart_outunit ) Snowevap_aet_frac
-        WRITE ( Restart_outunit ) Gvr2pfr
-        IF ( GSFLOW_flag==1 ) THEN
-          WRITE ( Restart_outunit ) Gravity_stor_res
-          WRITE ( Restart_outunit ) Gvr2sm
-          WRITE ( Restart_outunit ) Sm2gw_grav
-          WRITE ( Restart_outunit ) Grav_gwin
-        ENDIF
-        IF ( Cascade_flag==1 ) THEN
-          WRITE ( Restart_outunit ) Upslope_interflow
-          WRITE ( Restart_outunit ) Upslope_dunnianflow
-          WRITE ( Restart_outunit ) Hru_sz_cascadeflow
-!          WRITE ( Restart_outunit ) Cap_upflow_max
-          IF ( Nlake>0 ) WRITE ( Restart_outunit ) Lakein_sz
-        ENDIF
+        IF ( GSFLOW_flag==1 ) WRITE ( Restart_outunit ) Gravity_stor_res
       ELSE
         READ ( Restart_inunit ) module_name
         CALL check_restart(MODNAME, module_name)
@@ -1883,40 +1849,8 @@
      &         Basin_soil_rechr, Basin_dunnian_gvr, Basin_recharge, Basin_ssin, Basin_sm2gvr, Basin_capwaterin, Basin_dunnian, &
      &         Basin_slowflow, Basin_slstor, Basin_cap_up_max, Basin_soil_moist_tot, Basin_gvr2sm, Et_type, Basin_lakeprecip
         READ ( Restart_inunit ) Basin_prefflow, Basin_pref_flow_infil, Basin_pref_stor, Basin_gvr2pfr, Basin_dunnian_pfr
-        READ ( Restart_inunit ) Basin_dndunnianflow, Basin_dninterflow, Basin_dncascadeflow
-        READ ( Restart_inunit ) Basin_lakeinsz, Basin_lakeprecip
-        READ ( Restart_inunit ) Perv_actet
-        READ ( Restart_inunit ) Soil_moist_tot
-!        READ ( Restart_inunit ) Soil_moist_frac
-        READ ( Restart_inunit ) Recharge
-        READ ( Restart_inunit ) Cap_infil_tot
-        READ ( Restart_inunit ) Swale_actet
-        READ ( Restart_inunit ) Snow_free
-        READ ( Restart_inunit ) Cap_waterin
-        READ ( Restart_inunit ) Soil_lower
-!        READ ( Restart_inunit ) Soil_rechr_ratio
-        READ ( Restart_inunit ) Potet_lower
-        READ ( Restart_inunit ) Potet_rechr
-        READ ( Restart_inunit ) Soil_lower_ratio
-        READ ( Restart_inunit ) Dunnian_flow
-        READ ( Restart_inunit ) Pref_flow_infil
-        READ ( Restart_inunit ) Pref_flow_in
+        READ ( Restart_inunit ) Basin_dndunnianflow, Basin_dninterflow, Basin_dncascadeflow, Basin_lakeinsz, Basin_lakeprecip
         READ ( Restart_inunit ) Pref_flow_stor
-        READ ( Restart_inunit ) Pref_flow
-!        READ ( Restart_inunit ) Snowevap_aet_frac
-        READ ( Restart_inunit ) Gvr2pfr
-        IF ( GSFLOW_flag==1 ) THEN
-          READ ( Restart_inunit ) Gravity_stor_res
-          READ ( Restart_inunit ) Gvr2sm
-          READ ( Restart_inunit ) Sm2gw_grav
-          READ ( Restart_inunit ) Grav_gwin
-        ENDIF
-        IF ( Cascade_flag==1 ) THEN
-          READ ( Restart_inunit ) Upslope_interflow
-          READ ( Restart_inunit ) Upslope_dunnianflow
-          READ ( Restart_inunit ) Hru_sz_cascadeflow
-!          READ ( Restart_inunit ) Cap_upflow_max
-          IF ( Nlake>0 ) READ ( Restart_inunit ) Lakein_sz
-        ENDIF
+        IF ( Model==0 ) READ ( Restart_inunit ) Gravity_stor_res
       ENDIF
       END SUBROUTINE soilzone_restart

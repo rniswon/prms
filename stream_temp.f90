@@ -6,9 +6,8 @@
 !   Local Variables
       CHARACTER(LEN=11), SAVE :: MODNAME
       INTEGER, SAVE, ALLOCATABLE :: Seg_hru_num(:), Seg_close(:)
-!      REAL, SAVE, ALLOCATABLE ::  Tyear(:,:), T30(:,:), T_ss(:), Seg_carea_inv(:)
+!      REAL, SAVE, ALLOCATABLE :: Tyear(:,:), T30(:,:), Tyr_avg(:), T30_avg(:)
       REAL, SAVE, ALLOCATABLE ::  T_ss(:), Seg_carea_inv(:)
-!      REAL, SAVE, ALLOCATABLE :: T_gw(:), T_ground(:), Tyr_avg(:), T30_avg(:) !, Flowsum(:)
       REAL, SAVE, ALLOCATABLE :: T_gw(:), T_ground(:), Flowsum(:)
       ! next variables only needed of strm_temp_shade_flag = 0
       REAL, SAVE, ALLOCATABLE :: Seg_lat(:), Shade_jday(:, :), Svi_jday(:, :)
@@ -527,15 +526,22 @@
       IF ( getparam(MODNAME, 'ccov_slope', Nhru*12, 'real', Ccov_slope)/=0 ) CALL read_error(2, 'ccov_slope')
       IF ( getparam(MODNAME, 'ccov_intcp', Nhru*12, 'real', Ccov_intcp)/=0 ) CALL read_error(2, 'ccov_intcp')
 
-      IF ( Init_vars_from_file == 0 ) THEN
 ! Initialize declared variables
+      Upstrm_temp = 0.0
+      Seg_potet = 0.0D0
+      Seg_maxtemp = 0.0
+      Seg_humid = 0.0
+      Seg_width = 0.0
+      Seg_ccov = 0.0
+      Seg_rain = 0.0
+      Seg_melt = 0.0
+      T_roff = 0.0
+      T_ground = 0.0
+      T_gw = 0.0
+      T_ss = 0.0
+
+      IF ( Init_vars_from_file == 0 ) THEN
         Temp_avg = 0.0
-        Upstrm_temp = 0.0
-        Seg_potet = 0.0D0
-        Seg_maxtemp = 0.0
-        Seg_humid = 0.0
-        Seg_width = 0.0
-        Seg_ccov = 0.0
 ! markstro
 !        DO i = 1, Nsegment
 !          DO j = 1, 365
@@ -551,13 +557,7 @@
           ENDDO
         ENDDO
 
-
-        T_roff = 0.0
-        T_ground = 0.0
-
 ! markstro
-        T_gw = 0.0
-        T_ss = 0.0
         gw_sum = 0.0
         ss_sum = 0.0
 ! these are set to zero because they will be incremented to 1 down in the run function
@@ -711,8 +711,7 @@
       USE PRMS_MODULE, ONLY: Nsegment
       USE PRMS_BASIN, ONLY: Active_hrus, Hru_route_order, Hru_area, NEARZERO
       USE PRMS_SET_TIME, ONLY: Summer_flag, Nowmonth
-!      USE PRMS_CLIMATEVARS, ONLY: Tavgc, Tmaxc, Potet, Hru_rain, Basin_cloud_cover, Cloud_cover_hru, Tmax_hru, Tmin_hru
-      USE PRMS_CLIMATEVARS, ONLY: Tavgc, Tmaxc, Potet, Hru_rain, Tmax_hru, Tmin_hru
+      USE PRMS_CLIMATEVARS, ONLY: Tavgc, Tmaxc, Potet, Hru_rain, Basin_cloud_cover, Cloud_cover_hru, Tmax_hru, Tmin_hru
       USE PRMS_FLOWVARS, ONLY: Seg_outflow
       USE PRMS_CLIMATE_HRU, ONLY: Humidity_hru
       USE PRMS_SNOW, ONLY: Snowmelt
@@ -729,7 +728,6 @@
       EXTERNAL :: equilb, lat_inflow, shday
 ! Local Variables
       REAL :: harea, carea, svi, fs
-      DOUBLE PRECISION :: basin_cloud_cover
       INTEGER :: i, j, k, toseg, iseg
       REAL :: tlat, te, ak1, ak2, ccov
       REAL :: outflow
@@ -768,7 +766,7 @@
         ELSEIF ( ccov>1.0 ) THEN
           ccov = 1.0
         ENDIF
-!        Cloud_cover_hru(j) = ccov
+        Cloud_cover_hru(j) = ccov
 
         harea = Hru_area(j)
         Basin_cloud_cover = Basin_cloud_cover + DBLE( ccov*harea )
@@ -780,7 +778,6 @@
         
         IF ( Strmtemp_humidity_flag==0 ) Seg_humid(i) = Seg_humid(i) + Humidity_hru(j)*harea
 
-!        Seg_ccov(i) = Seg_ccov(i) + Cloud_cover_hru(j)*harea
         Seg_ccov(i) = Seg_ccov(i) + ccov*harea
 
         Seg_potet(i) = Seg_potet(i) + DBLE( Potet(j)*harea )
@@ -1804,31 +1801,20 @@
 !***********************************************************************
       IF ( In_out==0 ) THEN
         WRITE ( Restart_outunit ) MODNAME
-        WRITE ( Restart_outunit ) T_gw
-        WRITE ( Restart_outunit ) Dlit
-        WRITE ( Restart_outunit ) T_roff
+        WRITE ( Restart_outunit ) gw_index, ss_index
         WRITE ( Restart_outunit ) Temp_avg
-        WRITE ( Restart_outunit ) Upstrm_temp
-        WRITE ( Restart_outunit ) Seg_humid
-        WRITE ( Restart_outunit ) Seg_maxtemp
-        WRITE ( Restart_outunit ) Seg_width
-        WRITE ( Restart_outunit ) Seg_ccov
-        WRITE ( Restart_outunit ) Seg_rain
-        WRITE ( Restart_outunit ) Seg_potet
-        WRITE ( Restart_outunit ) Seg_melt
+        WRITE ( Restart_outunit ) gw_silo
+        WRITE ( Restart_outunit ) ss_silo
+        WRITE ( Restart_outunit ) gw_sum
+        WRITE ( Restart_outunit ) ss_sum
       ELSE
         READ ( Restart_inunit ) module_name
         CALL check_restart(MODNAME, module_name)
-        READ ( Restart_inunit ) Dlit
-        READ ( Restart_inunit ) T_roff
+        READ ( Restart_inunit ) gw_index, ss_index
         READ ( Restart_inunit ) Temp_avg
-        READ ( Restart_inunit ) Upstrm_temp
-        READ ( Restart_inunit ) Seg_humid
-        READ ( Restart_inunit ) Seg_maxtemp
-        READ ( Restart_inunit ) Seg_width
-        READ ( Restart_inunit ) Seg_ccov
-        READ ( Restart_inunit ) Seg_rain
-        READ ( Restart_inunit ) Seg_potet
-        READ ( Restart_inunit ) Seg_melt
+        READ ( Restart_inunit ) gw_silo
+        READ ( Restart_inunit ) ss_silo
+        READ ( Restart_inunit ) gw_sum
+        READ ( Restart_inunit ) ss_sum
       ENDIF
       END SUBROUTINE stream_temp_restart
