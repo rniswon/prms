@@ -19,7 +19,7 @@
 !   Declared Parameters
       INTEGER, SAVE, ALLOCATABLE :: Hru_subbasin(:)
 ! Control Parameters
-      INTEGER, SAVE :: NsubOutVars, NsubOut_freq, Prms_warmup
+      INTEGER, SAVE :: NsubOutVars, NsubOut_freq
       CHARACTER(LEN=36), SAVE, ALLOCATABLE :: NsubOutVar_names(:)
       CHARACTER(LEN=MAXFILE_LENGTH), SAVE :: NsubOutBaseFileName
       END MODULE PRMS_NSUB_SUMMARY
@@ -80,7 +80,6 @@
       IF ( control_integer(NsubOutVars, 'nsubOutVars')/=0 ) NsubOutVars = 0
       ! 1 = daily, 2 = monthly, 3 = both, 4 = mean monthly, 5 = mean yearly, 6 = yearly total
       IF ( control_integer(NsubOut_freq, 'nsubOut_freq')/=0 ) NsubOut_freq = 0
-      IF ( control_integer(Prms_warmup, 'prms_warmup')/=0 ) prms_warmup = 0
 
       IF ( NsubOutVars==0 ) THEN
         IF ( Model/=99 ) THEN
@@ -111,7 +110,7 @@
 !***********************************************************************
       SUBROUTINE nsub_summaryinit()
       USE PRMS_NSUB_SUMMARY
-      USE PRMS_MODULE, ONLY: Nhru, Nsub, Inputerror_flag, MAXFILE_LENGTH, Start_year, End_year
+      USE PRMS_MODULE, ONLY: Nhru, Nsub, Inputerror_flag, MAXFILE_LENGTH, Start_year, Prms_warmup
       USE PRMS_BASIN, ONLY: Hru_area_dble, DNEARZERO, Active_hrus, Hru_route_order
       IMPLICIT NONE
       INTRINSIC ABS
@@ -125,10 +124,6 @@
       Begyr = Start_year
       IF ( Prms_warmup>0 ) Begin_results = 0
       Begyr = Begyr + Prms_warmup
-      IF ( Begyr>End_year ) THEN
-        PRINT *, 'ERROR, prms_warmup > than simulation time period:', Prms_warmup
-        Inputerror_flag = 1
-      ENDIF
       Lastyear = Begyr
 
       WRITE ( Output_fmt, 9001 ) Nsub

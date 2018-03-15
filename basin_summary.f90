@@ -13,7 +13,7 @@
       DOUBLE PRECISION, SAVE :: Monthdays
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Basin_var_daily(:), Basin_var_monthly(:), Basin_var_yearly(:)
 ! Control Parameters
-      INTEGER, SAVE :: BasinOutVars, BasinOut_freq, Prms_warmup
+      INTEGER, SAVE :: BasinOutVars, BasinOut_freq
       CHARACTER(LEN=36), SAVE, ALLOCATABLE :: BasinOutVar_names(:)
       CHARACTER(LEN=MAXFILE_LENGTH), SAVE :: BasinOutBaseFileName
       END MODULE PRMS_BASIN_SUMMARY
@@ -57,14 +57,13 @@
       INTEGER :: i
       CHARACTER(LEN=80), SAVE :: Version_basin_summary
 !***********************************************************************
-      Version_basin_summary = 'basin_summary.f90 2017-11-21 11:06:00Z'
+      Version_basin_summary = 'basin_summary.f90 2018-01-26 15:56:00Z'
       CALL print_module(Version_basin_summary, 'Basin Output Summary        ', 90)
       MODNAME = 'basin_summary'
 
       IF ( control_integer(BasinOutVars, 'basinOutVars')/=0 ) BasinOutVars = 0
       ! 1 = daily, 2 = monthly, 3 = both, 4 = mean monthly, 5 = mean yearly, 6 = yearly total
       IF ( control_integer(BasinOut_freq, 'basinOut_freq')/=0 ) BasinOut_freq = 0
-      IF ( control_integer(Prms_warmup, 'prms_warmup')/=0 ) prms_warmup = 0
 
       IF ( BasinOutVars==0 ) THEN
         IF ( Model/=99 ) THEN
@@ -90,7 +89,7 @@
 !***********************************************************************
       SUBROUTINE basin_summaryinit()
       USE PRMS_BASIN_SUMMARY
-      USE PRMS_MODULE, ONLY: Inputerror_flag, MAXFILE_LENGTH, Start_year, End_year
+      USE PRMS_MODULE, ONLY: MAXFILE_LENGTH, Start_year, Prms_warmup
       IMPLICIT NONE
       INTRINSIC ABS
       INTEGER, EXTERNAL :: getvartype, numchars, getvarsize, getparam
@@ -103,10 +102,6 @@
       Begyr = Start_year
       IF ( Prms_warmup>0 ) Begin_results = 0
       Begyr = Begyr + Prms_warmup
-      IF ( Begyr>End_year ) THEN
-        PRINT *, 'ERROR, prms_warmup > than simulation time period:', Prms_warmup
-        Inputerror_flag = 1
-      ENDIF
       Lastyear = Begyr
 
       WRITE ( Output_fmt, 9001 ) BasinOutVars

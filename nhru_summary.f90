@@ -15,8 +15,8 @@
       DOUBLE PRECISION, SAVE :: Monthdays
       INTEGER, SAVE, ALLOCATABLE :: Monthlyunit(:), Yearlyunit(:)
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Nhru_var_monthly(:, :), Nhru_var_yearly(:, :)
-! Declared Parameters
-      INTEGER, SAVE :: Prms_warmup
+! Paramters
+      INTEGER, SAVE, ALLOCATABLE :: Nhm_id(:)
 ! Control Parameters
       INTEGER, SAVE :: NhruOutVars, NhruOut_freq
       CHARACTER(LEN=36), SAVE, ALLOCATABLE :: NhruOutVar_names(:)
@@ -62,7 +62,7 @@
 !***********************************************************************
       SUBROUTINE nhru_summarydecl()
       USE PRMS_NHRU_SUMMARY
-      USE PRMS_MODULE, ONLY: Model, Inputerror_flag
+      USE PRMS_MODULE, ONLY: Model, Inputerror_flag, NhruOutON_OFF, Nhru
       IMPLICIT NONE
 ! Functions
       INTRINSIC CHAR
@@ -72,7 +72,7 @@
       INTEGER :: i
       CHARACTER(LEN=80), SAVE :: Version_nhru_summary
 !***********************************************************************
-      Version_nhru_summary = 'nhru_summary.f90 2017-11-20 12:59:00Z'
+      Version_nhru_summary = 'nhru_summary.f90 2018-01-26 15:58:00Z'
       CALL print_module(Version_nhru_summary, 'Nhru Output Summary         ', 90)
       MODNAME = 'nhru_summary'
 
@@ -95,12 +95,13 @@
         IF ( control_string(NhruOutBaseFileName, 'nhruOutBaseFileName')/=0 ) CALL read_error(5, 'nhruOutBaseFileName')
       ENDIF
 
-! Declared Parameters
-      IF ( declparam(MODNAME, 'prms_warmup', 'one', 'integer', &
-     &     '1', '0', '12', &
-     &     'Number of years to simulate before writing mapped results', &
-     &     'Number of years to simulate before writing mapped results', &
-     &     'years')/=0 ) CALL read_error(1, 'prms_warmup')
+      IF ( NhruOutON_OFF==2 ) THEN
+        ALLOCATE ( Nhm_id(Nhru) )
+        IF ( declparam(MODNAME, 'nhm_id', 'nhru', 'integer', &
+     &       '1', '1', '9999999', &
+     &       'National Hydrologic Model HRU ID', 'National Hydrologic Model HRU ID', &
+     &       'none') /= 0 ) CALL read_error(1, 'nhm_id')
+      ENDIF
 
       END SUBROUTINE nhru_summarydecl
 
@@ -109,7 +110,7 @@
 !***********************************************************************
       SUBROUTINE nhru_summaryinit()
       USE PRMS_NHRU_SUMMARY
-      USE PRMS_MODULE, ONLY: Nhru, Inputerror_flag , MAXFILE_LENGTH, Start_year, End_year
+      USE PRMS_MODULE, ONLY: Nhru, MAXFILE_LENGTH, Start_year, NhruOutON_OFF, Prms_warmup
       IMPLICIT NONE
       INTRINSIC ABS
       INTEGER, EXTERNAL :: getvartype, numchars, getvarsize, getparam
@@ -120,13 +121,8 @@
 !***********************************************************************
       Begin_results = 1
       Begyr = Start_year
-      IF ( getparam(MODNAME, 'prms_warmup', 1, 'integer', Prms_warmup)/=0 ) CALL read_error(2, 'prms_warmup')
       IF ( Prms_warmup>0 ) Begin_results = 0
       Begyr = Begyr + Prms_warmup
-      IF ( Begyr>End_year ) THEN
-        PRINT *, 'ERROR, prms_warmup > than simulation time period:', Prms_warmup
-        Inputerror_flag = 1
-      ENDIF
       Lastyear = Begyr
 
       WRITE ( Output_fmt, 9001 ) Nhru
@@ -178,6 +174,9 @@
         Monthlyunit = 0
       ENDIF
 
+      IF ( NhruOutON_OFF==2 ) THEN
+        IF ( getparam(MODNAME, 'nhm_id', Nhru, 'integer', Nhm_id)/=0 ) CALL read_error(2, 'nhm_id')
+      ENDIF
       WRITE ( Output_fmt2, 9002 ) Nhru
       ALLOCATE ( Nhru_var_daily(Nhru, NhruOutVars) )
       Nhru_var_daily = 0.0
@@ -187,7 +186,11 @@
           !print *, fileName
           CALL PRMS_open_output_file(Dailyunit(jj), fileName, 'xxx', 0, ios)
           IF ( ios/=0 ) STOP 'in nhru_summary'
-          WRITE ( Dailyunit(jj), Output_fmt2 ) (j, j=1,Nhru)
+          IF ( NhruOutON_OFF==1 ) THEN
+            WRITE ( Dailyunit(jj), Output_fmt2 ) (j, j=1,Nhru)
+          ELSE
+            WRITE ( Dailyunit(jj), Output_fmt2 ) (Nhm_id(j), j=1,Nhru)
+          ENDIF
         ENDIF
         IF ( NhruOut_freq>4 ) THEN
           IF ( NhruOut_freq==5 ) THEN
@@ -199,7 +202,11 @@
             CALL PRMS_open_output_file(Yearlyunit(jj), fileName, 'xxx', 0, ios)
             IF ( ios/=0 ) STOP 'in nhru_summary, yearly'
           ENDIF
-          WRITE ( Yearlyunit(jj), Output_fmt2 ) (j, j=1,Nhru)
+          IF ( NhruOutON_OFF==1 ) THEN
+            WRITE ( Yearlyunit(jj), Output_fmt2 ) (j, j=1,Nhru)
+          ELSE
+            WRITE ( Yearlyunit(jj), Output_fmt2 ) (Nhm_id(j), j=1,Nhru)
+          ENDIF
         ENDIF
         IF ( Monthly_flag==1 ) THEN
           IF ( NhruOut_freq==4 ) THEN
@@ -212,7 +219,11 @@
             CALL PRMS_open_output_file(Monthlyunit(jj), fileName, 'xxx', 0, ios)
             IF ( ios/=0 ) STOP 'in nhru_summary, monthly'
           ENDIF
-          WRITE ( Monthlyunit(jj), Output_fmt2 ) (j, j=1,Nhru)
+          IF ( NhruOutON_OFF==1 ) THEN
+            WRITE ( Monthlyunit(jj), Output_fmt2 ) (j, j=1,Nhru)
+          ELSE
+            WRITE ( Monthlyunit(jj), Output_fmt2 ) (Nhm_id(j), j=1,Nhru)
+          ENDIF
         ENDIF
       ENDDO
 

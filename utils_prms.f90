@@ -481,7 +481,7 @@
 ! write_outfile - print to model output file
 !***********************************************************************
       SUBROUTINE write_outfile(String)
-      USE PRMS_MODULE, ONLY: PRMS_output_unit
+      USE PRMS_MODULE, ONLY: PRMS_output_unit, Print_debug
       IMPLICIT NONE
       ! Functions
       INTRINSIC LEN_TRIM
@@ -490,6 +490,7 @@
       ! Local variable
       INTEGER nchars
 !***********************************************************************
+      IF ( Print_debug==-2 ) RETURN
       nchars = LEN_TRIM(String)
       IF ( nchars>0 ) THEN
         WRITE ( PRMS_output_unit, '(A)' ) String(:nchars)
@@ -831,7 +832,7 @@
 ! print module version information to user's screen
 !***********************************************************************
       SUBROUTINE print_module(Versn, Description, Ftntype)
-      USE PRMS_MODULE, ONLY: PRMS_output_unit, Model, Logunt, Print_debug
+      USE PRMS_MODULE, ONLY: PRMS_output_unit, Model, Print_debug !, Logunt
       IMPLICIT NONE
       ! Arguments
       CHARACTER(LEN=*), INTENT(IN) :: Description, Versn
@@ -843,6 +844,7 @@
       CHARACTER(LEN=28) :: blanks
       CHARACTER(LEN=80) :: string
 !***********************************************************************
+      IF ( Print_debug==-2 ) RETURN
       nc = INDEX( Versn, 'Z' ) - 10
       n = INDEX( Versn, '.f' ) - 1
       IF ( n<1 ) n = 1
@@ -854,8 +856,8 @@
       blanks = ' '
       nb = 29 - (n + 3)
       string = Description//'   '//Versn(:n)//blanks(:nb)//Versn(n+is:nc)
-      IF ( Print_debug>-1 ) PRINT '(A)', TRIM( string )
-      WRITE ( Logunt, '(A)' ) TRIM( string )
+      PRINT '(A)', TRIM( string )
+!      WRITE ( Logunt, '(A)' ) TRIM( string )
       IF ( Model/=2 ) WRITE ( PRMS_output_unit, '(A)' ) TRIM( string )
       END SUBROUTINE print_module
 
@@ -912,23 +914,6 @@
 !***********************************************************************
 !     Check parameter value limits
 !***********************************************************************
-      SUBROUTINE check_param_value(Ihru, Param, Param_value, Iret)
-! Arguments
-      INTEGER, INTENT(IN) :: Ihru
-      REAL, INTENT(IN) :: Param_value
-      CHARACTER(LEN=*), INTENT(IN) :: Param
-      INTEGER, INTENT(INOUT) :: Iret
-!***********************************************************************
-      IF ( Param_value<0.0 .OR. Param_value>1.0 ) THEN
-        PRINT *, 'ERROR, ', Param, ' < 0.0 or > 1.0 for HRU:', Ihru, '; value:', Param_value
-        PRINT *, ' '
-        Iret = 1
-      ENDIF
-      END SUBROUTINE check_param_value
-
-!***********************************************************************
-!     Check parameter value limits
-!***********************************************************************
       SUBROUTINE check_param_limits(Indx, Param, Param_value, Lower_val, Upper_val, Iret)
 ! Arguments
       INTEGER, INTENT(IN) :: Indx
@@ -944,24 +929,6 @@
         Iret = 1
       ENDIF
       END SUBROUTINE check_param_limits
-
-!***********************************************************************
-!     Check integer parameter value limits
-!***********************************************************************
-      SUBROUTINE checkint_param_limits(Indx, Param, Param_value, Lower_val, Upper_val, Iret)
-! Arguments
-      INTEGER, INTENT(IN) :: Indx, Param_value, Lower_val, Upper_val
-      CHARACTER(LEN=*), INTENT(IN) :: Param
-      INTEGER, INTENT(INOUT) :: Iret
-!***********************************************************************
-      IF ( Param_value<Lower_val .OR. Param_value>Upper_val ) THEN
-        PRINT *, 'ERROR, out-of-bounds value for parameter: ', Param
-        PRINT *, '       value:  ', Param_value, '; array index:', Indx
-        PRINT *, '       minimum:', Lower_val, '; maximum:', Upper_val
-        PRINT *, ' '
-        Iret = 1
-      ENDIF
-      END SUBROUTINE checkint_param_limits
 
 !***********************************************************************
 !     Check parameter value against dimension

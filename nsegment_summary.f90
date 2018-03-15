@@ -15,8 +15,10 @@
       DOUBLE PRECISION, SAVE :: Monthdays
       INTEGER, SAVE, ALLOCATABLE :: Monthlyunit(:), Yearlyunit(:)
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Nsegment_var_monthly(:, :), Nsegment_var_yearly(:, :)
+! Paramters
+      INTEGER, SAVE, ALLOCATABLE :: Nhm_seg(:)
 ! Control Parameters
-      INTEGER, SAVE :: NsegmentOutVars, NsegmentOut_freq, Prms_warmup
+      INTEGER, SAVE :: NsegmentOutVars, NsegmentOut_freq
       CHARACTER(LEN=36), SAVE, ALLOCATABLE :: NsegmentOutVar_names(:)
       CHARACTER(LEN=MAXFILE_LENGTH), SAVE :: NsegmentOutBaseFileName
       END MODULE PRMS_NSEGMENT_SUMMARY
@@ -60,7 +62,7 @@
 !***********************************************************************
       SUBROUTINE nsegment_summarydecl()
       USE PRMS_NSEGMENT_SUMMARY
-      USE PRMS_MODULE, ONLY: Model, Inputerror_flag
+      USE PRMS_MODULE, ONLY: Model, Inputerror_flag, Nsegment, NsegmentOutON_OFF
       IMPLICIT NONE
 ! Functions
       INTRINSIC CHAR
@@ -77,7 +79,6 @@
       IF ( control_integer(NsegmentOutVars, 'nsegmentOutVars')/=0 ) NsegmentOutVars = 0
       ! 1 = daily, 2 = monthly, 3 = both, 4 = mean monthly, 5 = mean yearly, 6 = yearly total
       IF ( control_integer(NsegmentOut_freq, 'nsegmentOut_freq')/=0 ) NsegmentOut_freq = 0
-      IF ( control_integer(Prms_warmup, 'prms_warmup')/=0 ) prms_warmup = 0
 
       IF ( NsegmentOutVars==0 ) THEN
         IF ( Model/=99 ) THEN
@@ -95,6 +96,14 @@
         IF ( control_string(NsegmentOutBaseFileName, 'nsegmentOutBaseFileName')/=0 ) CALL read_error(5, 'nsegmentOutBaseFileName')
       ENDIF
 
+      IF ( NsegmentOutON_OFF==2 ) THEN
+        ALLOCATE ( Nhm_seg(Nsegment) )
+        IF (declparam(MODNAME, 'nhm_seg', 'nsegment', 'integer', &
+     &       '0', '0', '9999999', &
+     &       'National Hydrologic Model segment ID', 'National Hydrologic Model segment ID', &
+     &       'none') /= 0 ) CALL read_error(1, 'nhm_seg')
+      ENDIF
+
       END SUBROUTINE nsegment_summarydecl
 
 !***********************************************************************
@@ -102,7 +111,7 @@
 !***********************************************************************
       SUBROUTINE nsegment_summaryinit()
       USE PRMS_NSEGMENT_SUMMARY
-      USE PRMS_MODULE, ONLY: Nsegment, MAXFILE_LENGTH, Start_year, End_year, Inputerror_flag
+      USE PRMS_MODULE, ONLY: Nsegment, MAXFILE_LENGTH, Start_year, Prms_warmup, NsegmentOutON_OFF
       IMPLICIT NONE
       INTRINSIC ABS
       INTEGER, EXTERNAL :: getvartype, numchars, getvarsize, getparam
@@ -115,10 +124,6 @@
       Begyr = Start_year
       IF ( Prms_warmup>0 ) Begin_results = 0
       Begyr = Begyr + Prms_warmup
-      IF ( Begyr>End_year ) THEN
-        PRINT *, 'ERROR, prms_warmup > than simulation time period:', Prms_warmup
-        Inputerror_flag = 1
-      ENDIF
       Lastyear = Begyr
 
       WRITE ( Output_fmt, 9001 ) Nsegment
@@ -171,6 +176,9 @@
         Monthlyunit = 0
       ENDIF
 
+      IF ( NsegmentOutON_OFF==2 ) THEN
+        IF ( getparam(MODNAME, 'nhm_seg', Nsegment, 'integer', Nhm_seg)/=0 ) CALL read_error(2, 'nhm_seg')
+      ENDIF
       WRITE ( Output_fmt2, 9002 ) Nsegment
       ALLOCATE ( Nsegment_var_daily(Nsegment, NsegmentOutVars) )
       Nsegment_var_daily = 0.0
@@ -180,7 +188,11 @@
           !print *, fileName
           CALL PRMS_open_output_file(Dailyunit(jj), fileName, 'xxx', 0, ios)
           IF ( ios/=0 ) STOP 'in nsegment_summary, daily'
-          WRITE ( Dailyunit(jj), Output_fmt2 ) (j, j=1,Nsegment)
+          IF ( NsegmentOutON_OFF==1 ) THEN
+            WRITE ( Dailyunit(jj), Output_fmt2 ) (j, j=1,Nsegment)
+          ELSE
+            WRITE ( Dailyunit(jj), Output_fmt2 ) (Nhm_seg(j), j=1,Nsegment)
+          ENDIF
         ENDIF
         IF ( NsegmentOut_freq>4 ) THEN
           IF ( NsegmentOut_freq==5 ) THEN
@@ -194,7 +206,11 @@
             CALL PRMS_open_output_file(Yearlyunit(jj), fileName, 'xxx', 0, ios)
             IF ( ios/=0 ) STOP 'in nsegment_summary, yearly'
           ENDIF
-          WRITE ( Yearlyunit(jj), Output_fmt2 ) (j, j=1,Nsegment)
+          IF ( NsegmentOutON_OFF==1 ) THEN
+            WRITE ( Yearlyunit(jj), Output_fmt2 ) (j, j=1,Nsegment)
+          ELSE
+            WRITE ( Yearlyunit(jj), Output_fmt2 ) (Nhm_seg(j), j=1,Nsegment)
+          ENDIF
         ENDIF
         IF ( Monthly_flag==1 ) THEN
           IF ( NsegmentOut_freq==4 ) THEN
@@ -208,7 +224,11 @@
             CALL PRMS_open_output_file(Monthlyunit(jj), fileName, 'xxx', 0, ios)
             IF ( ios/=0 ) STOP 'in nsegment_summary, monthly'
           ENDIF
-          WRITE ( Monthlyunit(jj), Output_fmt2 ) (j, j=1,Nsegment)
+          IF ( NsegmentOutON_OFF==1 ) THEN
+            WRITE ( Monthlyunit(jj), Output_fmt2 ) (j, j=1,Nsegment)
+          ELSE
+            WRITE ( Monthlyunit(jj), Output_fmt2 ) (Nhm_seg(j), j=1,Nsegment)
+          ENDIF
         ENDIF
       ENDDO
 
