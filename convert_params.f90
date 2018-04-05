@@ -110,7 +110,7 @@
                 EXIT
               ENDIF
             ENDDO
-            IF ( j==1 ) THEN
+            IF ( j==0 ) THEN
               PRINT *, 'Change parameter name dprst_frac_hru to dprst_frac'
               PRINT *, 'Using dprst_frac_hru instead of dprst_area'
               dprst_frac_flag = 1

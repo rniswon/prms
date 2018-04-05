@@ -65,7 +65,7 @@
 !***********************************************************************
       routingdecl = 0
 
-      Version_routing = 'routing.f90 2018-02-23 15:45:00Z'
+      Version_routing = 'routing.f90 2018-03-23 14:14:00Z'
       CALL print_module(Version_routing, 'Routing Initialization      ', 90)
       MODNAME = 'routing'
 
@@ -266,7 +266,7 @@
       INTEGER, EXTERNAL :: getparam
       EXTERNAL :: read_error
 ! Local Variable
-      INTEGER :: i, j, test, lval, toseg, iseg, isegerr, ierr
+      INTEGER :: i, j, test, lval, toseg, iseg, isegerr, ierr, eseg
       REAL :: k, x, d, x_max
       INTEGER, ALLOCATABLE :: x_off(:)
       CHARACTER(LEN=10) :: buffer
@@ -357,8 +357,13 @@
           PRINT *, 'ERROR, tosegment value (', toseg, ') equals itself for segment:', j
           isegerr = 1
         ELSEIF ( toseg>0 ) THEN
-          ! load segment_up with last stream segment that flows into a segment
-          Segment_up(toseg) = j
+          IF ( Tosegment(toseg)==j ) THEN
+            PRINT *, 'ERROR, circle found, segment:', j, ' sends flow to segment:', toseg, ' that sends it flow'
+            isegerr = 1
+          ELSE
+            ! load segment_up with last stream segment that flows into a segment
+            Segment_up(toseg) = j
+          ENDIF
         ENDIF
       ENDDO
 
@@ -379,10 +384,14 @@
       x_off = 0
       Segment_order = 0
       lval = 0
+      iseg = 0
+      eseg = 0
       DO WHILE ( lval<Nsegment )
+        ierr = 1
         DO i = 1, Nsegment
           ! If segment "i" has not been crossed out consider it, else continue
           IF ( x_off(i)==1 ) CYCLE
+          iseg = i
           ! Test to see if segment "i" is the to segment from other segments
           test = 1
           DO j = 1, Nsegment
@@ -392,6 +401,7 @@
               ! put the segment in as an ordered segment
               IF ( x_off(j)==0 ) THEN
                 test = 0
+                eseg = j
                 EXIT
               ENDIF
             ENDIF
@@ -400,8 +410,13 @@
             lval = lval + 1
             Segment_order(lval) = i
             x_off(i) = 1
+            ierr = 0
           ENDIF
         ENDDO
+        IF ( ierr==1 ) THEN
+          PRINT *, 'ERROR, circular segments involving', iseg, 'and', eseg
+          STOP
+        ENDIF
       ENDDO
 !      IF ( Print_debug==20 ) THEN
 !        PRINT *, 'Stream Network Routing Order:'
