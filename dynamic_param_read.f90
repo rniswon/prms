@@ -33,7 +33,7 @@
         INTEGER, SAVE :: Soilmoist_flag, Soilrechr_flag, Output_unit
         INTEGER, SAVE :: Snarea_thresh_unit, Snarea_thresh_next_yr, Snarea_thresh_next_mo, Snarea_thresh_next_day
         INTEGER, SAVE, ALLOCATABLE :: Itemp(:), Updated_hrus(:)
-        REAL, SAVE, ALLOCATABLE :: Temp(:), Temp3(:), Potet_coef(:, :)
+        REAL, SAVE, ALLOCATABLE :: Temp(:), Temp3(:), Potet_coef(:, :), Soil_rechr_max_frac(:)
       END MODULE PRMS_DYNAMIC_PARAM_READ
 
 !***********************************************************************
@@ -54,7 +54,7 @@
       IF ( Process(:3)=='run' ) THEN
         dynamic_param_read = dynparamrun()
       ELSEIF ( Process(:4)=='decl' ) THEN
-        Version_dynamic_param_read = 'dynamic_param_read.f90 2017-03-24 10:01:00Z'
+        Version_dynamic_param_read = 'dynamic_param_read.f90 2018-04-06 16:35:00Z'
         CALL print_module(Version_dynamic_param_read, 'Time Series Data            ', 90)
         !MODNAME = 'dynamic_param_read'
       ELSEIF ( Process(:4)=='init' ) THEN
@@ -71,7 +71,7 @@
       USE PRMS_MODULE, ONLY: Nhru, Starttime, Dyn_imperv_flag, Dyn_dprst_flag, Dyn_intcp_flag, Dyn_covden_flag, &
      &    Dyn_covtype_flag, Dyn_potet_flag, Dyn_transp_flag, Dyn_soil_flag, Dyn_radtrncf_flag, Dyn_transp_on_flag, &
      &    Dyn_sro2dprst_perv_flag, Dyn_sro2dprst_imperv_flag, Transp_flag, Dprst_flag, Dyn_fallfrost_flag, &
-     &    Dyn_springfrost_flag, Dyn_snareathresh_flag, MAXFILE_LENGTH, Print_debug
+     &    Dyn_springfrost_flag, Dyn_snareathresh_flag, MAXFILE_LENGTH, Print_debug, PRMS4_flag
       IMPLICIT NONE
       INTEGER, EXTERNAL :: control_string, get_ftnunit
       EXTERNAL read_error, find_header_end, find_current_file_time
@@ -301,6 +301,7 @@
       ENDIF
 
       IF ( Dyn_soil_flag>1 ) THEN
+        IF ( PRMS4_flag==0 ) ALLOCATE ( Soil_rechr_max_frac(Nhru) )
         IF ( control_string(soilrechr_dynamic, 'soilrechr_dynamic')/=0 ) CALL read_error(5, 'soilrechr_dynamic')
         CALL find_header_end(Soil_rechr_unit, soilrechr_dynamic, 'soilrechr_dynamic', ierr, 0, 0)
         IF ( ierr==0 ) THEN
@@ -394,15 +395,15 @@
       USE PRMS_DYNAMIC_PARAM_READ
       USE PRMS_MODULE, ONLY: Nhru, Dprst_flag, Dyn_imperv_flag, &
      &    Dyn_covtype_flag, Dyn_radtrncf_flag, Dyn_transp_on_flag, Dyn_snareathresh_flag, &
-     &    Dyn_sro2dprst_perv_flag, Dyn_sro2dprst_imperv_flag, Et_flag, Dyn_potet_flag
+     &    Dyn_sro2dprst_perv_flag, Dyn_sro2dprst_imperv_flag, Et_flag, Dyn_potet_flag, PRMS4_flag
       USE PRMS_SET_TIME, ONLY: Nowyear, Nowmonth, Nowday
       USE PRMS_BASIN, ONLY: Active_hrus, Hru_route_order, Hru_type, Hru_area, Dprst_clos_flag, &
      &    Hru_percent_imperv, Hru_frac_perv, Hru_imperv, Hru_perv, Dprst_frac, Dprst_open_flag, &
      &    Dprst_area_max, Dprst_area_open_max, Dprst_area_clos_max, Dprst_frac_open, &
-     &    Cov_type, Basin_area_inv, NEARZERO, Dprst_frac, Covden_win, Covden_sum, DNEARZERO
+     &    Cov_type, Basin_area_inv, NEARZERO, Covden_win, Covden_sum, DNEARZERO
       USE PRMS_CLIMATEVARS, ONLY: Transp_on, Epan_coef
       USE PRMS_FLOWVARS, ONLY: Basin_soil_moist, Soil_moist, Soil_rechr, Imperv_stor, Sat_threshold, &
-     &    Soil_rechr_max, Soil_moist_max, Imperv_stor_max, Dprst_vol_open, Dprst_vol_clos, Ssres_stor, Soil_rechr_max_frac
+     &    Soil_rechr_max, Soil_moist_max, Imperv_stor_max, Dprst_vol_open, Dprst_vol_clos, Ssres_stor
       USE PRMS_POTET_JH, ONLY: Jh_coef, Jh_coef_hru
       USE PRMS_POTET_PM, ONLY: Pm_n_coef, Pm_d_coef
       USE PRMS_POTET_PT, ONLY: Pt_alpha
@@ -740,7 +741,11 @@
         IF ( Soil_rechr_next_mo/=0 ) THEN
           IF ( Soil_rechr_next_yr==Nowyear .AND. Soil_rechr_next_mo==Nowmonth .AND. Soil_rechr_next_day==Nowday ) THEN
             READ ( Soil_rechr_unit, * ) Soil_rechr_next_yr, Soil_rechr_next_mo, Soil_rechr_next_day, Temp
-            CALL write_dynparam(Output_unit, Nhru, Updated_hrus, Temp, Soil_rechr_max_frac, 'soil_rechr_max_frac')
+            IF ( PRMS4_flag==1 ) THEN
+              CALL write_dynparam(Output_unit, Nhru, Updated_hrus, Temp, Soil_rechr_max, 'soil_rechr_max')
+            ELSE
+              CALL write_dynparam(Output_unit, Nhru, Updated_hrus, Temp, Soil_rechr_max_frac, 'soil_rechr_max_frac')
+            ENDIF
             CALL is_eof(Soil_rechr_unit, Soil_rechr_next_yr, Soil_rechr_next_mo, Soil_rechr_next_day)
           ENDIF
         ENDIF
@@ -761,16 +766,18 @@
         DO jj = 1, Active_hrus
           i = Hru_route_order(jj)
           IF ( Hru_type(i)==2 ) CYCLE ! skip lake HRUs
+
           IF ( Soil_moist_max(i)<NEARZERO ) THEN
             istop = 1
             PRINT 9001, 'soil_moist_max', NEARZERO, i, Soil_moist_max(i), NEARZERO
           ENDIF
-          IF ( Soil_rechr_max_frac(i)<NEARZERO ) THEN
+          IF ( PRMS4_flag==0 ) Soil_rechr_max(i) = Soil_moist_max(i)*Soil_rechr_max_frac(i)
+          IF ( Soil_rechr_max(i)<NEARZERO ) THEN
             istop = 1
-            PRINT 9001, 'soil_rechr_max_frac', NEARZERO, i, Soil_rechr_max_frac(i), NEARZERO
+            PRINT 9001, 'soil_rechr_max', NEARZERO, i, Soil_rechr_max(i), NEARZERO
           ENDIF
           IF ( istop==1 ) CYCLE
-          Soil_rechr_max(i) = Soil_moist_max(i)*Soil_rechr_max_frac(i)
+
           Soil_zone_max(i) = Sat_threshold(i) + Soil_moist_max(i)*Hru_frac_perv(i)
           Soil_moist_tot(i) = Ssres_stor(i) + Soil_moist(i)*Hru_frac_perv(i)
 !          Soil_moist_frac(i) = Soil_moist_tot(i)/Soil_zone_max(i)
