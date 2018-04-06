@@ -1003,6 +1003,7 @@
         DEALLOCATE ( Soil_rechr_max_frac )
       ENDIF
 
+      ierr = 0
       IF ( Init_vars_from_file==0 .OR. Init_vars_from_file==2 .OR. Init_vars_from_file==5 ) THEN
         IF ( PRMS4_flag==1 ) THEN
           ! use PRMS4 parameters
@@ -1015,7 +1016,6 @@
           Soil_rechr = Soil_rechr_init_frac
           Soil_moist = Soil_moist_init_frac
           Ssres_stor = Ssstor_init_frac
-          ierr = 0
           DO i = 1, Nhru
             IF ( Hru_type(i)==0 .OR. Hru_type(i)==2 ) CYCLE
             ! hru_type = 1 or 3
