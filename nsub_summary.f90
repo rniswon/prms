@@ -73,7 +73,7 @@
       INTEGER :: i
       CHARACTER(LEN=80), SAVE :: Version_nsub_summary
 !***********************************************************************
-      Version_nsub_summary = 'nsub_summary.f90 2017-11-21 10:42:00Z'
+      Version_nsub_summary = 'nsub_summary.f90 2018-04-05 14:02:00Z'
       CALL print_module(Version_nsub_summary, 'Subbasin Output Summary     ', 90)
       MODNAME = 'nsub_summary'
 
@@ -230,9 +230,9 @@
         ENDIF
       ENDDO
 
- 9001 FORMAT ('(I4, 2(''-'',I2.2),',I6,'('',''ES10.3))')
- 9002 FORMAT ('("Date "',I6,'('',''I6))')
- 9003 FORMAT ('(I4,', I6,'('',''ES10.3))')
+ 9001 FORMAT ('(I4, 2(''-'',I2.2),',I0,'('',''ES10.3))')
+ 9002 FORMAT ('("Date"',I0,'('', ''I0))')
+ 9003 FORMAT ('(I4,', I0,'('',''ES10.3))')
 
       END SUBROUTINE nsub_summaryinit
 

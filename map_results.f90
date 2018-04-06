@@ -23,7 +23,7 @@
       CHARACTER(LEN=15), SAVE :: Mapfmt
       CHARACTER(LEN=11), SAVE :: MODNAME
 ! Declared Parameters
-      INTEGER, SAVE :: Ncol, Mapvars_freq, Mapvars_units
+      INTEGER, SAVE :: Ncol, Prms_warmup_local, Mapvars_freq, Mapvars_units
       INTEGER, SAVE, ALLOCATABLE :: Gvr_map_id(:), Gvr_hru_id(:)
       REAL, SAVE, ALLOCATABLE :: Gvr_map_frac(:)
 ! Control Parameters
@@ -60,7 +60,7 @@
 !***********************************************************************
       INTEGER FUNCTION map_resultsdecl()
       USE PRMS_MAP_RESULTS
-      USE PRMS_MODULE, ONLY: Model, Nhru, MapOutON_OFF, Nhrucell, Ngwcell
+      USE PRMS_MODULE, ONLY: Model, Nhru, MapOutON_OFF, Nhrucell, Ngwcell, PRMS4_flag
       IMPLICIT NONE
 ! Functions
       INTRINSIC CHAR
@@ -72,7 +72,7 @@
 !***********************************************************************
       map_resultsdecl = 0
 
-      Version_map_results = 'map_results.f90 2018-01-23 14:02:00Z'
+      Version_map_results = 'map_results.f90 2018-04-06 14:13:00Z'
       CALL print_module(Version_map_results, 'Output Summary              ', 90)
       MODNAME = 'map_results'
 
@@ -128,6 +128,14 @@
      &     ' 1=inches to feet; 2=inches to centimeters; 3=inches to meters; as states or fluxes)', &
      &     'none')/=0 ) CALL read_error(1, 'mapvars_units')
 
+      IF ( PRMS4_flag==1 ) THEN
+        IF ( declparam(MODNAME, 'prms_warmup', 'one', 'integer', &
+     &       '1', '0', '12', &
+     &       'Number of years to simulate before writing mapped results', &
+     &       'Number of years to simulate before writing mapped results', &
+     &       'years')/=0 ) CALL read_error(1, 'prms_warmup')
+      ENDIF
+
       IF ( declparam(MODNAME, 'ncol', 'one', 'integer', &
      &     '1', '1', '50000', &
      &     'Number of columns for each row of the mapped results', &
@@ -163,8 +171,8 @@
 !***********************************************************************
       INTEGER FUNCTION map_resultsinit()
       USE PRMS_MAP_RESULTS
-      USE PRMS_MODULE, ONLY: Nhru, Print_debug, Nhrucell, Ngwcell, Inputerror_flag, MapOutON_OFF, &
-     &                       Start_year, Start_month, Start_day, Parameter_check_flag, Prms_warmup
+      USE PRMS_MODULE, ONLY: Nhru, Print_debug, Nhrucell, Ngwcell, Inputerror_flag, MapOutON_OFF, PRMS4_flag, &
+     &                       Start_year, Start_month, Start_day, End_year, Parameter_check_flag, Prms_warmup
       USE PRMS_BASIN, ONLY: NEARZERO
       IMPLICIT NONE
       INTRINSIC ABS, DBLE
@@ -186,9 +194,18 @@
         RETURN
       ENDIF
       IF ( getparam(MODNAME, 'ncol', 1, 'integer', Ncol)/=0 ) CALL read_error(2, 'ncol')
+      IF ( PRMS4_flag==1 ) THEN
+        IF ( getparam(MODNAME, 'prms_warmup', 1, 'integer', Prms_warmup_local)/=0 ) CALL read_error(2, 'prms_warmup')
+      ELSE
+        Prms_warmup_local = Prms_warmup
+      ENDIF
       IF ( getparam(MODNAME, 'mapvars_units', 1, 'integer', Mapvars_units)/=0 ) CALL read_error(2, 'Mapvars_units')
-      IF ( Prms_warmup>0 ) Begin_results = 0
-      Begyr = Begyr + Prms_warmup
+      IF ( Prms_warmup_local>0 ) Begin_results = 0
+      Begyr = Begyr + Prms_warmup_local
+      IF ( Begyr>End_year ) THEN
+        PRINT *, 'ERROR, prms_warmup > than simulation time period:', Prms_warmup_local
+        Inputerror_flag = 1
+      ENDIF
 
       WRITE ( Mapfmt, 9001 ) Ncol
 

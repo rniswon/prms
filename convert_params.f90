@@ -149,9 +149,9 @@
         ENDIF
 
         CLOSE ( ounit )
- 100    FORMAT ('####', /, A, /, '1', /, 'nhru', /, I6, /, '2')
- 110    FORMAT ('####', /, A, /, '1', /, 'nssr', /, I6, /, '2')
- 200    FORMAT ('####', /, A, /, '2', /, 'nhru', /, 'nmonths', /, I7, /, '2')
+ 100    FORMAT ('####', /, A, /, '1', /, 'nhru', /, I0, /, '2')
+ 110    FORMAT ('####', /, A, /, '1', /, 'nssr', /, I0, /, '2')
+ 200    FORMAT ('####', /, A, /, '2', /, 'nhru', /, 'nmonths', /, I0, /, '2')
 
       ELSEIF ( Process(:4)=='decl' ) THEN
         Version_convert_params = 'convert_params.f90 2018-03-15 11:44:00Z'

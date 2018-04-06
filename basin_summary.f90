@@ -57,7 +57,7 @@
       INTEGER :: i
       CHARACTER(LEN=80), SAVE :: Version_basin_summary
 !***********************************************************************
-      Version_basin_summary = 'basin_summary.f90 2018-01-26 15:56:00Z'
+      Version_basin_summary = 'basin_summary.f90 2018-04-05 14:02:00Z'
       CALL print_module(Version_basin_summary, 'Basin Output Summary        ', 90)
       MODNAME = 'basin_summary'
 
@@ -176,8 +176,8 @@
       ENDIF
 
  9001 FORMAT ('(I4, 2(''-'',I2.2),',I6,'('',''ES10.3))')
- 9002 FORMAT ('("Date"',I6,'('',''A))')
- 9003 FORMAT ('(I4,', I6,'('',''ES10.3))')
+ 9002 FORMAT ('("Date"',I0,'('', ''A))')
+ 9003 FORMAT ('(I4,', I0,'('',''ES10.3))')
 
       END SUBROUTINE basin_summaryinit
 

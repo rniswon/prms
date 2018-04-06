@@ -11,7 +11,7 @@
       REAL, SAVE, ALLOCATABLE :: Tsta_elev_feet(:), Tsta_elev_meters(:)
       REAL, SAVE, ALLOCATABLE :: Psta_elev_feet(:), Psta_elev_meters(:)
       REAL, SAVE, ALLOCATABLE :: Tmax_allsnow_f(:, :), Tmax_allsnow_c(:, :)
-      REAL, SAVE, ALLOCATABLE :: Tmax_allrain_f(:, :), Tmax_allrain(:, :)
+      REAL, SAVE, ALLOCATABLE :: Tmax_allrain_f(:, :)
 !   Declared Variables - Precip
       INTEGER, SAVE, ALLOCATABLE :: Newsnow(:), Pptmix(:)
       DOUBLE PRECISION, SAVE :: Basin_ppt, Basin_rain, Basin_snow, Basin_obs_ppt
@@ -47,7 +47,7 @@
       REAL, SAVE, ALLOCATABLE :: Tsta_elev(:), Tmax_aspect_adjust(:, :), Tmin_aspect_adjust(:, :)
 !   Declared Parameters - Precip
       INTEGER, SAVE :: Precip_units
-      REAL, SAVE, ALLOCATABLE :: Tmax_allsnow(:, :), Adjmix_rain(:, :), Tmax_allrain_offset(:, :)
+      REAL, SAVE, ALLOCATABLE :: Tmax_allsnow(:, :), Adjmix_rain(:, :), Tmax_allrain(:, :), Tmax_allrain_offset(:, :)
       REAL, SAVE, ALLOCATABLE :: Psta_elev(:)
 !   Declared Parameters - Intcp
       REAL, SAVE, ALLOCATABLE :: Epan_coef(:, :), Potet_sublim(:)
@@ -70,7 +70,7 @@
       REAL, SAVE, ALLOCATABLE :: Hru_actet(:), Soil_moist(:)
       REAL, SAVE, ALLOCATABLE :: Soil_to_gw(:), Slow_flow(:)
       REAL, SAVE, ALLOCATABLE :: Soil_to_ssr(:), Ssres_in(:)
-      REAL, SAVE, ALLOCATABLE :: Ssr_to_gw(:), Slow_stor(:), Soil_rechr_max(:)
+      REAL, SAVE, ALLOCATABLE :: Ssr_to_gw(:), Slow_stor(:)
       REAL, SAVE, ALLOCATABLE :: Ssres_stor(:), Ssres_flow(:), Soil_rechr(:)
       ! srunoff
       REAL, SAVE, ALLOCATABLE :: Sroff(:), Imperv_stor(:), Infil(:)
@@ -87,9 +87,10 @@
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Seg_upstream_inflow(:), Seg_lateral_inflow(:)
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Seg_outflow(:), Seg_inflow(:)
 !   Declared Parameters
-      REAL, SAVE, ALLOCATABLE :: Soil_moist_max(:), Soil_rechr_max_frac(:), Sat_threshold(:)
+      REAL, SAVE, ALLOCATABLE :: Soil_moist_max(:), Soil_rechr_max(:), Sat_threshold(:)
       REAL, SAVE, ALLOCATABLE :: Snowinfil_max(:), Imperv_stor_max(:)
-      REAL, SAVE, ALLOCATABLE :: Soil_rechr_init_frac(:), Soil_moist_init_frac(:), Ssstor_init_frac(:)
+      REAL, SAVE, ALLOCATABLE :: Soil_rechr_init_frac(:), Soil_moist_init_frac(:)
+      REAL, SAVE, ALLOCATABLE :: Ssstor_init_frac(:), Soil_rechr_max_frac(:)
       END MODULE PRMS_FLOWVARS
 
 !***********************************************************************
@@ -123,7 +124,7 @@
       USE PRMS_FLOWVARS
       USE PRMS_MODULE, ONLY: Temp_flag, Precip_flag, Model, Nhru, Nssr, Nevap, Nlake, &
      &    Nsegment, Strmflow_module, Temp_module, Ntemp, Stream_order_flag, Stream_temp_flag, &
-     &    Precip_module, Solrad_module, Transp_module, Et_module, Init_vars_from_file, &
+     &    Precip_module, Solrad_module, Transp_module, Et_module, Init_vars_from_file, PRMS4_flag, &
      &    Soilzone_module, Srunoff_module, Nrain, Nsol, Call_cascade, Et_flag, Dprst_flag, Solrad_flag
       IMPLICIT NONE
 ! Functions
@@ -134,7 +135,7 @@
 !***********************************************************************
       climateflow_decl = 0
 
-      Version_climateflow = 'climateflow.f90 2018-02-23 16:03:00Z'
+      Version_climateflow = 'climateflow.f90 2018-04-06 14:37:00Z'
       CALL print_module(Version_climateflow, 'Common States and Fluxes    ', 90)
       MODNAME = 'climateflow'
 
@@ -438,12 +439,6 @@
      &     'Basin average excess flow to capillary reservoirs that drains to GWRs', &
      &     'inches', Basin_soil_to_gw)/=0 ) CALL read_error(3, 'basin_soil_to_gw')
 
-      ALLOCATE ( Soil_rechr_max(Nhru) )
-!      IF ( declvar(Soilzone_module, 'soil_rechr_max', 'nhru', Nhru, 'real', &
-!     &     'Maximum storage for soil recharge zone (upper portion of'// &
-!     &     ' capillary reservoir where losses occur as both evaporation and transpiration)', &
-!     &     'inches', Soil_rechr_max)/=0 ) CALL read_error(1, 'soil_rechr_max')
-
 ! gwflow
       ALLOCATE ( Gwres_stor(Nhru) )
       IF ( declvar('gwflow', 'gwres_stor', 'ngw', Nhru, 'double', &
@@ -605,13 +600,23 @@
      &     'decimal fraction')/=0 ) CALL read_error(1, 'potet_sublim')
 
       ALLOCATE ( Tmax_allrain_offset(Nhru,12), Tmax_allrain(Nhru,12) )
-      IF ( declparam(Precip_module, 'tmax_allrain_offset', 'nhru,nmonths', 'real', &
-     &     '1.0', '0.0', '50.0', &
-     &     'Precipitation is rain if HRU max temperature >= tmax_allsnow + this value', &
-     &     'Monthly (January to December) maximum air temperature'// &
-     &     ' when precipitation is assumed to be rain; if HRU air'// &
-     &     ' temperature is greater than or equal to tmax_allsnow plus this value, precipitation is rain', &
-     &     'temp_units')/=0 ) CALL read_error(1, 'tmax_allrain_offset')
+      IF ( PRMS4_flag==1 ) THEN
+        IF ( declparam(Precip_module, 'tmax_allrain', 'nhru,nmonths', 'real', &
+     &       '38.0', '-8.0', '75.0', &
+     &       'Precipitation is rain if HRU max temperature >= this value', &
+     &       'Monthly (January to December) maximum air temperature'// &
+     &       ' when precipitation is assumed to be rain; if HRU air'// &
+     &       ' temperature is greater than or equal to this value, precipitation is rain', &
+     &       'temp_units')/=0 ) CALL read_error(1, 'tmax_allrain')
+      ELSE
+        IF ( declparam(Precip_module, 'tmax_allrain_offset', 'nhru,nmonths', 'real', &
+     &       '1.0', '0.0', '50.0', &
+     &       'Precipitation is rain if HRU max temperature >= tmax_allsnow + this value', &
+     &       'Monthly (January to December) maximum air temperature'// &
+     &       ' when precipitation is assumed to be rain; if HRU air'// &
+     &       ' temperature is greater than or equal to tmax_allsnow plus this value, precipitation is rain', &
+     &       'temp_units')/=0 ) CALL read_error(1, 'tmax_allrain_offset')
+      ENDIF
 
       ALLOCATE ( Tmax_allsnow(Nhru,12) )
       IF ( declparam(Precip_module, 'tmax_allsnow', 'nhru,nmonths', 'real', &
@@ -745,13 +750,24 @@
      &     ' major vegetation type of each HRU', &
      &     'inches')/=0 ) CALL read_error(1, 'soil_moist_max')
 
-      ALLOCATE ( Soil_rechr_max_frac(Nhru) )
-      IF ( declparam(Soilzone_module, 'soil_rechr_max_frac', 'nhru', 'real', &
-     &     '1.0', '0.00001', '1.0', &
-     &     'Fraction of capillary reservoir where losses occur as both evaporation and transpiration (soil recharge zone)', &
-     &     'Fraction of the capillary reservoir water-holding capacity (soil_moist_max) where losses occur as both'// &
-     &     ' evaporation and transpiration (upper zone of capillary reservoir) for each HRU', &
-     &     'decimal fraction')/=0 ) CALL read_error(1, 'soil_rechr_max_frac')
+      ALLOCATE ( Soil_rechr_max(Nhru) )
+      IF ( PRMS4_flag==1 ) THEN
+        IF ( declparam(Soilzone_module, 'soil_rechr_max', 'nhru', 'real', &
+     &       '1.5', '0.00001', '5.0', &
+     &       'Maximum storage for soil recharge zone', &
+     &       'Maximum storage for soil recharge zone (upper portion of'// &
+     &       ' capillary reservoir where losses occur as both'// &
+     &       ' evaporation and transpiration); must be less than or equal to soil_moist_max', &
+     &       'inches')/=0 ) CALL read_error(1, 'soil_rechr_max')
+      ELSE
+        ALLOCATE ( Soil_rechr_max_frac(Nhru) )
+        IF ( declparam(Soilzone_module, 'soil_rechr_max_frac', 'nhru', 'real', &
+     &       '1.0', '0.00001', '1.0', &
+     &       'Fraction of capillary reservoir where losses occur as both evaporation and transpiration (soil recharge zone)', &
+     &       'Fraction of the capillary reservoir water-holding capacity (soil_moist_max) where losses occur as both'// &
+     &       ' evaporation and transpiration (upper zone of capillary reservoir) for each HRU', &
+     &       'decimal fraction')/=0 ) CALL read_error(1, 'soil_rechr_max_frac')
+      ENDIF
 
       ALLOCATE ( Snowinfil_max(Nhru) )
       IF ( declparam(Srunoff_module, 'snowinfil_max', 'nhru', 'real', &
@@ -768,26 +784,45 @@
      &     'inches')/=0 ) CALL read_error(1, 'imperv_stor_max')
 
       IF ( Init_vars_from_file==0 .OR. Init_vars_from_file==2 .OR. Init_vars_from_file==5 ) THEN
-        ALLOCATE ( Soil_rechr_init_frac(Nhru) )
-        IF ( declparam(Soilzone_module, 'soil_rechr_init_frac', 'nhru', 'real', &
-     &       '0.0', '0.0', '1.0', &
-     &       'Initial fraction of available water in the soil recharge zone within the capillary reservoir', &
-     &       'Initial fraction of available water in the capillary reservoir where losses occur'// &
-     &       ' as both evaporation and transpiration (upper zone of capillary reservoir) for each HRU', &
-     &       'decimal fraction')/=0 ) CALL read_error(1, 'soil_rechr_init_frac')
-        ALLOCATE ( Soil_moist_init_frac(Nhru) )
-        IF ( declparam(Soilzone_module, 'soil_moist_init_frac', 'nhru', 'real', &
-     &       '0.0', '0.0', '1.0', &
-     &       'Initial fraction available water in the capillary reservoir', &
-     &       'Initial fraction of available water in the capillary reservoir (fraction of soil_moist_max for each HRU', &
-     &       'decimal fraction')/=0 ) CALL read_error(1, 'soil_moist_init_frac')
-        ALLOCATE ( Ssstor_init_frac(Nssr) )
-        IF ( declparam(Soilzone_module, 'ssstor_init_frac', 'nssr', 'real', &
-     &       '0.0', '0.0', '1.0', &
-     &       'Initial fraction of available water in the gravity plus preferential-flow reservoirs', &
-     &       'Initial fraction of available water in the gravity plus preferential-flow reservoirs'// &
-     &       ' (fraction of sat_threshold) for each HRU', &
-     &       'decimal fraction')/=0 ) CALL read_error(1, 'ssstor_init_frac')
+        ALLOCATE ( Soil_rechr_init_frac(Nhru), Soil_moist_init_frac(Nhru), Ssstor_init_frac(Nssr) )
+        IF ( PRMS4_flag==1 ) THEN
+          IF ( declparam(MODNAME, 'soil_rechr_init', 'nhru', 'real', &
+     &         '1.0', '0.0', '10.0', &
+     &         'Initial storage of water for soil recharge zone', &
+     &         'Initial storage for soil recharge zone (upper part of'// &
+     &         ' capillary reservoir where losses occur as both'// &
+     &         ' evaporation and transpiration) for each HRU; must be'// &
+     &         ' less than or equal to soil_moist_init', &
+     &         'inches')/=0 ) CALL read_error(1, 'soil_rechr_init')
+          IF ( declparam(MODNAME, 'soil_moist_init', 'nhru', 'real', &
+     &         '3.0', '0.0', '10.0', &
+     &         'Initial value of available water in capillary reservoir', &
+     &         'Initial value of available water in capillary reservoir for each HRU', &
+     &         'inches')/=0 ) CALL read_error(1, 'soil_moist_init')
+          IF ( declparam(MODNAME, 'ssstor_init', 'nssr', 'real', &
+     &         '0.0', '0.0', '5.0', &
+     &         'Initial storage in each GVR and PFR', &
+     &         'Initial storage of the gravity and preferential-flow reservoirs for each HRU', &
+     &         'inches')/=0 ) CALL read_error(1, 'ssstor_init')
+        ELSE
+          IF ( declparam(Soilzone_module, 'soil_rechr_init_frac', 'nhru', 'real', &
+     &         '0.0', '0.0', '1.0', &
+     &         'Initial fraction of available water in the soil recharge zone within the capillary reservoir', &
+     &         'Initial fraction of available water in the capillary reservoir where losses occur'// &
+     &         ' as both evaporation and transpiration (upper zone of capillary reservoir) for each HRU', &
+     &         'decimal fraction')/=0 ) CALL read_error(1, 'soil_rechr_init_frac')
+          IF ( declparam(Soilzone_module, 'soil_moist_init_frac', 'nhru', 'real', &
+     &         '0.0', '0.0', '1.0', &
+     &         'Initial fraction available water in the capillary reservoir', &
+     &         'Initial fraction of available water in the capillary reservoir (fraction of soil_moist_max for each HRU', &
+     &         'decimal fraction')/=0 ) CALL read_error(1, 'soil_moist_init_frac')
+          IF ( declparam(Soilzone_module, 'ssstor_init_frac', 'nssr', 'real', &
+     &         '0.0', '0.0', '1.0', &
+     &         'Initial fraction of available water in the gravity plus preferential-flow reservoirs', &
+     &         'Initial fraction of available water in the gravity plus preferential-flow reservoirs'// &
+     &         ' (fraction of sat_threshold) for each HRU', &
+     &         'decimal fraction')/=0 ) CALL read_error(1, 'ssstor_init_frac')
+        ENDIF
       ENDIF
 
       END FUNCTION climateflow_decl
@@ -802,8 +837,8 @@
       USE PRMS_MODULE, ONLY: Temp_flag, Precip_flag, Nhru, Nssr, Temp_module, Precip_module, Parameter_check_flag, &
      &    Solrad_module, Soilzone_module, Srunoff_module, Stream_order_flag, Ntemp, Nrain, Nsol, Nevap, &
      &    Init_vars_from_file, Inputerror_flag, Dprst_flag, Solrad_flag, Et_flag, Nlake, Et_module, Humidity_cbh_flag, &
-     &    Stream_temp_flag
-      USE PRMS_BASIN, ONLY: Elev_units, FEET2METERS, METERS2FEET, Active_hrus, Hru_route_order
+     &    Stream_temp_flag, PRMS4_flag, Print_debug
+      USE PRMS_BASIN, ONLY: Elev_units, FEET2METERS, METERS2FEET, Active_hrus, Hru_route_order, Hru_type
       IMPLICIT NONE
 ! Functions
       INTEGER, EXTERNAL :: getparam
@@ -845,13 +880,30 @@
 
       IF ( Temp_flag==1 .OR. Temp_flag==2 .OR. Temp_flag==8 ) THEN
         IF ( getparam(Temp_module, 'hru_tsta', Nhru, 'integer', Hru_tsta)/=0 ) CALL read_error(2, 'hru_tsta')
-        IF ( Parameter_check_flag>0 ) CALL checkdim_bounded_limits('hru_tsta', 'ntemp', Hru_tsta, Nhru, 1, Ntemp, ierr)
+        IF ( Parameter_check_flag>0 ) THEN
+          CALL checkdim_bounded_limits('hru_tsta', 'ntemp', Hru_tsta, Nhru, 1, Ntemp, ierr)
+          IF ( ierr>0 ) Inputerror_flag = 1
+        ENDIF
       ENDIF
 
       IF ( getparam(Precip_module, 'tmax_allsnow', Nhru*12, 'real', Tmax_allsnow)/=0 ) CALL read_error(2, 'tmax_allsnow')
 
-      IF ( getparam(Precip_module, 'tmax_allrain_offset', Nhru*12, 'real', Tmax_allrain_offset)/=0 ) &
-     &              CALL read_error(2, 'tmax_allrain_offset')
+      IF ( PRMS4_flag==1 ) THEN
+        IF ( getparam(Precip_module, 'tmax_allrain', Nhru*12, 'real', Tmax_allrain)/=0 ) CALL read_error(2, 'tmax_allrain')
+        DO j = 1, 12
+          DO i = 1, Nhru
+            Tmax_allrain_offset(i, j) = Tmax_allrain(i, j) - Tmax_allsnow(i, j)
+            IF ( Tmax_allrain_offset(i, j)<0.0 ) THEN
+              IF ( Print_debug>-1 ) PRINT *, 'WARNING, tmax_allsnow > tmax_allrain for HRU:', i, '; month:', j, &
+     &                                       ' tmax_allrain set to tmax_allsnow'
+              Tmax_allrain_offset(i, j) = 0.0
+            ENDIF
+          ENDDO
+        ENDDO
+      ELSE
+        IF ( getparam(Precip_module, 'tmax_allrain_offset', Nhru*12, 'real', Tmax_allrain_offset)/=0 ) &
+     &                CALL read_error(2, 'tmax_allrain_offset')
+      ENDIF
 
       ! Set tmax_allrain in units of the input values
       ! tmax_allsnow must be in the units of the input values
@@ -874,6 +926,7 @@
           ENDDO
         ENDDO
       ENDIF
+      DEALLOCATE ( Tmax_allrain_offset )
 
       IF ( getparam(Precip_module, 'adjmix_rain', Nhru*12, 'real', Adjmix_rain)/=0 ) CALL read_error(2, 'adjmix_rain')
 
@@ -939,27 +992,97 @@
 
       IF ( getparam(Soilzone_module, 'soil_moist_max', Nhru, 'real', Soil_moist_max)/=0 ) CALL read_error(2, 'soil_moist_max')
 
-      IF ( getparam(Soilzone_module, 'soil_rechr_max_frac', Nhru, 'real', Soil_rechr_max_frac)/=0 ) &
-     &     CALL read_error(2, 'soil_rechr_max_frac')
-
-      DO i = 1, Nhru
-        Soil_rechr_max(i) = Soil_rechr_max_frac(i)*Soil_moist_max(i)
-      ENDDO
-      IF ( Init_vars_from_file==0 .OR. Init_vars_from_file==2 .OR. Init_vars_from_file==5 ) THEN
-        IF ( getparam(Soilzone_module, 'soil_moist_init_frac', Nhru, 'real', Soil_moist_init_frac)/=0 ) &
-     &       CALL read_error(2, 'soil_moist_init_frac')
-        IF ( getparam(Soilzone_module, 'soil_rechr_init_frac', Nhru, 'real', Soil_rechr_init_frac)/=0 ) &
-     &       CALL read_error(2, 'soil_rechr_init_frac')
-        IF ( getparam(Soilzone_module, 'ssstor_init_frac', Nssr, 'real', Ssstor_init_frac)/=0 ) &
-     &       CALL read_error(2, 'ssstor_init_frac')
+      IF ( PRMS4_flag==1 ) THEN
+        IF ( getparam(Soilzone_module, 'soil_rechr_max', Nhru, 'real', Soil_rechr_max)/=0 ) CALL read_error(2, 'soil_rechr_max')
+      ELSE
+        IF ( getparam(Soilzone_module, 'soil_rechr_max_frac', Nhru, 'real', Soil_rechr_max_frac)/=0 ) &
+     &       CALL read_error(2, 'soil_rechr_max_frac')
         DO i = 1, Nhru
-          Soil_rechr(i) = Soil_rechr_init_frac(i)*Soil_rechr_max(i)
-          Soil_moist(i) = Soil_moist_init_frac(i)*Soil_moist_max(i)
-          Ssres_stor(i) = Ssstor_init_frac(i)*Sat_threshold(i)
+          Soil_rechr_max(i) = Soil_rechr_max_frac(i)*Soil_moist_max(i)
         ENDDO
-        DEALLOCATE ( Soil_moist_init_frac, Soil_rechr_init_frac )
-        DEALLOCATE ( Ssstor_init_frac )
+        DEALLOCATE ( Soil_rechr_max_frac )
       ENDIF
+
+      IF ( Init_vars_from_file==0 .OR. Init_vars_from_file==2 .OR. Init_vars_from_file==5 ) THEN
+        IF ( PRMS4_flag==1 ) THEN
+          ! use PRMS4 parameters
+          IF ( getparam(Soilzone_module, 'soil_moist_init', Nhru, 'real', Soil_moist_init_frac)/=0 ) &
+     &         CALL read_error(2, 'soil_moist_init')
+          IF ( getparam(Soilzone_module, 'soil_rechr_init', Nhru, 'real', Soil_rechr_init_frac)/=0 ) &
+     &         CALL read_error(2, 'soil_rechr_init')
+          IF ( getparam(Soilzone_module, 'ssstor_init', Nssr, 'real', Ssstor_init_frac)/=0 ) &
+     &         CALL read_error(2, 'ssstor_init')
+          Soil_rechr = Soil_rechr_init_frac
+          Soil_moist = Soil_moist_init_frac
+          Ssres_stor = Ssstor_init_frac
+          ierr = 0
+          DO i = 1, Nhru
+            IF ( Hru_type(i)==0 .OR. Hru_type(i)==2 ) CYCLE
+            ! hru_type = 1 or 3
+            IF ( Soil_rechr_max(i)>Soil_moist_max(i) ) THEN
+              IF ( Parameter_check_flag>0 ) THEN
+                PRINT 9002, i, Soil_rechr_max(i), Soil_moist_max(i)
+                ierr = 1
+              ELSE
+                IF ( Print_debug>-1 ) PRINT 9012, i, Soil_rechr_max(i), Soil_moist_max(i)
+                Soil_rechr_max(i) = Soil_moist_max(i)
+              ENDIF
+            ENDIF
+            IF ( Soil_rechr(i)>Soil_rechr_max(i) ) THEN
+              IF ( Parameter_check_flag>0 ) THEN
+                PRINT 9003, i, Soil_rechr(i), Soil_rechr_max(i)
+                ierr = 1
+              ELSE
+                IF ( Print_debug>-1 ) PRINT 9013, i, Soil_rechr(i), Soil_rechr_max(i)
+                Soil_rechr(i) = Soil_rechr_max(i)
+              ENDIF
+            ENDIF
+            IF ( Soil_moist(i)>Soil_moist_max(i) ) THEN
+              IF ( Parameter_check_flag>0 ) THEN
+                PRINT 9004, i, Soil_moist(i), Soil_moist_max(i)
+                ierr = 1
+              ELSE
+                IF ( Print_debug>-1 ) PRINT 9014, i, Soil_moist(i), Soil_moist_max(i)
+                Soil_moist(i) = Soil_moist_max(i)
+              ENDIF
+            ENDIF
+            IF ( Soil_rechr(i)>Soil_moist(i) ) THEN
+              IF ( Parameter_check_flag>0 ) THEN
+                PRINT 9005, i, Soil_rechr(i), Soil_moist(i)
+                ierr = 1
+              ELSE
+                IF ( Print_debug>-1 ) PRINT 9015, i, Soil_rechr(i), Soil_moist(i)
+                Soil_rechr(i) = Soil_moist(i)
+              ENDIF
+            ENDIF
+            IF ( Ssres_stor(i)>Sat_threshold(i) ) THEN
+              IF ( Parameter_check_flag>0 ) THEN
+                PRINT *, 'ERROR, HRU:', i, Ssres_stor(i), Sat_threshold(i), ' ssres_stor > sat_threshold'
+                ierr = 1
+              ELSE
+                PRINT *, 'WARNING, HRU:', i, Ssres_stor(i), Sat_threshold(i), ' ssres_stor > sat_threshold, ssres_stor set to max'
+                Ssres_stor(i) = Sat_threshold(i)
+              ENDIF
+            ENDIF
+          ENDDO
+! PRMS 5 parameters
+        ELSE
+          IF ( getparam(Soilzone_module, 'soil_moist_init_frac', Nhru, 'real', Soil_moist_init_frac)/=0 ) &
+     &         CALL read_error(2, 'soil_moist_init_frac')
+          IF ( getparam(Soilzone_module, 'soil_rechr_init_frac', Nhru, 'real', Soil_rechr_init_frac)/=0 ) &
+     &         CALL read_error(2, 'soil_rechr_init_frac')
+          IF ( getparam(Soilzone_module, 'ssstor_init_frac', Nssr, 'real', Ssstor_init_frac)/=0 ) &
+     &         CALL read_error(2, 'ssstor_init_frac')
+          DO i = 1, Nhru
+            Soil_rechr(i) = Soil_rechr_init_frac(i)*Soil_rechr_max(i)
+            Soil_moist(i) = Soil_moist_init_frac(i)*Soil_moist_max(i)
+            Ssres_stor(i) = Ssstor_init_frac(i)*Sat_threshold(i)
+          ENDDO
+        ENDIF
+        DEALLOCATE ( Soil_moist_init_frac, Soil_rechr_init_frac, Ssstor_init_frac )
+      ENDIF
+
+      IF ( ierr>0 ) Inputerror_flag = 1
 
       IF ( getparam(Srunoff_module, 'snowinfil_max', Nhru, 'real', Snowinfil_max)/=0 ) CALL read_error(2, 'snowinfil_max')
 
@@ -1014,7 +1137,7 @@
         Seg_lateral_inflow = 0.0D0
       ENDIF
 
-      IF ( Init_vars_from_file==1 ) RETURN
+      IF ( Init_vars_from_file==1 .OR. ierr>0 ) RETURN
 
 ! initialize scalers
       Basin_temp = 0.0D0
@@ -1067,6 +1190,19 @@
       ENDIF
 ! initialize arrays (dimensioned nlake)
       IF ( Nlake>0 ) Lake_vol = 0.0D0
+
+ 9002 FORMAT (/, 'ERROR, HRU: ', I0, ' soil_rechr_max > soil_moist_max', 2F10.4)
+ 9003 FORMAT (/, 'ERROR, HRU: ', I0, ' soil_rechr_init > soil_rechr_max', 2F10.4)
+ 9004 FORMAT (/, 'ERROR, HRU: ', I0, ' soil_moist_init > soil_moist_max', 2F10.4)
+ 9005 FORMAT (/, 'ERROR, HRU: ', I0, ' soil_rechr > soil_moist based on init and max values', 2F10.4)
+ 9012 FORMAT ('WARNING, HRU: ', I0, ' soil_rechr_max > soil_moist_max,', 2F10.4, /, 9X, &
+     &        'soil_rechr_max set to soil_moist_max')
+ 9013 FORMAT ('WARNING, HRU: ', I0, ' soil_rechr_init > soil_rechr_max,', 2F10.4, /, 9X, &
+     &        'soil_rechr set to soil_rechr_max')
+ 9014 FORMAT ('WARNING, HRU: ', I0, ' soil_moist_init > soil_moist_max,', 2F10.4, /, 9X, &
+     &        'soil_moist set to soil_moist_max')
+ 9015 FORMAT ('WARNING, HRU: ', I0, ' soil_rechr_init > soil_moist_init,', 2F10.4, /, 9X, &
+     &        'soil_rechr set to soil_moist based on init and max values')
 
       END FUNCTION climateflow_init
 
