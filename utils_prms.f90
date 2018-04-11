@@ -8,6 +8,7 @@
       INTEGER, INTENT(OUT) :: Iret
 ! Local Variables
       INTEGER :: yr, mo, dy
+      CHARACTER(LEN=20), PARAMETER :: fmt1 = '(A, I5, 2("/",I2.2))'
 !***********************************************************************
       Iret = 0
       DO
@@ -16,7 +17,7 @@
         ELSE
           READ ( Iunit, IOSTAT=Iret ) yr, mo, dy
         ENDIF
-        IF ( Iret==-1 ) PRINT *, 'ERROR, end-of-file found reading input file for date:', Year, Month, Day
+        IF ( Iret==-1 ) PRINT fmt1, 'ERROR, end-of-file found reading input file for date:', Year, Month, Day
         IF ( Iret/=0 ) RETURN
         IF ( yr==Year .AND. mo==Month .AND. dy==Day ) EXIT
       ENDDO
@@ -151,7 +152,7 @@
               EXIT
             ENDIF
             IF ( dim/=Nhru ) THEN
-              PRINT '(/,2(A,I7))', '***CBH file dimension incorrect*** nhru=', Nhru, ' CBH dimension=', dim, ' File: '//Fname
+              PRINT '(/,2(A,I0))', '***CBH file dimension incorrect*** nhru= ', Nhru, ' CBH dimension=', dim, ' File: '//Fname
               STOP 'ERROR: update Control File with correct CBH files'
             ENDIF
             IF ( Cbh_binary_flag==0 ) THEN
@@ -247,11 +248,11 @@
       CHARACTER(LEN=*), INTENT(IN) :: Parm_name, Dimen_name
 ! Local Variables
       INTEGER i
-      CHARACTER(LEN=48), PARAMETER :: fmt1 = '("####", /, A, /, "1", /, A, /, I6, /, "1")'
+      CHARACTER(LEN=48), PARAMETER :: fmt1 = '("####", /, A, /, "1", /, A, /, I0, /, "1")'
 !***********************************************************************
       WRITE ( Iunit, fmt1 ) Parm_name, Dimen_name, Dimen
       DO i = 1, Dimen
-        WRITE ( Iunit, * ) Values(i)
+        WRITE ( Iunit, '(I0)' ) Values(i)
       ENDDO
       END SUBROUTINE write_integer_param
 
@@ -265,7 +266,7 @@
       CHARACTER(LEN=*), INTENT(IN) :: Parm_name, Dimen_name
 ! Local Variables
       INTEGER i
-      CHARACTER(LEN=48), PARAMETER :: fmt1 = '("####", /, A, /, "1", /, A, /, I6, /, "2")'
+      CHARACTER(LEN=48), PARAMETER :: fmt1 = '("####", /, A, /, "1", /, A, /, I0, /, "2")'
 !***********************************************************************
       WRITE ( Iunit, fmt1) Parm_name, Dimen_name, Dimen
       DO i = 1, Dimen
@@ -283,7 +284,7 @@
       CHARACTER(LEN=*), INTENT(IN) :: Parm_name, Dimen_name
 ! Local Variables
       INTEGER i
-      CHARACTER(LEN=40), PARAMETER :: fmt1 = '("####", /, A, /, "1", /, A, /, I6, "3")'
+      CHARACTER(LEN=40), PARAMETER :: fmt1 = '("####", /, A, /, "1", /, A, /, I0, "3")'
 !***********************************************************************
       WRITE ( Iunit, fmt1 ) Parm_name, Dimen_name, Dimen
       DO i = 1, Dimen
@@ -303,7 +304,7 @@
       CHARACTER(LEN=*), INTENT(IN) :: Dimen_name1, Dimen_name2
 ! Local Variables
       INTEGER i, j
-      CHARACTER(LEN=46), PARAMETER :: fmt1 = '("####", /, A, /, "2", /, A, /, A, /, I8, "3")'
+      CHARACTER(LEN=46), PARAMETER :: fmt1 = '("####", /, A, /, "2", /, A, /, A, /, I0, "3")'
 !***********************************************************************
       WRITE ( Iunit, fmt1 ) Parm_name, Dimen_name1, Dimen_name2, Dimen1*Dimen2
       DO i = 1, Dimen2
@@ -332,7 +333,7 @@
         WRITE ( Iunit, fmt ) (Values(j, i), j=1,Dimen1)
       ENDDO
 
- 9001 FORMAT ( '####', /, A, /, '2', /, A, /, A, /, I8, /, '3' )
+ 9001 FORMAT ( '####', /, A, /, '2', /, A, /, A, /, I0, /, '3' )
  9002 FORMAT ( '(', I5, 'F10.5)' )
       END SUBROUTINE write_2D_double_array_grid
 
@@ -412,7 +413,7 @@
 !**********************************************************************
       PRINT 9001, Modname, Arg, Retcode
       STOP
- 9001 FORMAT ('ERROR in ', A, ' module, arg = ', A, /, 'Return val =', I4)
+ 9001 FORMAT ('ERROR in ', A, ' module, arg = ', A, /, 'Return val = ', I0)
       END SUBROUTINE module_error
 
 !***********************************************************************
@@ -889,7 +890,7 @@
 !***********************************************************************
       IF ( Oldval/=Newval ) THEN
         PRINT *, 'ERROR READING RESTART FILE, for dimension ', Dimen
-        PRINT *, '      restart value=', Oldval, ' new value=', Newval
+        PRINT '(A,I0,A,I0,/)', '      restart value= ', Oldval, ' new value= ', Newval
         ierr = 1
       ENDIF
       END SUBROUTINE check_restart_dimen
@@ -943,9 +944,8 @@
 !***********************************************************************
       IF ( Param_value<Lower_val .OR. Param_value>Upper_val ) THEN
         PRINT *, 'ERROR, out-of-bounds value for bounded parameter: ', Param
-        PRINT *, '       value:  ', Param_value, '; array index:', Indx
-        PRINT *, '       minimum:', Lower_val, '; maximum is dimension ', Dimen, ' =', Upper_val
-        PRINT *, ' '
+        PRINT '(A,I0,A,I0)', '       value:  ', Param_value, '; array index: ', Indx
+        PRINT '(A,I0,3A,I0,/)', '       minimum: ', Lower_val, '; maximum is dimension ', Dimen, ' = ', Upper_val
         Iret = 1
       ENDIF
       END SUBROUTINE checkdim_param_limits
@@ -965,9 +965,8 @@
       DO i = 1, Num_values
         IF ( Param_value(i)<Lower_val .OR. Param_value(i)>Upper_val ) THEN
           PRINT *, 'ERROR, out-of-bounds value for bounded parameter: ', Param
-          PRINT *, '       value:  ', Param_value(i), '; array index:', i
-          PRINT *, '       minimum:', Lower_val, '; maximum is dimension ', Bound, ' =', Upper_val
-          PRINT *, ' '
+          PRINT '(A,I0,A,I0)', '       value:  ', Param_value(i), '; array index: ', i
+          PRINT '(A,I0,3A,I0,/)', '       minimum: ', Lower_val, '; maximum is dimension ', Bound, ' = ', Upper_val
           Iret = 1
         ENDIF
       ENDDO

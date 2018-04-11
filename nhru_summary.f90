@@ -72,7 +72,7 @@
       INTEGER :: i
       CHARACTER(LEN=80), SAVE :: Version_nhru_summary
 !***********************************************************************
-      Version_nhru_summary = 'nhru_summary.f90 2018-01-26 15:58:00Z'
+      Version_nhru_summary = 'nhru_summary.f90 2018-04-06 14:14:00Z'
       CALL print_module(Version_nhru_summary, 'Nhru Output Summary         ', 90)
       MODNAME = 'nhru_summary'
 
@@ -227,9 +227,9 @@
         ENDIF
       ENDDO
 
- 9001 FORMAT ('(I4, 2(''-'',I2.2),',I6,'('',''ES10.3))')
- 9002 FORMAT ('("Date "',I6,'('',''I6))')
- 9003 FORMAT ('(I4,', I6,'('',''ES10.3))')
+ 9001 FORMAT ('(I4, 2(''-'',I2.2),',I0,'('',''ES10.3))')
+ 9002 FORMAT ('("Date"',I0,'('', ''I0))')
+ 9003 FORMAT ('(I4,', I0,'('',''ES10.3))')
 
       END SUBROUTINE nhru_summaryinit
 

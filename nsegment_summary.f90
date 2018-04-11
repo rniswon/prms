@@ -72,7 +72,7 @@
       INTEGER :: i
       CHARACTER(LEN=80), SAVE :: Version_nsegment_summary
 !***********************************************************************
-      Version_nsegment_summary = 'nsegment_summary.f90 2017-11-03 13:27:00Z'
+      Version_nsegment_summary = 'nsegment_summary.f90 2018-04-06 14:19:00Z'
       CALL print_module(Version_nsegment_summary, 'Nsegment Output Summary     ', 90)
       MODNAME = 'nsegment_summary'
 
@@ -232,9 +232,9 @@
         ENDIF
       ENDDO
 
- 9001 FORMAT ('(I4, 2(''-'',I2.2),',I6,'('',''ES10.3))')
- 9002 FORMAT ('("Date "',I6,'('',''I6))')
- 9003 FORMAT ('(I4,', I6,'('',''ES10.3))')
+ 9001 FORMAT ('(I4, 2(''-'',I2.2),',I0,'('',''ES10.3))')
+ 9002 FORMAT ('("Date"',I0,'('', ''I0))')
+ 9003 FORMAT ('(I4,', I0,'('',''ES10.3))')
 
       END SUBROUTINE nsegment_summaryinit
 

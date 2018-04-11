@@ -99,7 +99,7 @@
       INTEGER FUNCTION srunoffdecl()
       USE PRMS_SRUNOFF
       USE PRMS_MODULE, ONLY: Model, Dprst_flag, Nhru, Nsegment, Print_debug, &
-     &    Cascade_flag, Sroff_flag, Nlake, Init_vars_from_file, Call_cascade, Frozen_flag
+     &    Cascade_flag, Sroff_flag, Nlake, Init_vars_from_file, Call_cascade, Frozen_flag, PRMS4_flag
       IMPLICIT NONE
 ! Functions
       INTEGER, EXTERNAL :: declparam
@@ -109,7 +109,7 @@
 !***********************************************************************
       srunoffdecl = 0
 
-      Version_srunoff = 'srunoff.f90 2018-02-23 16:06:00Z'
+      Version_srunoff = 'srunoff.f90 2018-04-06 14:27:00Z'
       IF ( Sroff_flag==1 ) THEN
         MODNAME = 'srunoff_smidx'
       ELSE
@@ -403,13 +403,23 @@
      &       'decimal fraction')/=0 ) CALL read_error(1, 'op_flow_thres')
 
         ALLOCATE ( Sro_to_dprst_perv(Nhru) )
-        IF ( declparam(MODNAME, 'sro_to_dprst_perv', 'nhru', 'real', &
-     &       '0.2', '0.0', '1.0', &
-     &       'Fraction of pervious surface runoff that flows into surface-depression storage', &
-     &       'Fraction of pervious surface runoff that'// &
-     &       ' flows into surface-depression storage; the remainder'// &
-     &       ' flows to a stream network for each HRU', &
-     &       'decimal fraction')/=0 ) CALL read_error(1, 'sro_to_dprst_perv')
+        IF ( PRMS4_flag==1 ) THEN
+          IF ( declparam(MODNAME, 'sro_to_dprst', 'nhru', 'real', &
+     &         '0.2', '0.0', '1.0', &
+     &         'Fraction of pervious surface runoff that flows into surface-depression storage', &
+     &         'Fraction of pervious surface runoff that'// &
+     &         ' flows into surface-depression storage; the remainder'// &
+     &         ' flows to a stream network for each HRU', &
+     &         'decimal fraction')/=0 ) CALL read_error(1, 'sro_to_dprst')
+        ELSE
+          IF ( declparam(MODNAME, 'sro_to_dprst_perv', 'nhru', 'real', &
+     &         '0.2', '0.0', '1.0', &
+     &         'Fraction of pervious surface runoff that flows into surface-depression storage', &
+     &         'Fraction of pervious surface runoff that'// &
+     &         ' flows into surface-depression storage; the remainder'// &
+     &         ' flows to a stream network for each HRU', &
+     &         'decimal fraction')/=0 ) CALL read_error(1, 'sro_to_dprst_perv')
+        ENDIF
 
         ALLOCATE ( Sro_to_dprst_imperv(Nhru) )
         IF ( declparam(MODNAME, 'sro_to_dprst_imperv', 'nhru', 'real', &
@@ -1080,7 +1090,7 @@
 !***********************************************************************
       SUBROUTINE dprst_init()
       USE PRMS_SRUNOFF
-      USE PRMS_MODULE, ONLY: Init_vars_from_file, Nhru
+      USE PRMS_MODULE, ONLY: Init_vars_from_file, Nhru, PRMS4_flag
       USE PRMS_BASIN, ONLY: Dprst_clos_flag, NEARZERO, Dprst_area_max, &
      &    Dprst_area_clos_max, Dprst_area_open_max, Basin_area_inv, &
      &    Hru_area_dble, Active_hrus, Hru_route_order, Dprst_open_flag
@@ -1111,7 +1121,11 @@
         Va_open_exp = 0.0
         Op_flow_thres = 0.0
       ENDIF
-      IF ( getparam(MODNAME, 'sro_to_dprst_perv', Nhru, 'real', Sro_to_dprst_perv)/=0 ) CALL read_error(2, 'sro_to_dprst_perv')
+      IF ( PRMS4_flag==1 ) THEN
+        IF ( getparam(MODNAME, 'sro_to_dprst', Nhru, 'real', Sro_to_dprst_perv)/=0 ) CALL read_error(2, 'sro_to_dprst')
+      ELSE
+        IF ( getparam(MODNAME, 'sro_to_dprst_perv', Nhru, 'real', Sro_to_dprst_perv)/=0 ) CALL read_error(2, 'sro_to_dprst_perv')
+      ENDIF
       IF ( getparam(MODNAME, 'sro_to_dprst_imperv', Nhru, 'real', Sro_to_dprst_imperv)/=0 ) &
      &     CALL read_error(2, 'sro_to_dprst_imperv')
       IF ( getparam(MODNAME, 'dprst_depth_avg', Nhru, 'real', Dprst_depth_avg)/=0 ) CALL read_error(2, 'dprst_depth_avg')
