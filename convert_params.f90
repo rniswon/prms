@@ -7,6 +7,7 @@
 ! Functions
       EXTERNAL print_module, PRMS_open_module_file, read_error
       INTEGER, EXTERNAL :: declparam, getparam
+      INTRINSIC :: MIN
 ! Parameters
       REAL, SAVE, ALLOCATABLE :: Soil_rechr_init(:), Soil_moist_init(:), Soil_rechr_max(:)
       REAL, SAVE, ALLOCATABLE :: Soil_moist_max(:), Ssstor_init(:), Sat_threshold(:)
@@ -84,14 +85,16 @@
           Soil_rechr_init_frac = 0.0
           Soil_rechr_max_frac = 0.0
           Ssstor_init_frac = 0.0
+          Soil_moist_init_frac = 0.0
           DO i = 1, Nhru
-            IF ( Soil_rechr_max(i)>0.0 ) Soil_rechr_init_frac(i) = Soil_rechr_init(i)/Soil_rechr_max(i)
+            IF ( Soil_rechr_max(i)>0.0 ) Soil_rechr_init_frac(i) = MIN( 1.0, Soil_rechr_init(i)/Soil_rechr_max(i) )
             IF ( Soil_moist_max(i)>0.0 ) THEN
-              Soil_rechr_max_frac(i) = Soil_rechr_max(i)/Soil_moist_max(i)
-              Soil_moist_init_frac(i) = Soil_moist_init(i)/Soil_moist_max(i)
+              Soil_rechr_max_frac(i) = MIN( 1.0, Soil_rechr_max(i)/Soil_moist_max(i) )
+              Soil_moist_init_frac(i) = MIN( 1.0, Soil_moist_init(i)/Soil_moist_max(i) )
             ENDIF
-            IF ( Sat_threshold(i)>0.0 ) Ssstor_init_frac(i) = Ssstor_init(i)/Sat_threshold(i)
+            IF ( Sat_threshold(i)>0.0 ) Ssstor_init_frac(i) = MIN( 1.0, Ssstor_init(i)/Sat_threshold(i) )
           ENDDO
+
           Tmax_allrain_offset = Tmax_allrain - Tmax_allsnow
           IF ( Dprst_flag==1 ) THEN
             IF ( getparam(MODNAME, 'hru_area', Nhru, 'real', Hru_area)/=0 ) CALL read_error(2, 'hru_area')
@@ -107,7 +110,7 @@
                 EXIT
               ENDIF
             ENDDO
-            IF ( j==1 ) THEN
+            IF ( j==0 ) THEN
               PRINT *, 'Change parameter name dprst_frac_hru to dprst_frac'
               PRINT *, 'Using dprst_frac_hru instead of dprst_area'
               dprst_frac_flag = 1
@@ -116,13 +119,6 @@
               dprst_frac_flag = 0
             ENDIF
           ENDIF
-
-          DO i = 1, Nhru
-            IF ( Soil_rechr_init_frac(i)>1.0 ) Soil_rechr_init_frac(i) = 1.0
-            IF ( Soil_rechr_max_frac(i)>1.0 ) Soil_rechr_max_frac(i) = 1.0
-            IF ( Soil_moist_init_frac(i)>1.0 ) Soil_moist_init_frac(i) = 1.0
-            IF ( Ssstor_init_frac(i)>1.0 ) Ssstor_init_frac(i) = 1.0
-          ENDDO
 
           WRITE ( ounit, 100 ) 'soil_rechr_init_frac', Nhru
           WRITE ( ounit, '(F9.7)' ) ( Soil_rechr_init_frac(i), i = 1, Nhru )
@@ -153,12 +149,12 @@
         ENDIF
 
         CLOSE ( ounit )
- 100    FORMAT ('####', /, A, /, '1', /, 'nhru', /, I6, /, '2')
- 110    FORMAT ('####', /, A, /, '1', /, 'nssr', /, I6, /, '2')
- 200    FORMAT ('####', /, A, /, '2', /, 'nhru', /, 'nmonths', /, I7, /, '2')
+ 100    FORMAT ('####', /, A, /, '1', /, 'nhru', /, I0, /, '2')
+ 110    FORMAT ('####', /, A, /, '1', /, 'nssr', /, I0, /, '2')
+ 200    FORMAT ('####', /, A, /, '2', /, 'nhru', /, 'nmonths', /, I0, /, '2')
 
       ELSEIF ( Process(:4)=='decl' ) THEN
-        Version_convert_params = 'convert_params.f90 2017-03-22 14:08:00Z'
+        Version_convert_params = 'convert_params.f90 2018-03-15 11:44:00Z'
         CALL print_module(Version_convert_params, 'Convert PRMS parameters     ', 90)
         MODNAME = 'convert_params'
 
