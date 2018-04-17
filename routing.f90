@@ -65,7 +65,7 @@
 !***********************************************************************
       routingdecl = 0
 
-      Version_routing = 'routing.f90 2018-02-23 15:45:00Z'
+      Version_routing = 'routing.f90 2018-04-17 14:19:00Z'
       CALL print_module(Version_routing, 'Routing Initialization      ', 90)
       MODNAME = 'routing'
 
@@ -257,7 +257,7 @@
       INTEGER FUNCTION routinginit()
       USE PRMS_ROUTING
       USE PRMS_MODULE, ONLY: Nsegment, Nhru, Init_vars_from_file, Strmflow_flag, Cascade_flag, &
-     &    Water_use_flag, Segment_transferON_OFF, Inputerror_flag, Parameter_check_flag
+     &    Water_use_flag, Segment_transferON_OFF, Inputerror_flag, Parameter_check_flag !, Print_debug
       USE PRMS_SET_TIME, ONLY: Timestep_seconds
       USE PRMS_BASIN, ONLY: FT2_PER_ACRE, DNEARZERO, Active_hrus, Hru_route_order, Hru_area_dble, NEARZERO !, Active_area
       IMPLICIT NONE
@@ -266,7 +266,7 @@
       INTEGER, EXTERNAL :: getparam
       EXTERNAL :: read_error
 ! Local Variable
-      INTEGER :: i, j, test, lval, toseg, iseg, isegerr, ierr
+      INTEGER :: i, j, test, lval, toseg, iseg, isegerr, ierr, eseg
       REAL :: k, x, d, x_max
       INTEGER, ALLOCATABLE :: x_off(:)
       CHARACTER(LEN=10) :: buffer
@@ -357,8 +357,13 @@
           PRINT *, 'ERROR, tosegment value (', toseg, ') equals itself for segment:', j
           isegerr = 1
         ELSEIF ( toseg>0 ) THEN
-          ! load segment_up with last stream segment that flows into a segment
-          Segment_up(toseg) = j
+          IF ( Tosegment(toseg)==j ) THEN
+            PRINT *, 'ERROR, circle found, segment:', j, ' sends flow to segment:', toseg, ' that sends it flow'
+            isegerr = 1
+          ELSE
+            ! load segment_up with last stream segment that flows into a segment
+            Segment_up(toseg) = j
+          ENDIF
         ENDIF
       ENDDO
 
@@ -379,10 +384,14 @@
       x_off = 0
       Segment_order = 0
       lval = 0
+      iseg = 0
+      eseg = 0
       DO WHILE ( lval<Nsegment )
+        ierr = 1
         DO i = 1, Nsegment
           ! If segment "i" has not been crossed out consider it, else continue
           IF ( x_off(i)==1 ) CYCLE
+          iseg = i
           ! Test to see if segment "i" is the to segment from other segments
           test = 1
           DO j = 1, Nsegment
@@ -392,6 +401,7 @@
               ! put the segment in as an ordered segment
               IF ( x_off(j)==0 ) THEN
                 test = 0
+                eseg = j
                 EXIT
               ENDIF
             ENDIF
@@ -400,8 +410,13 @@
             lval = lval + 1
             Segment_order(lval) = i
             x_off(i) = 1
+            ierr = 0
           ENDIF
         ENDDO
+        IF ( ierr==1 ) THEN
+          PRINT *, 'ERROR, circular segments involving', iseg, 'and', eseg
+          STOP
+        ENDIF
       ENDDO
 !      IF ( Print_debug==20 ) THEN
 !        PRINT *, 'Stream Network Routing Order:'
@@ -553,6 +568,8 @@
 ! Local Variables
       INTEGER :: i, j, jj
       DOUBLE PRECISION :: tocfs
+      LOGICAL :: found
+      INTEGER :: this_seg
 !***********************************************************************
       route_run = 0
 
@@ -613,18 +630,67 @@
 ! other way to get the solar radiation, the following is not great
       ELSE !     IF ( Noarea_flag==1 ) THEN
         DO i = 1, Nsegment
+! This reworked by markstrom
           IF ( Segment_hruarea(i)>NEARZERO ) THEN
             Seginc_swrad(i) = Seginc_swrad(i)/Segment_hruarea(i)
             Seginc_potet(i) = Seginc_potet(i)/Segment_hruarea(i)
-          ELSEIF ( Tosegment(i)>0 ) THEN
-            Seginc_swrad(i) = Seginc_swrad(Tosegment(i))
-            Seginc_potet(i) = Seginc_potet(Tosegment(i))
-          ELSEIF ( i>1 ) THEN ! set to next segment id
-            Seginc_swrad(i) = Seginc_swrad(i-1)
-            Seginc_potet(i) = Seginc_potet(i-1)
-          ELSE ! assume at least 2 segments
-            Seginc_swrad(i) = Seginc_swrad(i+1)
-            Seginc_potet(i) = Seginc_potet(i+1)
+          ELSE
+
+! Segment does not have any HRUs, check upstream segments.
+            this_seg = i
+            found = .false.
+            do
+              if (Segment_hruarea(this_seg) <= NEARZERO) then
+
+                 ! Hit the headwater segment without finding any HRUs (i.e. sources of streamflow)
+                 if (segment_up(this_seg) .eq. 0) then
+                     found = .false.
+                     exit
+                 endif
+
+                 ! There is an upstream segment, check that segment for HRUs
+                 this_seg = segment_up(this_seg)
+              else
+                  ! This segment has HRUs so there will be swrad and potet
+                  Seginc_swrad(i) = Seginc_swrad(this_seg)/Segment_hruarea(this_seg)
+                  Seginc_potet(i) = Seginc_potet(this_seg)/Segment_hruarea(this_seg)
+                  found = .true.
+                  exit
+              endif
+            enddo
+
+            if (.not. found) then
+! Segment does not have any upstream segments with HRUs, check downstream segments.
+
+              this_seg = i
+              found = .false.
+              do
+                if (Segment_hruarea(this_seg) <= NEARZERO) then
+
+                   ! Hit the terminal segment without finding any HRUs (i.e. sources of streamflow)
+                   if (tosegment(this_seg) .eq. 0) then
+                     found = .false.
+                     exit
+                   endif
+
+                   ! There is a downstream segment, check that segment for HRUs
+                   this_seg = tosegment(this_seg)
+                else
+                    ! This segment has HRUs so there will be swrad and potet
+                    Seginc_swrad(i) = Seginc_swrad(this_seg)/Segment_hruarea(this_seg)
+                    Seginc_potet(i) = Seginc_potet(this_seg)/Segment_hruarea(this_seg)
+                    found = .true.
+                    exit
+                endif
+              enddo
+
+              if (.not. found) then
+!                write(*,*) "route_run: no upstream or downstream HRU found for segment ", i
+!                write(*,*) "    no values for seginc_swrad and seginc_potet"
+                Seginc_swrad(i) = -99.9
+                Seginc_potet(i) = -99.9
+              endif
+            endif
           ENDIF
         ENDDO
       ENDIF

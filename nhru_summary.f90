@@ -15,6 +15,8 @@
       DOUBLE PRECISION, SAVE :: Monthdays
       INTEGER, SAVE, ALLOCATABLE :: Monthlyunit(:), Yearlyunit(:)
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Nhru_var_monthly(:, :), Nhru_var_yearly(:, :)
+! Declared Parameters
+      INTEGER, SAVE :: Prms_warmup_local
 ! Paramters
       INTEGER, SAVE, ALLOCATABLE :: Nhm_id(:)
 ! Control Parameters
@@ -62,7 +64,7 @@
 !***********************************************************************
       SUBROUTINE nhru_summarydecl()
       USE PRMS_NHRU_SUMMARY
-      USE PRMS_MODULE, ONLY: Model, Inputerror_flag, NhruOutON_OFF, Nhru
+      USE PRMS_MODULE, ONLY: Model, Inputerror_flag, NhruOutON_OFF, Nhru, PRMS4_flag
       IMPLICIT NONE
 ! Functions
       INTRINSIC CHAR
@@ -95,6 +97,15 @@
         IF ( control_string(NhruOutBaseFileName, 'nhruOutBaseFileName')/=0 ) CALL read_error(5, 'nhruOutBaseFileName')
       ENDIF
 
+! Declared Parameters
+      IF ( PRMS4_flag==1 ) THEN
+        IF ( declparam(MODNAME, 'prms_warmup', 'one', 'integer', &
+     &       '1', '0', '12', &
+     &       'Number of years to simulate before writing mapped results', &
+     &       'Number of years to simulate before writing mapped results', &
+     &       'years')/=0 ) CALL read_error(1, 'prms_warmup')
+      ENDIF
+
       IF ( NhruOutON_OFF==2 ) THEN
         ALLOCATE ( Nhm_id(Nhru) )
         IF ( declparam(MODNAME, 'nhm_id', 'nhru', 'integer', &
@@ -110,7 +121,7 @@
 !***********************************************************************
       SUBROUTINE nhru_summaryinit()
       USE PRMS_NHRU_SUMMARY
-      USE PRMS_MODULE, ONLY: Nhru, MAXFILE_LENGTH, Start_year, NhruOutON_OFF, Prms_warmup
+      USE PRMS_MODULE, ONLY: Nhru, MAXFILE_LENGTH, Start_year, End_year, NhruOutON_OFF, Prms_warmup, PRMS4_flag, Inputerror_flag
       IMPLICIT NONE
       INTRINSIC ABS
       INTEGER, EXTERNAL :: getvartype, numchars, getvarsize, getparam
@@ -121,8 +132,17 @@
 !***********************************************************************
       Begin_results = 1
       Begyr = Start_year
-      IF ( Prms_warmup>0 ) Begin_results = 0
-      Begyr = Begyr + Prms_warmup
+      IF ( PRMS4_flag==1 ) THEN
+        IF ( getparam(MODNAME, 'prms_warmup', 1, 'integer', Prms_warmup_local)/=0 ) CALL read_error(2, 'prms_warmup')
+      ELSE
+        Prms_warmup_local = Prms_warmup
+      ENDIF
+      IF ( Prms_warmup_local>0 ) Begin_results = 0
+      Begyr = Begyr + Prms_warmup_local
+      IF ( Begyr>End_year ) THEN
+        PRINT *, 'ERROR, prms_warmup > than simulation time period:', Prms_warmup_local
+        Inputerror_flag = 1
+      ENDIF
       Lastyear = Begyr
 
       WRITE ( Output_fmt, 9001 ) Nhru

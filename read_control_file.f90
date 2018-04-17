@@ -8,7 +8,7 @@
      &      Precip_module, Temp_module, Et_module, Srunoff_module, Solrad_module, Gwr_swale_flag, &
      &      Strmflow_module, Transp_module, Soilzone_module, Print_debug, Dprst_flag, Subbasin_flag, Frozen_flag, &
      &      CsvON_OFF, MapOutON_OFF, Model_mode, Orad_flag, Endtime, Starttime, Snow_cbh_flag, Stream_temp_flag, &
-     &      Cascade_flag, Cascadegw_flag, Prms_warmup, Humidity_cbh_flag, Windspeed_cbh_flag, &
+     &      Cascade_flag, Cascadegw_flag, Prms_warmup, Humidity_cbh_flag, Windspeed_cbh_flag, Strmtemp_humidity_flag, &
      &      Gwflow_cbh_flag, NhruOutON_OFF, NsubOutON_OFF, BasinOutON_OFF, Dyn_imperv_flag, Dyn_dprst_flag, Dyn_intcp_flag, &
      &      Dyn_covtype_flag, Dyn_potet_flag, Dyn_transp_flag, Dyn_soil_flag, Dyn_radtrncf_flag, Dyn_transp_on_flag, &
      &      Dyn_sro2dprst_perv_flag, Dyn_sro2dprst_imperv_flag, Dyn_fallfrost_flag, NsegmentOutON_OFF, &
@@ -70,7 +70,7 @@
       CHARACTER(LEN=MAXCONTROL_LENGTH) :: paramstring
       REAL, ALLOCATABLE :: real_parameter_values(:)
 !***********************************************************************
-      Version_read_control_file = 'read_control_file.f90 2017-09-28 11:54:00Z'
+      Version_read_control_file = 'read_control_file.f90 2018-04-17 16:55:00Z'
 
       ! control filename cannot include blanks
       CALL get_control_filename(Model_control_file, nchars)
@@ -189,6 +189,9 @@
       i = i + 1
       Control_parameter_data(i)%name = 'stream_temp_flag'
       Stream_temp_flag = 0
+	  i = i + 1
+      Control_parameter_data(i)%name = 'strmtemp_humidity_flag'
+      Strmtemp_humidity_flag = 0
       i = i + 1
       Stream_temp_shade_flag = 0
       i = i + 1
