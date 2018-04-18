@@ -524,7 +524,7 @@
           IF ( Pkwater_equiv(i)>0.0D0 ) THEN
             Basin_pweqv = Basin_pweqv + Pkwater_equiv(i)*Hru_area_dble(i)
             Pk_depth(i) = Pkwater_equiv(i)*Deninv
-            Pk_den(i) = Pkwater_equiv(i)/Pk_depth(i)
+            Pk_den(i) = SNGL( Pkwater_equiv(i)/Pk_depth(i) )
             Pk_ice(i) = SNGL( Pkwater_equiv(i) )
             Freeh2o(i) = Pk_ice(i)*Freeh2o_cap(i)
             Ai(i) = Pkwater_equiv(i) ! [inches]

@@ -221,8 +221,8 @@
           Basin_tmax = Basin_tmax*Basin_area_inv
           Basin_tmin = Basin_tmin*Basin_area_inv
           Basin_temp = Basin_temp*Basin_area_inv
-          Solrad_tmax = Basin_tmax
-          Solrad_tmin = Basin_tmin
+          Solrad_tmax = SNGL( Basin_tmax )
+          Solrad_tmin = SNGL( Basin_tmin )
         ENDIF
 
         IF ( Climate_precip_flag==1 ) THEN

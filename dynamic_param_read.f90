@@ -62,7 +62,7 @@
       IF ( Process(:3)=='run' ) THEN
         dynamic_param_read = dynparamrun()
       ELSEIF ( Process(:4)=='decl' ) THEN
-        Version_dynamic_param_read = 'dynamic_param_read.f90 2018-04-06 16:35:00Z'
+        Version_dynamic_param_read = 'dynamic_param_read.f90 2018-04-18 11:21:00Z'
         CALL print_module(Version_dynamic_param_read, 'Time Series Data            ', 90)
         !MODNAME = 'dynamic_param_read'
       ELSEIF ( Process(:4)=='init' ) THEN
@@ -576,9 +576,9 @@
               IF ( Dprst_area_max(i)>NEARZERO ) THEN
                 Dprst_vol_clos_max(i) = DBLE( Dprst_area_clos_max(i)*Dprst_depth_avg(i) )
                 Dprst_vol_open_max(i) = DBLE( Dprst_area_open_max(i)*Dprst_depth_avg(i) )
-                IF ( Dprst_vol_open_max(i)>0.0 ) Dprst_vol_open_frac(i) = Dprst_vol_open(i)/Dprst_vol_open_max(i)
-                IF ( Dprst_vol_clos_max(i)>0.0 ) Dprst_vol_clos_frac(i) = Dprst_vol_clos(i)/Dprst_vol_clos_max(i)
-                Dprst_vol_frac(i) = (Dprst_vol_open(i)+Dprst_vol_clos(i))/(Dprst_vol_open_max(i)+Dprst_vol_clos_max(i))
+                IF ( Dprst_vol_open_max(i)>0.0 ) Dprst_vol_open_frac(i) = SNGL( Dprst_vol_open(i)/Dprst_vol_open_max(i) )
+                IF ( Dprst_vol_clos_max(i)>0.0 ) Dprst_vol_clos_frac(i) = SNGL( Dprst_vol_clos(i)/Dprst_vol_clos_max(i) )
+                Dprst_vol_frac(i) = SNGL( (Dprst_vol_open(i)+Dprst_vol_clos(i))/(Dprst_vol_open_max(i)+Dprst_vol_clos_max(i)) )
               ENDIF
             ENDDO
             CALL is_eof(Dprst_depth_unit, Dprst_depth_next_yr, Dprst_depth_next_mo, Dprst_depth_next_day)

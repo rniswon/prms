@@ -7,8 +7,8 @@
 ! Module Variables
       INTEGER, SAVE :: Begin_results, Begyr, Lastyear
       INTEGER, SAVE, ALLOCATABLE :: Dailyunit(:), Nc_vars(:), Nsub_var_type(:)
-      REAL, SAVE, ALLOCATABLE :: Nhru_var_daily(:, :), Nsub_var_daily(:, :)
-      DOUBLE PRECISION, SAVE, ALLOCATABLE :: Nhru_var_dble(:, :), Nsub_var_dble(:, :)
+      REAL, SAVE, ALLOCATABLE :: Nhru_var_daily(:, :)
+      DOUBLE PRECISION, SAVE, ALLOCATABLE :: Nhru_var_dble(:, :), Nsub_var_dble(:, :), Nsub_var_daily(:, :)
       CHARACTER(LEN=48), SAVE :: Output_fmt, Output_fmt2, Output_fmt3
       CHARACTER(LEN=12), SAVE :: MODNAME
       INTEGER, SAVE :: Daily_flag, Double_vars, Yeardays, Monthly_flag
@@ -73,7 +73,7 @@
       INTEGER :: i
       CHARACTER(LEN=80), SAVE :: Version_nsub_summary
 !***********************************************************************
-      Version_nsub_summary = 'nsub_summary.f90 2018-04-05 14:02:00Z'
+      Version_nsub_summary = 'nsub_summary.f90 2018-04-18 11:22:00Z'
       CALL print_module(Version_nsub_summary, 'Subbasin Output Summary     ', 90)
       MODNAME = 'nsub_summary'
 
@@ -159,6 +159,8 @@
         Daily_flag = 1
         ALLOCATE ( Dailyunit(NsubOutVars) )
         Dailyunit = 0
+        ALLOCATE ( Nsub_var_daily(Nsub, NsubOutVars) )
+        Nsub_var_daily = 0.0D0
       ENDIF
 
       Monthly_flag = 0
@@ -180,10 +182,6 @@
 
       WRITE ( Output_fmt2, 9002 ) Nsub
 
-      IF ( Daily_flag==1 ) THEN
-        ALLOCATE ( Nsub_var_daily(Nsub, NsubOutVars) )
-        Nsub_var_daily = 0.0
-      ENDIF
       DO jj = 1, NsubOutVars
         IF ( Daily_flag==1 ) THEN
           fileName = NsubOutBaseFileName(:numchars(NsubOutBaseFileName))//NsubOutVar_names(jj)(:Nc_vars(jj))//'.csv'
@@ -339,6 +337,7 @@
       ENDIF
 
       IF ( Daily_flag==1 ) THEN
+        Nsub_var_daily = 0.0D0
         DO jj = 1, NsubOutVars
           DO j = 1, Active_hrus
             i = Hru_route_order(j)

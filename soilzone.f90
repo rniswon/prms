@@ -125,7 +125,7 @@
 !***********************************************************************
       szdecl = 0
 
-      Version_soilzone = 'soilzone.f90 2018-02-23 16:10:00Z'
+      Version_soilzone = 'soilzone.f90 2018-04-18 11:20:00Z'
       CALL print_module(Version_soilzone, 'Soil Zone Computations      ', 90 )
       MODNAME = 'soilzone'
 
@@ -592,8 +592,8 @@
 !***********************************************************************
       INTEGER FUNCTION szinit()
       USE PRMS_SOILZONE
-      USE PRMS_MODULE, ONLY: Nhru, Nssr, Nlake, Nhrucell, &
-     &    Parameter_check_flag, Cascade_flag, Init_vars_from_file, GSFLOW_flag, Inputerror_flag
+      USE PRMS_MODULE, ONLY: Nhru, Nssr, Nlake, GSFLOW_flag, Nhrucell, &
+     &    Parameter_check_flag, Cascade_flag, Init_vars_from_file, Inputerror_flag
       USE PRMS_BASIN, ONLY: Hru_type, Hru_perv, &
      &    Basin_area_inv, Hru_area, Hru_frac_perv, Numlake_hrus
       USE PRMS_FLOWVARS, ONLY: Soil_moist_max, Soil_rechr_max, &
@@ -849,8 +849,7 @@
       INTEGER FUNCTION szrun(AFR)
       USE PRMS_SOILZONE
       USE PRMS_MODULE, ONLY: Dprst_flag, Print_debug, Kkiter, &
-     &    Nlake, Cascade_flag, Dprst_flag, Frozen_flag, GSFLOW_flag, &
-     &    soilzone_gain
+     &    GSFLOW_flag, Nlake, Cascade_flag, Dprst_flag, Frozen_flag, soilzone_gain
       USE PRMS_BASIN, ONLY: Hru_type, Hru_perv, Hru_frac_perv, &
      &    Hru_route_order, Active_hrus, Basin_area_inv, Hru_area, &
      &    NEARZERO, Lake_hru_id, Cov_type, Numlake_hrus, Hru_area_dble
@@ -1285,7 +1284,7 @@
         Basin_ssin = Basin_ssin + DBLE( Ssres_in(i)*harea )
         Basin_ssstor = Basin_ssstor + DBLE( Ssres_stor(i)*harea )
         Basin_slstor = Basin_slstor + DBLE( Slow_stor(i)*harea )
-        Soil_moist_tot(i) = Ssres_stor(i) + DBLE( Soil_moist(i)*perv_frac )
+        Soil_moist_tot(i) = Ssres_stor(i) + Soil_moist(i)*perv_frac
         Basin_soil_moist_tot = Basin_soil_moist_tot + DBLE( Soil_moist_tot(i)*harea )
 !        Soil_moist_frac(i) = Soil_moist_tot(i)/Soil_zone_max(i)
 !        Cpr_stor_frac(i) = Soil_moist(i)/Soil_moist_max(i)
@@ -1300,7 +1299,7 @@
 !        Basin_soil_rechr_stor_frac = Basin_soil_rechr_stor_frac + Soil_rechr_ratio(i)*perv_area
         Basin_soil_rechr_stor_frac = Basin_soil_rechr_stor_frac + Soil_rechr(i)/Soil_rechr_max(i)*perv_area
         Recharge(i) = Soil_to_gw(i) + Ssr_to_gw(i)
-        IF ( Dprst_flag==1 ) Recharge(i) = Recharge(i) + Dprst_seep_hru(i)
+        IF ( Dprst_flag==1 ) Recharge(i) = Recharge(i) + SNGL( Dprst_seep_hru(i) )
         Basin_recharge = Basin_recharge + DBLE( Recharge(i)*harea )
         Grav_dunnian_flow(i) = dunnianflw_gvr
         Unused_potet(i) = Potet(i) - Hru_actet(i)
@@ -1723,7 +1722,7 @@
 
 ! add any direct recharge from soil infiltration
         Sm2gw_grav(igvr) = Sm2gw_grav(igvr) + Soil_to_gw
-        IF ( Dprst_flag==1 ) Sm2gw_grav(igvr) = Sm2gw_grav(igvr) + Dprst_seep_hru(Ihru)
+        IF ( Dprst_flag==1 ) Sm2gw_grav(igvr) = Sm2gw_grav(igvr) + SNGL( Dprst_seep_hru(Ihru) )
 
       ENDDO ! end loop of GVRs in the HRU
 

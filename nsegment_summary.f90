@@ -265,7 +265,7 @@
       DO jj = 1, NsegmentOutVars
         IF ( Nsegment_var_type(jj)==2 ) THEN
           CALL getvar_real(MODNAME, NsegmentOutVar_names(jj)(:Nc_vars(jj)), Nsegment, Nsegment_var_daily(1, jj))
-        ELSEIF ( Nsegment_var_type(jj)==3 ) THEN  ! probably don't need double
+        ELSEIF ( Nsegment_var_type(jj)==3 ) THEN
           CALL getvar_dble(MODNAME, NsegmentOutVar_names(jj)(:Nc_vars(jj)), Nsegment, Nsegment_var_dble(1, jj))
         ENDIF
       ENDDO
