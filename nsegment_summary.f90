@@ -267,7 +267,7 @@
         IF ( Nsegment_var_type(jj)==2 ) THEN
           IF ( getvar(MODNAME, NsegmentOutVar_names(jj)(:Nc_vars(jj)), Nsegment, 'real', Nsegment_var_daily(1, jj))/=0 ) &
      &         CALL read_error(4, NsegmentOutVar_names(jj)(:Nc_vars(jj)))
-        ELSEIF ( Nsegment_var_type(jj)==3 ) THEN  ! probably don't need double
+        ELSEIF ( Nsegment_var_type(jj)==3 ) THEN
           IF ( getvar(MODNAME, NsegmentOutVar_names(jj)(:Nc_vars(jj)), Nsegment, 'double', Nsegment_var_dble(1, jj))/=0 ) &
      &         CALL read_error(4, NsegmentOutVar_names(jj)(:Nc_vars(jj)))
         ENDIF

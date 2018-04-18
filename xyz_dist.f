@@ -130,7 +130,7 @@
       xyzdecl = 0
 
       Version_xyz_dist =
-     +'xyz_dist.f 2018-02-23 16:01:00Z'
+     +'xyz_dist.f 2018-04-18 11:09:00Z'
       CALL print_module(Version_xyz_dist,
      +                  'Temp & Precip Distribution  ', 77)
       MODNAME = 'xyz_dist'
@@ -862,14 +862,14 @@
 !  Compute maximum temperature at XY centroid of basin at the elevation
 !  of the solrad station used to develop the DD solrad curves.
 !
-      Solrad_tmax = ((maxlapse1*Basin_centroid_x)+
+      Solrad_tmax = SNGL( ((maxlapse1*Basin_centroid_x)+
      +              (maxlapse2*Basin_centroid_y)+
      +              (maxlapse3*Solradelev+intmax))*DBLE(Tmax_div)
-     +              - DBLE(Tmax_add)
-      Solrad_tmin = ((minlapse1*Basin_centroid_x)+
+     +              - DBLE(Tmax_add) )
+      Solrad_tmin = SNGL( ((minlapse1*Basin_centroid_x)+
      +              (minlapse2*Basin_centroid_y)+
      +              (minlapse3*Solradelev+intmin))*DBLE(Tmin_div)
-     +              - DBLE(Tmin_add)
+     +              - DBLE(Tmin_add) )
 
 !
 !  Compute temperatures at distribution stations.

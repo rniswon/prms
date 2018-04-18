@@ -112,7 +112,7 @@
           IF (Soltab_potsw(Jday,i) <= 10.0) THEN
             stab = 10.0
           ELSE
-            stab = Soltab_potsw(Jday,i)
+            stab = SNGL( Soltab_potsw(Jday,i) )
           ENDIF
 
           IF (Swrad(i) <= 10.0) THEN
@@ -151,7 +151,7 @@
         Basin_humidity = Basin_humidity*Basin_area_inv
 
       ELSEIF ( Process(:4)=='decl' ) THEN
-        Version_potet = 'potet_pt.f90 2018-02-23 15:43:00Z'
+        Version_potet = 'potet_pt.f90 2018-04-18 11:10:00Z'
         CALL print_module(Version_potet, 'Potential Evapotranspiration', 90)
         MODNAME = 'potet_pt'
 

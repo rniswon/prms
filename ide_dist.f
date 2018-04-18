@@ -71,7 +71,7 @@
       idedecl = 0
 
       Version_ide_dist =
-     +'ide_dist.f 2018-02-23 16:01:00Z'
+     +'ide_dist.f 2018-04-18 11:09:00Z'
       CALL print_module(Version_ide_dist,
      +                  'Temp & Precip Distribution  ', 77)
       MODNAME = 'ide_dist'
@@ -943,7 +943,7 @@
             IF ( slope>0.0D0 ) slope = Dalr
           ENDIF
         ENDIF
-        Dat_elev = (slope*z_dble) + b
+        Dat_elev = SNGL( (slope*z_dble) + b )
 !
       ELSE
 !
@@ -959,7 +959,7 @@
         j2 = rb(2)
         slope = (xmndat(j2)-xmndat(j1))/(xmnelv(j2)-xmnelv(j1))
         b = xmndat(j1) - (slope*xmnelv(j1))
-        Dat_elev = (slope*z_dble) + b
+        Dat_elev = SNGL( (slope*z_dble) + b )
 !
       ENDIF
 !

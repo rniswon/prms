@@ -94,7 +94,7 @@
 !***********************************************************************
       srunoffdecl = 0
 
-      Version_srunoff = 'srunoff.f90 2018-04-06 14:27:00Z'
+      Version_srunoff = 'srunoff.f90 2018-04-18 11:15:00Z'
       IF ( Sroff_flag==1 ) THEN
         MODNAME = 'srunoff_smidx'
       ELSE
@@ -953,7 +953,7 @@
       ENDDO
 
 ! reset Sroff as it accumulates flow to streams
-      Runoff = Runoff - Hru_sroff_down
+      Runoff = Runoff - SNGL( Hru_sroff_down )
 !      IF ( Runoff<0.0 ) THEN
 !        IF ( Runoff<-NEARZERO ) THEN
 !          IF ( Print_debug>-1 ) PRINT *, 'runoff < NEARZERO', Runoff
@@ -1117,9 +1117,9 @@
           Basin_dprst_volop = Basin_dprst_volop + Dprst_vol_open(i)
           Basin_dprst_volcl = Basin_dprst_volcl + Dprst_vol_clos(i)
           Dprst_stor_hru(i) = (Dprst_vol_open(i)+Dprst_vol_clos(i))/Hru_area_dble(i)
-          IF ( Dprst_vol_open_max(i)>0.0 ) Dprst_vol_open_frac(i) = Dprst_vol_open(i)/Dprst_vol_open_max(i)
-          IF ( Dprst_vol_clos_max(i)>0.0 ) Dprst_vol_clos_frac(i) = Dprst_vol_clos(i)/Dprst_vol_clos_max(i)
-          Dprst_vol_frac(i) = (Dprst_vol_open(i)+Dprst_vol_clos(i))/(Dprst_vol_open_max(i)+Dprst_vol_clos_max(i))
+          IF ( Dprst_vol_open_max(i)>0.0 ) Dprst_vol_open_frac(i) = SNGL( Dprst_vol_open(i)/Dprst_vol_open_max(i) )
+          IF ( Dprst_vol_clos_max(i)>0.0 ) Dprst_vol_clos_frac(i) = SNGL( Dprst_vol_clos(i)/Dprst_vol_clos_max(i) )
+          Dprst_vol_frac(i) = SNGL( (Dprst_vol_open(i)+Dprst_vol_clos(i))/(Dprst_vol_open_max(i)+Dprst_vol_clos_max(i)) )
         ENDIF
       ENDDO
       Basin_dprst_volop = Basin_dprst_volop*Basin_area_inv
@@ -1374,9 +1374,9 @@
       Basin_dprst_seep = Basin_dprst_seep + Dprst_seep_hru*Hruarea_dble
       Basin_dprst_sroff = Basin_dprst_sroff + Dprst_sroff_hru*Hruarea_dble
       Avail_et = Avail_et - Dprst_evap_hru
-      IF ( Dprst_vol_open_max>0.0 ) Dprst_vol_open_frac(Ihru) = Dprst_vol_open/Dprst_vol_open_max
-      IF ( Dprst_vol_clos_max(Ihru)>0.0 ) Dprst_vol_clos_frac(Ihru) = Dprst_vol_clos/Dprst_vol_clos_max(Ihru)
-      Dprst_vol_frac(Ihru) = (Dprst_vol_open+Dprst_vol_clos)/(Dprst_vol_open_max+Dprst_vol_clos_max(Ihru))
+      IF ( Dprst_vol_open_max>0.0 ) Dprst_vol_open_frac(Ihru) = SNGL( Dprst_vol_open/Dprst_vol_open_max )
+      IF ( Dprst_vol_clos_max(Ihru)>0.0 ) Dprst_vol_clos_frac(Ihru) = SNGL( Dprst_vol_clos/Dprst_vol_clos_max(Ihru) )
+      Dprst_vol_frac(Ihru) = SNGL( (Dprst_vol_open+Dprst_vol_clos)/(Dprst_vol_open_max+Dprst_vol_clos_max(Ihru)) )
       Dprst_stor_hru(Ihru) = (Dprst_vol_open+Dprst_vol_clos)/Hruarea_dble
 
       END SUBROUTINE dprst_comp
