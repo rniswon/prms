@@ -37,6 +37,7 @@
       REAL, SAVE :: Cascade_tol
       INTEGER, SAVE, ALLOCATABLE :: Hru_up_id(:), Hru_strmseg_down_id(:), Hru_down_id(:)
       INTEGER, SAVE, ALLOCATABLE :: Gw_up_id(:), Gw_strmseg_down_id(:), Gw_down_id(:)
+      INTEGER, SAVE, ALLOCATABLE :: Hru_segment(:)
       REAL, SAVE, ALLOCATABLE:: Hru_pct_up(:), Gw_pct_up(:)
       END MODULE PRMS_CASCADE
 
@@ -81,7 +82,7 @@
 !***********************************************************************
       cascdecl = 0
 
-      Version_cascade = 'cascade.f90 2017-11-08 12:14:00Z'
+      Version_cascade = 'cascade.f90 2018-04-19 16:18:00Z'
       CALL print_module(Version_cascade, 'Cascading Flow              ', 90)
       MODNAME = 'cascade'
 
@@ -92,29 +93,31 @@
       IF ( Print_debug==13 ) CALL PRMS_open_module_file(MSGUNT, 'cascade.msgs')
 
 ! declare HRU cascade parameters
-      IF ( Cascade_flag==1 .OR. Model==99 ) THEN
+      IF ( Cascade_flag>0 ) THEN
         ALLOCATE ( Hru_up_id(Ncascade) )
+        ALLOCATE ( Hru_strmseg_down_id(Ncascade) )
+        ALLOCATE ( Hru_down_id(Ncascade) )
+        ALLOCATE ( Hru_pct_up(Ncascade) )
+      ENDIF
+      IF ( Cascade_flag==1 .OR. Model==99 ) THEN
         IF ( declparam(MODNAME, 'hru_up_id', 'ncascade', 'integer', &
      &       '0', 'bounded', 'nhru', &
      &       'Index of HRU containing cascade area', &
      &       'Index of HRU containing cascade area', &
      &       'none')/=0 ) CALL read_error(1, 'hru_up_id')
 
-        ALLOCATE ( Hru_strmseg_down_id(Ncascade) )
         IF ( declparam(MODNAME, 'hru_strmseg_down_id', 'ncascade', 'integer', &
      &       '0', 'bounded', 'nsegment', &
      &       'Stream segment index that cascade area contributes flow', &
      &       'Index number of the stream segment that cascade area contributes flow', &
      &       'none')/=0 ) CALL read_error(1, 'hru_strmseg_down_id')
 
-        ALLOCATE ( Hru_down_id(Ncascade) )
         IF ( declparam(MODNAME, 'hru_down_id', 'ncascade', 'integer', &
      &       '0', 'bounded', 'nhru', &
      &       'HRU index of downslope HRU', &
      &       'Index number of the downslope HRU to which the upslope HRU contributes flow', &
      &       'none')/=0 ) CALL read_error(1, 'hru_down_id')
 
-        ALLOCATE ( Hru_pct_up(Ncascade) )
         IF ( declparam(MODNAME, 'hru_pct_up', 'ncascade', 'real', &
      &       '1.0', '0.0', '1.0', &
      &       'Fraction of HRU area associated with cascade area', &
@@ -122,56 +125,66 @@
      &       ' to a downslope HRU or stream segment for cascade area', &
      &       'decimal fraction')/=0 ) CALL read_error(1, 'hru_pct_up')
       ENDIF
+      IF ( Cascade_flag==2 .OR. Model==99 ) THEN ! use hru_segment to define simple cascades
+        ALLOCATE ( Hru_segment(Nhru) )
+        IF ( declparam(MODNAME, 'hru_segment', 'nhru', 'integer', &
+     &       '0', 'bounded', 'nsegment', &
+     &       'Segment index for HRU lateral inflows', &
+     &       'Segment index to which an HRU contributes lateral flows'// &
+     &       ' (surface runoff, interflow, and groundwater discharge)', &
+     &       'none')/=0 ) CALL read_error(1, 'hru_segment')
+      ELSE
+        IF ( declparam(MODNAME, 'cascade_tol', 'one', 'real', &
+     &       '5.0', '0.0', '99.0', &
+     &       'Cascade area below which a cascade link is ignored', &
+     &       'Cascade area below which a cascade link is ignored', &
+     &       'acres')/=0 ) CALL read_error(1, 'cascade_tol')
 
-      IF ( declparam(MODNAME, 'cascade_tol', 'one', 'real', &
-     &     '5.0', '0.0', '99.0', &
-     &     'Cascade area below which a cascade link is ignored', &
-     &     'Cascade area below which a cascade link is ignored', &
-     &     'acres')/=0 ) CALL read_error(1, 'cascade_tol')
+        IF ( declparam(MODNAME, 'cascade_flg', 'one', 'integer', &
+     &       '0', '0', '1', &
+     &       'Flag to indicate cascade type (0=allow many to many; 1=force one to one)', &
+     &       'Flag to indicate cascade type (0=allow many to many; 1=force one to one)', &
+     &       'none')/=0 ) CALL read_error(1, 'cascade_flg')
 
-      IF ( declparam(MODNAME, 'cascade_flg', 'one', 'integer', &
-     &     '0', '0', '1', &
-     &     'Flag to indicate cascade type (0=allow many to many; 1=force one to one)', &
-     &     'Flag to indicate cascade type (0=allow many to many; 1=force one to one)', &
-     &     'none')/=0 ) CALL read_error(1, 'cascade_flg')
+        IF ( declparam(MODNAME, 'circle_switch', 'one', 'integer', &
+     &       '1', '0', '1', &
+     &       'Switch to check for circles', &
+     &       'Switch to check for circles (0=no check; 1=check)', &
+     &       'none')/=0 ) CALL read_error(1, 'circle_switch')
+      ENDIF
 
-      IF ( declparam(MODNAME, 'circle_switch', 'one', 'integer', &
-     &     '1', '0', '1', &
-     &     'Switch to check for circles', &
-     &     'Switch to check for circles (0=no check; 1=check)', &
-     &     'none')/=0 ) CALL read_error(1, 'circle_switch')
-
+      IF ( Cascadegw_flag>0 ) THEN
+        ALLOCATE ( Gw_up_id(Ncascdgw) )
+        ALLOCATE ( Gw_strmseg_down_id(Ncascdgw) )
+        ALLOCATE ( Gw_down_id(Ncascdgw) )
+        ALLOCATE ( Gw_pct_up(Ncascdgw) )
+      ENDIF
       IF ( Cascadegw_flag==1 .OR. Model==99 ) THEN
 ! declare GWR cascade parameters
-        ALLOCATE ( Gw_up_id(Ncascdgw) )
         IF ( declparam(MODNAME, 'gw_up_id', 'ncascdgw', 'integer', &
      &       '0', 'bounded', 'ngw', &
      &       'Index of GWR containing cascade area', &
      &       'Index of GWR containing cascade area', &
      &       'none')/=0 ) CALL read_error(1, 'gw_up_id')
 
-        ALLOCATE ( Gw_strmseg_down_id(Ncascdgw) )
         IF ( declparam(MODNAME, 'gw_strmseg_down_id', 'ncascdgw', &
      &       'integer', '0', 'bounded', 'nsegment', &
      &       'Stream segment index that cascade area contributes flow', &
      &       'Index number of the stream segment that cascade area contributes flow', &
      &       'none')/=0 ) CALL read_error(1, 'gw_strmseg_down_id')
 
-        ALLOCATE ( Gw_down_id(Ncascdgw) )
         IF ( declparam(MODNAME, 'gw_down_id', 'ncascdgw', 'integer', &
      &       '0', 'bounded', 'ngw', &
      &       'GWR index of downslope GWR', &
      &       'Index number of the downslope GWR to which the upslope GWR contributes flow', &
      &       'none')/=0 ) CALL read_error(1, 'gw_down_id')
 
-        ALLOCATE ( Gw_pct_up(Ncascdgw) )
         IF ( declparam(MODNAME, 'gw_pct_up', 'ncascdgw', 'real', &
      &       '1.0', '0.0', '1.0', &
      &       'Fraction of GWR area associated with cascade area', &
      &       'Fraction of GWR area used to compute flow contributed'// &
      &       ' to a downslope GWR or stream segment for cascade area', &
      &       'decimal fraction')/=0 ) CALL read_error(1, 'gw_pct_up')
-
       ENDIF
 
       END FUNCTION cascdecl
@@ -192,9 +205,15 @@
 !***********************************************************************
       cascinit = 0
 
-      IF ( getparam(MODNAME, 'cascade_tol', 1, 'real', Cascade_tol)/=0 ) CALL read_error(2, 'cascade_tol')
-      IF ( getparam(MODNAME, 'cascade_flg', 1, 'integer', Cascade_flg)/=0 ) CALL read_error(2, 'cascade_flg')
-      IF ( getparam(MODNAME, 'circle_switch', 1, 'integer', Circle_switch)/=0 ) CALL read_error(2, 'circle_switch')
+      IF ( Cascade_flag==2 ) THEN
+        Cascade_tol = 5.0
+        Cascade_flg = 1
+        Circle_switch = 0
+      ELSE
+        IF ( getparam(MODNAME, 'cascade_tol', 1, 'real', Cascade_tol)/=0 ) CALL read_error(2, 'cascade_tol')
+        IF ( getparam(MODNAME, 'cascade_flg', 1, 'integer', Cascade_flg)/=0 ) CALL read_error(2, 'cascade_flg')
+        IF ( getparam(MODNAME, 'circle_switch', 1, 'integer', Circle_switch)/=0 ) CALL read_error(2, 'circle_switch')
+      ENDIF
 
       IF ( Cascade_flag==1 ) CALL init_cascade(cascinit)
 
@@ -286,7 +305,7 @@
 !***********************************************************************
       SUBROUTINE init_cascade(Iret)
       USE PRMS_CASCADE
-      USE PRMS_MODULE, ONLY: Nhru, Nsegment, Print_debug, Ncascade, Ncascdgw, Cascadegw_flag
+      USE PRMS_MODULE, ONLY: Nhru, Nsegment, Print_debug, Ncascade, Ncascdgw, Cascadegw_flag, Cascade_flag
       USE PRMS_BASIN, ONLY: Active_hrus, Hru_route_order, Hru_type, Hru_area
       IMPLICIT NONE
       INTEGER, EXTERNAL :: getparam
@@ -302,11 +321,23 @@
       Iret = 0
 
 ! Cascade parameters
-      IF ( getparam(MODNAME, 'hru_up_id', Ncascade, 'integer', Hru_up_id)/=0 ) CALL read_error(2, 'hru_up_id')
-      IF ( getparam(MODNAME, 'hru_strmseg_down_id', Ncascade, 'integer', Hru_strmseg_down_id)/=0 ) &
-     &     CALL read_error(2, 'hru_strmseg_down_id')
-      IF ( getparam(MODNAME, 'hru_down_id', Ncascade, 'integer', Hru_down_id)/=0 ) CALL read_error(2, 'hru_down_id')
-      IF ( getparam(MODNAME, 'hru_pct_up', Ncascade, 'real', Hru_pct_up)/=0 ) CALL read_error(2, 'hru_pct_up')
+      IF ( Cascade_flag==2 ) THEN
+        ! simple 1 to 1 cascades, ncascade = nhru
+        IF ( getparam(MODNAME, 'hru_segment', Nhru, 'integer', Hru_segment)/=0 ) CALL read_error(2, 'hru_segment')
+        DO i = 1, Nhru
+          Hru_up_id(i) = i
+          Hru_strmseg_down_id(i) = Hru_segment(i)
+        ENDDO
+        Hru_down_id = 0
+        Hru_pct_up = 1.0
+        DEALLOCATE ( Hru_segment )
+      ELSE
+        IF ( getparam(MODNAME, 'hru_up_id', Ncascade, 'integer', Hru_up_id)/=0 ) CALL read_error(2, 'hru_up_id')
+        IF ( getparam(MODNAME, 'hru_strmseg_down_id', Ncascade, 'integer', Hru_strmseg_down_id)/=0 ) &
+     &       CALL read_error(2, 'hru_strmseg_down_id')
+        IF ( getparam(MODNAME, 'hru_down_id', Ncascade, 'integer', Hru_down_id)/=0 ) CALL read_error(2, 'hru_down_id')
+        IF ( getparam(MODNAME, 'hru_pct_up', Ncascade, 'real', Hru_pct_up)/=0 ) CALL read_error(2, 'hru_pct_up')
+      ENDIF
 
       Ncascade_hru = 0
       Ndown = 1
