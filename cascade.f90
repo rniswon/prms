@@ -133,7 +133,8 @@
      &       'Segment index to which an HRU contributes lateral flows'// &
      &       ' (surface runoff, interflow, and groundwater discharge)', &
      &       'none')/=0 ) CALL read_error(1, 'hru_segment')
-      ELSE
+      ENDIF
+      IF ( Cascade_flag/=2 .OR. Model==99 ) THEN
         IF ( declparam(MODNAME, 'cascade_tol', 'one', 'real', &
      &       '5.0', '0.0', '99.0', &
      &       'Cascade area below which a cascade link is ignored', &

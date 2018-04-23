@@ -121,9 +121,8 @@
       CHARACTER(LEN=MAXFILE_LENGTH) :: fileName
 !***********************************************************************
       Begin_results = 1
-      Begyr = Start_year
       IF ( Prms_warmup>0 ) Begin_results = 0
-      Begyr = Begyr + Prms_warmup
+      Begyr = Start_year + Prms_warmup
       Lastyear = Begyr
 
       WRITE ( Output_fmt, 9001 ) Nsub
