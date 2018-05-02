@@ -1116,7 +1116,7 @@
         Seg_lateral_inflow = 0.0D0
       ENDIF
 
-      IF ( Init_vars_from_file==1 .OR. ierr>0 ) RETURN
+      IF ( Init_vars_from_file>0 .OR. ierr>0 ) RETURN
 
 ! initialize scalers
       Basin_temp = 0.0D0
