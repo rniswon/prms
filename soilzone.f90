@@ -94,7 +94,7 @@
       ELSEIF ( Process(:4)=='decl' ) THEN
         soilzone = szdecl()
       ELSEIF ( Process(:4)=='init' ) THEN
-        IF ( Init_vars_from_file==1 ) CALL soilzone_restart(1)
+        IF ( Init_vars_from_file>0 ) CALL soilzone_restart(1)
         soilzone = szinit()
       ELSEIF ( Process(:5)=='clean' ) THEN
         IF ( Save_vars_to_file==1 ) CALL soilzone_restart(0)

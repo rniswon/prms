@@ -55,7 +55,7 @@
       ELSEIF ( Process(:4)=='decl' ) THEN
         gwflow = gwflowdecl()
       ELSEIF ( Process(:4)=='init' ) THEN
-        IF ( Init_vars_from_file==1 ) CALL gwflow_restart(1)
+        IF ( Init_vars_from_file>0 ) CALL gwflow_restart(1)
         gwflow = gwflowinit()
       ELSEIF ( Process(:5)=='clean' ) THEN
         IF ( Save_vars_to_file==1 ) CALL gwflow_restart(0)

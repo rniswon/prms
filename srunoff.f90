@@ -67,7 +67,7 @@
       ELSEIF ( Process(:4)=='decl' ) THEN
         srunoff = srunoffdecl()
       ELSEIF ( Process(:4)=='init' ) THEN
-        IF ( Init_vars_from_file==1 ) CALL srunoff_restart(1)
+        IF ( Init_vars_from_file>0 ) CALL srunoff_restart(1)
         srunoff = srunoffinit()
       ELSEIF ( Process(:5)=='clean' ) THEN
         IF ( Save_vars_to_file==1 ) CALL srunoff_restart(0)

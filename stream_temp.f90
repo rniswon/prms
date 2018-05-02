@@ -72,7 +72,7 @@
       ELSEIF ( Process(:4)=='decl' ) THEN
          stream_temp  = stream_temp_decl()
       ELSEIF ( Process(:4)=='init' ) THEN
-         IF ( Init_vars_from_file==1 ) CALL stream_temp_restart(1)
+         IF ( Init_vars_from_file>0 ) CALL stream_temp_restart(1)
          stream_temp  = stream_temp_init()
       ELSEIF ( Process(:5)=='clean' ) THEN
          IF ( Save_vars_to_file==1 ) CALL stream_temp_restart(0)
