@@ -70,7 +70,7 @@
 !***********************************************************************
       subdecl = 0
 
-      Version_subbasin = 'subbasin.f90 2017-11-15 15:11:00Z'
+      Version_subbasin = 'subbasin.f90 2018-04-25 15:27:00Z'
       CALL print_module(Version_subbasin, 'Output Summary              ', 90)
       MODNAME = 'subbasin'
 
@@ -248,7 +248,7 @@
 !***********************************************************************
       INTEGER FUNCTION subinit()
       USE PRMS_SUBBASIN
-      USE PRMS_MODULE, ONLY: Nsub, Nhru, Print_debug, Inputerror_flag, Dprst_flag, Lake_route_flag, Cascade_flag, GSFLOW_flag
+      USE PRMS_MODULE, ONLY: GSFLOW_flag, Nsub, Nhru, Print_debug, Inputerror_flag, Dprst_flag, Lake_route_flag, Cascade_flag
       USE PRMS_BASIN, ONLY: Hru_area_dble, Active_hrus, Hru_route_order, &
      &    Hru_type, Hru_frac_perv, DNEARZERO, Lake_hru_id, Cfs2cms_conv
       USE PRMS_FLOWVARS, ONLY: Ssres_stor, Soil_moist, Pkwater_equiv, Gwres_stor, Sroff, Ssres_flow, Lake_vol
@@ -381,7 +381,7 @@
               landstor = Lake_vol(Lake_hru_id(j))*12.0D0
               srq = Lake_outcfs(Lake_hru_id(j))*Cfs2inches
               ssq = 0.0D0
-            ELSEIF ( Cascade_flag==1 ) THEN
+            ELSEIF ( Cascade_flag>0 ) THEN
               srq = Hortonian_lakes(j)*harea
               ssq = Lakein_sz(j)*harea
             ELSE
@@ -444,7 +444,7 @@
 !***********************************************************************
       INTEGER FUNCTION subrun()
       USE PRMS_SUBBASIN
-      USE PRMS_MODULE, ONLY: Nsub, Cascade_flag, Dprst_flag, Lake_route_flag, GSFLOW_flag
+      USE PRMS_MODULE, ONLY: GSFLOW_flag, Nsub, Cascade_flag, Dprst_flag, Lake_route_flag
       USE PRMS_BASIN, ONLY: Hru_area_dble, Active_hrus, Hru_route_order, &
      &    Hru_type, CFS2CMS_CONV, Hru_frac_perv, Lake_hru_id
       USE PRMS_SET_TIME, ONLY: Cfs_conv, Cfs2inches
@@ -523,7 +523,7 @@
               landstor = Lake_vol(Lake_hru_id(j))*12.0D0
               srq = Lake_outcfs(Lake_hru_id(j))*Cfs2inches
               ssq = 0.0D0
-            ELSEIF ( Cascade_flag==1 ) THEN
+            ELSEIF ( Cascade_flag>0 ) THEN
               srq = Hortonian_lakes(j)*harea
               ssq = Lakein_sz(j)*harea
             ELSE

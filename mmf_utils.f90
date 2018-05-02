@@ -399,7 +399,7 @@
       END SUBROUTINE getvar_dble
 
 !***********************************************************************
-! getvar_dble - get double precision variable values
+! getvar_dble - get single precision variable values
 !***********************************************************************
       SUBROUTINE getvar_real(Modname, Varname, Numvalues, Values)
       USE PRMS_MMFAPI
@@ -416,6 +416,25 @@
       var_id = find_variable(Modname, Varname, Numvalues, 'real')
       Values = Variable_data(var_id)%values_real
       END SUBROUTINE getvar_real
+
+!***********************************************************************
+! getvar_dble - get integer variable values
+!***********************************************************************
+      SUBROUTINE getvar_int(Modname, Varname, Numvalues, Values)
+      USE PRMS_MMFAPI
+      IMPLICIT NONE
+      ! Arguments
+      CHARACTER(LEN=*), INTENT(IN) :: Modname, Varname
+      INTEGER, INTENT(IN) :: Numvalues
+      INTEGER, INTENT(OUT) :: Values(Numvalues)
+      ! Functions
+      INTEGER, EXTERNAL :: find_variable
+      ! Local Variables
+      INTEGER :: var_id
+!***********************************************************************
+      var_id = find_variable(Modname, Varname, Numvalues, 'real')
+      Values = Variable_data(var_id)%values_int
+      END SUBROUTINE getvar_int
 
 !***********************************************************************
 ! getvar - get variable values

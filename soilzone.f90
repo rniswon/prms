@@ -96,7 +96,7 @@
       ELSEIF ( Process(:4)=='decl' ) THEN
         soilzone = szdecl()
       ELSEIF ( Process(:4)=='init' ) THEN
-        IF ( Init_vars_from_file==1 ) CALL soilzone_restart(1)
+        IF ( Init_vars_from_file>0 ) CALL soilzone_restart(1)
         soilzone = szinit()
       ELSEIF ( Process(:5)=='clean' ) THEN
         IF ( Save_vars_to_file==1 ) CALL soilzone_restart(0)
@@ -125,7 +125,7 @@
 !***********************************************************************
       szdecl = 0
 
-      Version_soilzone = 'soilzone.f90 2018-04-18 11:20:00Z'
+      Version_soilzone = 'soilzone.f90 2018-04-25 15:08:00Z'
       CALL print_module(Version_soilzone, 'Soil Zone Computations      ', 90 )
       MODNAME = 'soilzone'
 
@@ -292,7 +292,7 @@
 !     &     'Maximum interflow for each HRU', &
 !     &     'inches', Interflow_max)
 
-      IF ( Cascade_flag==1 .OR. Model==99 ) THEN
+      IF ( Cascade_flag>0 .OR. Model==99 ) THEN
         CALL declvar_dble(MODNAME, 'basin_dndunnianflow', 'one', 1, 'double', &
      &       'Basin area-weighted average cascading Dunnian flow', &
      &       'inches', Basin_dndunnianflow)
@@ -606,7 +606,7 @@
       INTEGER, EXTERNAL :: getparam
       INTRINSIC MIN, DBLE
 ! Local Variables
-      INTEGER :: i, ii, ihru, icnt, ierr
+      INTEGER :: i, ii, ihru, icnt
       REAL :: hruarea, hruperv
 !***********************************************************************
       szinit = 0
@@ -624,11 +624,11 @@
         IF ( getparam(MODNAME, 'lake_evap_adj', 12*Nlake, 'real', Lake_evap_adj)/=0 ) CALL read_error(2, 'lake_evap_adj')
       ENDIF
 
-      ierr = 0
       IF ( GSFLOW_flag==1 ) THEN
         IF ( Nhru/=Nhrucell ) THEN
           IF ( getparam(MODNAME, 'gvr_hru_id', Nhrucell, 'integer', Gvr_hru_id)/=0 ) CALL read_error(2, 'gvr_hru_id')
-          IF ( Parameter_check_flag==1 ) CALL checkdim_bounded_limits('gvr_hru_id', 'nhru', Gvr_hru_id, Nhrucell, 1, Nhru, ierr)
+          IF ( Parameter_check_flag==1 ) &
+     &         CALL checkdim_bounded_limits('gvr_hru_id', 'nhru', Gvr_hru_id, Nhrucell, 1, Nhru, Inputerror_flag)
         ELSE
           DO i = 1, Nhru
             Gvr_hru_id(i) = i
@@ -636,7 +636,6 @@
         ENDIF
         Grav_gwin = 0.0 ! dimension nhru
         Gw2sm_grav = 0.0
-        IF ( ierr==1 ) Inputerror_flag = 1
       ENDIF
 
       Swale_limit = 0.0
@@ -758,7 +757,7 @@
 
 ! initialize arrays (dimensioned Nhru)
       Dunnian_flow = 0.0
-      IF ( Cascade_flag==1 ) THEN
+      IF ( Cascade_flag>0 ) THEN
         Upslope_interflow = 0.0D0
         Upslope_dunnianflow = 0.0D0
         Hru_sz_cascadeflow = 0.0
@@ -925,7 +924,7 @@
         Sm2gw_grav = 0.0
       ENDIF
 
-      IF ( Cascade_flag==1 ) THEN
+      IF ( Cascade_flag>0 ) THEN
         DO k = 1, Active_hrus
           i = Hru_route_order(k)
           Upslope_interflow(i) = 0.0D0
@@ -977,7 +976,7 @@
           Basin_actet = Basin_actet + DBLE( Hru_actet(i)*harea )
           Basin_lakeevap = Basin_lakeevap + DBLE( Hru_actet(i)*harea )
           Basin_lakeprecip = Basin_lakeprecip + DBLE( Hru_ppt(i)*harea )
-          IF ( Cascade_flag==1 ) THEN
+          IF ( Cascade_flag>0 ) THEN
             ! if lake HRU doesn't cascade, should we limit ET to
             !  water entering the HRU to this point (no gwflow yet)
             Lakein_sz(i) = Upslope_interflow(i) + Upslope_dunnianflow(i)
@@ -1055,7 +1054,7 @@
           Pfr_dunnian_flow(i) = dunnianflw_pfr
         ENDIF
 
-        IF ( Cascade_flag==1 ) THEN
+        IF ( Cascade_flag>0 ) THEN
 !          Cap_upflow_max(i) = SNGL(Upslope_dunnianflow(i)+Upslope_interflow(i))/perv_frac
 !          capwater_maxin = capwater_maxin + Cap_upflow_max(i)
 !          Basin_cap_up_max = Basin_cap_up_max + Cap_upflow_max(i)*perv_area
@@ -1219,7 +1218,7 @@
           Basin_interflow_max = Basin_interflow_max + interflow*harea
           dunnianflw = dunnianflw_gvr + dunnianflw_pfr
           Dunnian_flow(i) = dunnianflw
-          IF ( Cascade_flag==1 ) THEN
+          IF ( Cascade_flag>0 ) THEN
             IF ( Ncascade_hru(i)>0 ) THEN
               dnslowflow = 0.0
               dnpreflow = 0.0

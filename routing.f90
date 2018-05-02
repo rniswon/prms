@@ -7,7 +7,7 @@
       CHARACTER(LEN=7), SAVE :: MODNAME
       DOUBLE PRECISION, SAVE :: Cfs2acft
       DOUBLE PRECISION, SAVE :: Segment_area
-      INTEGER, SAVE :: Use_transfer_segment, Noarea_flag
+      INTEGER, SAVE :: Use_transfer_segment, Noarea_flag, Hru_seg_cascades
       INTEGER, SAVE, ALLOCATABLE :: Segment_order(:), Segment_up(:)
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Segment_hruarea(:)
       CHARACTER(LEN=80), SAVE :: Version_routing
@@ -65,7 +65,7 @@
 !***********************************************************************
       routingdecl = 0
 
-      Version_routing = 'routing.f90 2018-04-17 14:19:00Z'
+      Version_routing = 'routing.f90 2018-04-25 13:08:00Z'
       CALL print_module(Version_routing, 'Routing Initialization      ', 90)
       MODNAME = 'routing'
 
@@ -144,7 +144,8 @@
      &     ' streamflow flows, for segments that do not flow to another segment enter 0', &
      &     'none')/=0 ) CALL read_error(1, 'tosegment')
 
-      IF ( Cascade_flag==0 .OR. Model==99 ) THEN
+      IF ( Cascade_flag==0 .OR. Cascade_flag==2 .OR. Model==99 ) THEN
+        Hru_seg_cascades = 1
         ALLOCATE ( Hru_segment(Nhru) )
         IF ( declparam(MODNAME, 'hru_segment', 'nhru', 'integer', &
      &       '0', 'bounded', 'nsegment', &
@@ -152,6 +153,8 @@
      &       'Segment index to which an HRU contributes lateral flows'// &
      &       ' (surface runoff, interflow, and groundwater discharge)', &
      &       'none')/=0 ) CALL read_error(1, 'hru_segment')
+      ELSE
+        Hru_seg_cascades = 0
       ENDIF
 
       ALLOCATE ( Obsin_segment(Nsegment) )
@@ -187,7 +190,7 @@
      &       'decimal fraction')/=0 ) CALL read_error(1, 'x_coef')
       ENDIF
 
-      IF ( Cascade_flag==0 .OR. Model==99 ) THEN
+      IF ( Hru_seg_cascades==1 .OR. Model==99 ) THEN
         ALLOCATE ( Seginc_potet(Nsegment) )
         CALL declvar_dble(MODNAME, 'seginc_potet', 'nsegment', Nsegment, 'double', &
      &       'Area-weighted average potential ET for each segment'// &
@@ -256,7 +259,7 @@
 !**********************************************************************
       INTEGER FUNCTION routinginit()
       USE PRMS_ROUTING
-      USE PRMS_MODULE, ONLY: Nsegment, Nhru, Init_vars_from_file, Strmflow_flag, Cascade_flag, &
+      USE PRMS_MODULE, ONLY: Nsegment, Nhru, Init_vars_from_file, Strmflow_flag, &
      &    Water_use_flag, Segment_transferON_OFF, Inputerror_flag, Parameter_check_flag !, Print_debug
       USE PRMS_SET_TIME, ONLY: Timestep_seconds
       USE PRMS_BASIN, ONLY: FT2_PER_ACRE, DNEARZERO, Active_hrus, Hru_route_order, Hru_area_dble, NEARZERO !, Active_area
@@ -281,7 +284,7 @@
         Segment_delta_flow = 0.0D0
       ENDIF
 
-      IF ( Cascade_flag==0 ) THEN
+      IF ( Hru_seg_cascades==1 ) THEN
         Seginc_potet = 0.0D0
         Seginc_gwflow = 0.0D0
         Seginc_ssflow = 0.0D0
@@ -323,7 +326,7 @@
 
 ! if cascades are active then ignore hru_segment
       Noarea_flag = 0
-      IF ( Cascade_flag==0 ) THEN
+      IF ( Hru_seg_cascades==1 ) THEN
         IF ( getparam(MODNAME, 'hru_segment', Nhru, 'integer', Hru_segment)/=0 ) CALL read_error(2, 'hru_segment')
         Segment_hruarea = 0.0D0
         DO j = 1, Active_hrus
@@ -576,7 +579,7 @@
       Cfs2acft = Timestep_seconds/FT2_PER_ACRE
 
 ! seg variables are not computed if cascades are active as hru_segment is ignored
-      IF ( Cascade_flag==0 ) THEN
+      IF ( Hru_seg_cascades==1 ) THEN
         ! add hru_ppt, hru_actet
         Seginc_gwflow = 0.0D0
         Seginc_ssflow = 0.0D0
@@ -586,8 +589,10 @@
         Seg_gwflow = 0.0D0
         Seg_sroff = 0.0D0
         Seg_ssflow = 0.0D0
+      ENDIF
+      IF ( Cascade_flag==0 ) THEN
         Seg_lateral_inflow = 0.0D0
-      ELSE
+      ELSE ! use strm_seg_in for cascade_flag = 1 or 2
         Seg_lateral_inflow = Strm_seg_in
       ENDIF
 
@@ -595,13 +600,14 @@
         j = Hru_route_order(jj)
         tocfs = DBLE( Hru_area(j) )*Cfs_conv
         Hru_outflow(j) = DBLE( (Sroff(j) + Ssres_flow(j) + Gwres_flow(j)) )*tocfs
-        IF ( Cascade_flag==0 ) THEN
+        IF ( Hru_seg_cascades==1 ) THEN
           i = Hru_segment(j)
           IF ( i>0 ) THEN
             Seg_gwflow(i) = Seg_gwflow(i) + Gwres_flow(j)
             Seg_sroff(i) = Seg_sroff(i) + Sroff(j)
             Seg_ssflow(i) = Seg_ssflow(i) + Ssres_flow(j)
-            Seg_lateral_inflow(i) = Seg_lateral_inflow(i) + Hru_outflow(j)
+            ! if cascade_flag = 2, seg_lateral_inflow set with strm_seg_in
+            IF ( Cascade_flag==0 ) Seg_lateral_inflow(i) = Seg_lateral_inflow(i) + Hru_outflow(j)
             Seginc_sroff(i) = Seginc_sroff(i) + DBLE( Sroff(j) )*tocfs
             Seginc_ssflow(i) = Seginc_ssflow(i) + DBLE( Ssres_flow(j) )*tocfs
             Seginc_gwflow(i) = Seginc_gwflow(i) + DBLE( Gwres_flow(j) )*tocfs

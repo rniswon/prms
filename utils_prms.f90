@@ -1,4 +1,4 @@
-      ! utils_prms.f90 2018-02-23 14:04:00Z
+      ! utils_prms.f90 2018-04-25 14:20:00Z
 !***********************************************************************
 !     Read CBH File to current time
 !***********************************************************************
@@ -152,7 +152,7 @@
               EXIT
             ENDIF
             IF ( dim/=Nhru ) THEN
-              PRINT '(/,2(A,I0))', '***CBH file dimension incorrect*** nhru= ', Nhru, ' CBH dimension=', dim, ' File: '//Fname
+              PRINT '(/,2(A,I0))', '***CBH file dimension incorrect*** nhru= ', Nhru, ' CBH dimension= ', dim, ' File: '//Fname
               STOP 'ERROR: update Control File with correct CBH files'
             ENDIF
             IF ( Cbh_binary_flag==0 ) THEN
@@ -961,7 +961,6 @@
 ! Local Variable
       INTEGER :: i
 !***********************************************************************
-      Iret = 0
       DO i = 1, Num_values
         IF ( Param_value(i)<Lower_val .OR. Param_value(i)>Upper_val ) THEN
           PRINT *, 'ERROR, out-of-bounds value for bounded parameter: ', Param

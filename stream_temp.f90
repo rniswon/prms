@@ -72,7 +72,7 @@
       ELSEIF ( Process(:4)=='decl' ) THEN
          stream_temp  = stream_temp_decl()
       ELSEIF ( Process(:4)=='init' ) THEN
-         IF ( Init_vars_from_file==1 ) CALL stream_temp_restart(1)
+         IF ( Init_vars_from_file>0 ) CALL stream_temp_restart(1)
          stream_temp  = stream_temp_init()
       ELSEIF ( Process(:5)=='clean' ) THEN
          IF ( Save_vars_to_file==1 ) CALL stream_temp_restart(0)
@@ -86,7 +86,7 @@
 !***********************************************************************
       INTEGER FUNCTION stream_temp_decl()
       USE PRMS_STRMTEMP
-      USE PRMS_MODULE, ONLY: Nsegment, Strmtemp_humidity_flag
+      USE PRMS_MODULE, ONLY: Nsegment, Strmtemp_humidity_flag, Model
       IMPLICIT NONE
 ! Functions
       INTRINSIC INDEX
@@ -142,7 +142,7 @@
 
       ALLOCATE ( Seg_potet(Nsegment) )
       CALL declvar_dble( MODNAME, 'seg_potet', 'nsegment', Nsegment, 'double', &
-     &     'Hru area-weighted average potential ET for each segment', &
+     &     'HRU area-weighted average potential ET for each segment', &
      &     'inches', Seg_potet )
 
       ALLOCATE ( Seg_ccov(Nsegment) )
@@ -163,22 +163,22 @@
       ALLOCATE(seg_tave_gw(Nsegment))
       CALL declvar_real( MODNAME, 'seg_tave_gw', 'nsegment', Nsegment, 'real', &
      &     'groundwater temperature', &
-     &     'degrees C', seg_tave_gw )
+     &     'degrees Celsius', seg_tave_gw )
       
       ALLOCATE(seg_tave_ss(Nsegment))
       CALL declvar_real( MODNAME, 'seg_tave_ss', 'nsegment', Nsegment, 'real', &
      &     'subsurface temperature', &
-     &     'degrees C', seg_tave_ss )
+     &     'degrees Celsius', seg_tave_ss )
       
       ALLOCATE(seg_tave_sroff(Nsegment))
       CALL declvar_real( MODNAME, 'seg_tave_sroff', 'nsegment', Nsegment, 'real', &
      &     'surface runoff temperature', &
-     &     'degrees C', seg_tave_sroff )
+     &     'degrees Celsius', seg_tave_sroff )
       
       ALLOCATE(seg_tave_lat(Nsegment))
       CALL declvar_real( MODNAME, 'seg_tave_lat', 'nsegment', Nsegment, 'real', &
      &     'lateral flow temperature', &
-     &     'degrees C', seg_tave_lat )
+     &     'degrees Celsius', seg_tave_lat )
       
       ALLOCATE (Press(Nsegment) )
       ALLOCATE ( Seg_hru_count(Nsegment) )
@@ -229,7 +229,7 @@
      &     'M value in power function for width calculation', &
      &     'unknown')/=0 ) CALL read_error(1, 'width_m')
 
-      IF ( Stream_temp_shade_flag==0 ) THEN
+      IF ( Stream_temp_shade_flag==0 .OR. Model==99 ) THEN
          ALLOCATE ( Azrh(Nsegment) )
          IF ( declparam( MODNAME, 'azrh', 'nsegment', 'real', &
      &       '0.0', '-1.5708', '1.5708', &
@@ -322,7 +322,7 @@
      &       'meters')/=0 ) CALL read_error(1, 'vow')
       ENDIF
 
-      IF ( Stream_temp_shade_flag==1 ) THEN
+      IF ( Stream_temp_shade_flag==1 .OR. Model==99 ) THEN
          ALLOCATE ( Segshade_sum(Nsegment) )
          IF ( declparam( MODNAME, 'segshade_sum', 'nsegment', 'real', &
      &       '0.0', '0.0', '1.0.', &
@@ -364,14 +364,14 @@
      &     'Maximum number of Newton-Raphson iterations to compute stream temperature', &
      &     'none')/=0 ) CALL read_error(1, 'maxiter_sntemp')
 
-      IF ( Strmtemp_humidity_flag==1 ) THEN  ! specified constant
+      IF ( Strmtemp_humidity_flag==1 .OR. Model==99 ) THEN  ! specified constant
          ALLOCATE ( Seg_humidity(Nsegment, 12) )
          IF ( declparam( MODNAME, 'seg_humidity', 'nsegment,nmonths', 'real', &
      &       '0.7', '0.0', '1.0', &
      &       'Mean monthly humidity for each segment', &
      &       'Mean monthly humidity for each segment, used when values not input in CBH File', &
      &       'decimal fraction')/=0 )  CALL read_error(1, 'seg_humidity')
-      ELSEIF ( Strmtemp_humidity_flag==2 ) THEN  ! use station data
+      ELSEIF ( Strmtemp_humidity_flag==2 .OR. Model==99 ) THEN  ! use station data
          ALLOCATE ( Seg_humidity_sta(Nsegment) )
          IF ( declparam(MODNAME, 'seg_humidity_sta', 'nsegment', 'integer', &
      &       '0', 'bounded', 'nhumid', &
@@ -468,6 +468,7 @@
             CALL checkdim_param_limits(i, 'seg_humidity_sta', 'nhumid', Seg_humidity_sta(i), 1, Nhumid, ierr)
          ENDDO
       ENDIF
+
 ! Initialize declared variables
       seg_tave_upstream = 0.0
       Seg_potet = 0.0D0

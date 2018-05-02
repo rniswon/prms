@@ -132,7 +132,7 @@
 !***********************************************************************
       climateflow_decl = 0
 
-      Version_climateflow = 'climateflow.f90 2018-04-17 14:43:00Z'
+      Version_climateflow = 'climateflow.f90 2018-04-25 14:43:00Z'
       CALL print_module(Version_climateflow, 'Common States and Fluxes    ', 90)
       MODNAME = 'climateflow'
 
@@ -865,10 +865,8 @@
 
       IF ( Temp_flag==1 .OR. Temp_flag==2 .OR. Temp_flag==8 ) THEN
         IF ( getparam(Temp_module, 'hru_tsta', Nhru, 'integer', Hru_tsta)/=0 ) CALL read_error(2, 'hru_tsta')
-        IF ( Parameter_check_flag>0 ) THEN
-          CALL checkdim_bounded_limits('hru_tsta', 'ntemp', Hru_tsta, Nhru, 1, Ntemp, ierr)
-          IF ( ierr>0 ) Inputerror_flag = 1
-        ENDIF
+        IF ( Parameter_check_flag>0 ) &
+     &       CALL checkdim_bounded_limits('hru_tsta', 'ntemp', Hru_tsta, Nhru, 0, Ntemp, Inputerror_flag)
       ENDIF
 
       IF ( getparam(Precip_module, 'tmax_allsnow', Nhru*12, 'real', Tmax_allsnow)/=0 ) CALL read_error(2, 'tmax_allsnow')
@@ -941,8 +939,7 @@
 
           IF ( Parameter_check_flag>0 ) THEN
             CALL checkdim_param_limits(1, 'basin_solsta', 'nsol', Basin_solsta, 1, Nsol, Inputerror_flag)
-            CALL checkdim_bounded_limits('hru_solsta', 'nsol', Hru_solsta, Nhru, 0, Nsol, ierr)
-            IF ( ierr==1 ) Inputerror_flag = 1
+            CALL checkdim_bounded_limits('hru_solsta', 'nsol', Hru_solsta, Nhru, 0, Nsol, Inputerror_flag)
           ENDIF
 
           DO j = 1, Active_hrus
@@ -964,10 +961,8 @@
 
       IF ( Use_pandata==1 ) THEN
         IF ( getparam(MODNAME, 'hru_pansta', Nhru, 'integer', Hru_pansta)/=0 ) CALL read_error(2, 'hru_pansta')
-        IF ( Parameter_check_flag>0 ) THEN
-          CALL checkdim_bounded_limits('hru_pansta', 'nevap', Hru_pansta, Nhru, 1, Nevap, ierr)
-          IF ( ierr==1 ) Inputerror_flag = 1
-        ENDIF
+        IF ( Parameter_check_flag>0 ) &
+     &       CALL checkdim_bounded_limits('hru_pansta', 'nevap', Hru_pansta, Nhru, 0, Nevap, Inputerror_flag)
       ENDIF
 
       IF ( getparam('intcp', 'epan_coef', Nhru*12, 'real', Epan_coef)/=0 ) CALL read_error(2, 'epan_coef')
