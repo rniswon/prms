@@ -19,7 +19,7 @@
 !   Declared Parameters
       INTEGER, SAVE, ALLOCATABLE :: Hru_subbasin(:)
 ! Control Parameters
-      INTEGER, SAVE :: NsubOutVars, NsubOut_freq
+      INTEGER, SAVE :: NsubOutVars, NsubOut_freq, NsubOut_format
       CHARACTER(LEN=36), SAVE, ALLOCATABLE :: NsubOutVar_names(:)
       CHARACTER(LEN=MAXFILE_LENGTH), SAVE :: NsubOutBaseFileName
       END MODULE PRMS_NSUB_SUMMARY
@@ -80,6 +80,8 @@
       IF ( control_integer(NsubOutVars, 'nsubOutVars')/=0 ) NsubOutVars = 0
       ! 1 = daily, 2 = monthly, 3 = both, 4 = mean monthly, 5 = mean yearly, 6 = yearly total
       IF ( control_integer(NsubOut_freq, 'nsubOut_freq')/=0 ) NsubOut_freq = 0
+      ! 1 = ES10.3; 2 = F0.2; 3 = F0.3; 4 = F0.4; 5 = F0.5
+      IF ( control_integer(NsubOut_format, 'nsubOut_format')/=0 ) NsubOut_format = 1
 
       IF ( NsubOutVars==0 ) THEN
         IF ( Model/=99 ) THEN
@@ -125,7 +127,17 @@
       Begyr = Start_year + Prms_warmup
       Lastyear = Begyr
 
-      WRITE ( Output_fmt, 9001 ) Nsub
+      IF ( NsubOut_format==1 ) THEN
+        WRITE ( Output_fmt, 9001 ) Nsub
+      ELSEIF ( NsubOut_format==2 ) THEN
+        WRITE ( Output_fmt, 9007 ) Nsub
+      ELSEIF ( NsubOut_format==3 ) THEN
+        WRITE ( Output_fmt, 9006 ) Nsub
+      ELSEIF ( NsubOut_format==4 ) THEN
+        WRITE ( Output_fmt, 9005 ) Nsub
+      ELSEIF ( NsubOut_format==5 ) THEN
+        WRITE ( Output_fmt, 9012 ) Nsub
+      ENDIF
 
       Double_vars = 0
       ierr = 0
@@ -170,7 +182,17 @@
         ALLOCATE ( Nsub_var_yearly(Nsub, NsubOutVars), Yearlyunit(NsubOutVars) )
         Nsub_var_yearly = 0.0D0
         Yearlyunit = 0
-        WRITE ( Output_fmt3, 9003 ) Nsub
+        IF ( NsubOut_format==1 ) THEN
+          WRITE ( Output_fmt3, 9003 ) Nsub
+        ELSEIF ( NsubOut_format==2 ) THEN
+          WRITE ( Output_fmt3, 9010 ) Nsub
+        ELSEIF ( NsubOut_format==3 ) THEN
+          WRITE ( Output_fmt3, 9009 ) Nsub
+        ELSEIF ( NsubOut_format==4 ) THEN
+          WRITE ( Output_fmt3, 9008 ) Nsub
+        ELSEIF ( NsubOut_format==5 ) THEN
+          WRITE ( Output_fmt3, 9011 ) Nsub
+        ENDIF
       ENDIF
       IF ( Monthly_flag==1 ) THEN
         Monthdays = 0.0D0
@@ -229,7 +251,16 @@
 
  9001 FORMAT ('(I4, 2(''-'',I2.2),',I0,'('',''ES10.3))')
  9002 FORMAT ('("Date"',I0,'('', ''I0))')
- 9003 FORMAT ('(I4,', I0,'('',''ES10.3))')
+ 9003 FORMAT ('(I4,', I0,'('','',ES10.3))')
+ 9004 FORMAT ('(I4, 2(''-'',I2.2),',I0,'('','',I0))')
+ 9005 FORMAT ('(I4, 2(''-'',I2.2),',I0,'('','',F0.4))')
+ 9006 FORMAT ('(I4, 2(''-'',I2.2),',I0,'('','',F0.3))')
+ 9007 FORMAT ('(I4, 2(''-'',I2.2),',I0,'('','',F0.2))')
+ 9008 FORMAT ('(I4,', I0,'('','',F0.4))')
+ 9009 FORMAT ('(I4,', I0,'('','',F0.3))')
+ 9010 FORMAT ('(I4,', I0,'('','',F0.2))')
+ 9011 FORMAT ('(I4,', I0,'('','',F0.5))')
+ 9012 FORMAT ('(I4, 2(''-'',I2.2),',I0,'('','',F0.5))')
 
       END SUBROUTINE nsub_summaryinit
 

@@ -31,9 +31,6 @@
       REAL, SAVE, ALLOCATABLE :: Tempc_dewpt(:), Vp_actual(:), Lwrad_net(:), Vp_slope(:)
       REAL, SAVE, ALLOCATABLE :: Vp_sat(:)
       REAL, SAVE, ALLOCATABLE :: Humidity_percent(:, :)
-!   Declared Variables - clouds
-      DOUBLE PRECISION, SAVE :: Basin_cloud_cover
-      REAL, SAVE, ALLOCATABLE :: Cloud_cover_hru(:)
 !   Declared Parameters and Variables - Solar Radiation
       INTEGER, SAVE :: Basin_solsta
       INTEGER, SAVE, ALLOCATABLE :: Hru_solsta(:), Hru_pansta(:)
@@ -123,7 +120,7 @@
       USE PRMS_CLIMATEVARS
       USE PRMS_FLOWVARS
       USE PRMS_MODULE, ONLY: Temp_flag, Precip_flag, Model, Nhru, Nssr, Nevap, Nlake, &
-     &    Nsegment, Strmflow_module, Temp_module, Ntemp, Stream_order_flag, Stream_temp_flag, &
+     &    Nsegment, Strmflow_module, Temp_module, Ntemp, Stream_order_flag, &
      &    Precip_module, Solrad_module, Transp_module, Et_module, Init_vars_from_file, PRMS4_flag, &
      &    Soilzone_module, Srunoff_module, Nrain, Nsol, Call_cascade, Et_flag, Dprst_flag, Solrad_flag
       IMPLICIT NONE
@@ -135,7 +132,7 @@
 !***********************************************************************
       climateflow_decl = 0
 
-      Version_climateflow = 'climateflow.f90 2018-04-06 14:37:00Z'
+      Version_climateflow = 'climateflow.f90 2018-04-25 14:43:00Z'
       CALL print_module(Version_climateflow, 'Common States and Fluxes    ', 90)
       MODNAME = 'climateflow'
 
@@ -243,18 +240,6 @@
       IF ( declvar(Precip_module, 'hru_snow', 'nhru', Nhru, 'real', &
      &     'Snow distributed to each HRU', &
      &     'inches', Hru_snow)/=0 ) CALL read_error(3, 'hru_snow')
-
-! Cloud cover
-      IF ( Solrad_flag==2 .OR. Stream_temp_flag==1 .OR. Model==99 ) THEN
-        ALLOCATE ( Cloud_cover_hru(Nhru) )
-        IF ( declvar(MODNAME, 'cloud_cover_hru', 'nhru', Nhru, 'real', &
-     &       'Cloud cover proportion of each HRU', &
-     &       'decimal fraction', Cloud_cover_hru)/=0 ) CALL read_error(3, 'cloud_cover_hru')
-
-        IF ( declvar(MODNAME, 'basin_cloud_cover', 'one', 1, 'double', &
-     &       'Basin area-weighted average cloud cover proportion', &
-     &       'decimal fraction', Basin_cloud_cover)/=0 ) CALL read_error(3, 'basin_cloud_cover')
-      ENDIF
 
 ! Solar Radiation variables
       ALLOCATE ( Swrad(Nhru) )
@@ -837,7 +822,7 @@
       USE PRMS_MODULE, ONLY: Temp_flag, Precip_flag, Nhru, Nssr, Temp_module, Precip_module, Parameter_check_flag, &
      &    Solrad_module, Soilzone_module, Srunoff_module, Stream_order_flag, Ntemp, Nrain, Nsol, Nevap, &
      &    Init_vars_from_file, Inputerror_flag, Dprst_flag, Solrad_flag, Et_flag, Nlake, Et_module, Humidity_cbh_flag, &
-     &    Stream_temp_flag, PRMS4_flag, Print_debug
+     &    PRMS4_flag, Print_debug
       USE PRMS_BASIN, ONLY: Elev_units, FEET2METERS, METERS2FEET, Active_hrus, Hru_route_order, Hru_type
       IMPLICIT NONE
 ! Functions
@@ -880,10 +865,8 @@
 
       IF ( Temp_flag==1 .OR. Temp_flag==2 .OR. Temp_flag==8 ) THEN
         IF ( getparam(Temp_module, 'hru_tsta', Nhru, 'integer', Hru_tsta)/=0 ) CALL read_error(2, 'hru_tsta')
-        IF ( Parameter_check_flag>0 ) THEN
-          CALL checkdim_bounded_limits('hru_tsta', 'ntemp', Hru_tsta, Nhru, 1, Ntemp, ierr)
-          IF ( ierr>0 ) Inputerror_flag = 1
-        ENDIF
+        IF ( Parameter_check_flag>0 ) &
+     &       CALL checkdim_bounded_limits('hru_tsta', 'ntemp', Hru_tsta, Nhru, 0, Ntemp, Inputerror_flag)
       ENDIF
 
       IF ( getparam(Precip_module, 'tmax_allsnow', Nhru*12, 'real', Tmax_allsnow)/=0 ) CALL read_error(2, 'tmax_allsnow')
@@ -956,8 +939,7 @@
 
           IF ( Parameter_check_flag>0 ) THEN
             CALL checkdim_param_limits(1, 'basin_solsta', 'nsol', Basin_solsta, 1, Nsol, Inputerror_flag)
-            CALL checkdim_bounded_limits('hru_solsta', 'nsol', Hru_solsta, Nhru, 0, Nsol, ierr)
-            IF ( ierr==1 ) Inputerror_flag = 1
+            CALL checkdim_bounded_limits('hru_solsta', 'nsol', Hru_solsta, Nhru, 0, Nsol, Inputerror_flag)
           ENDIF
 
           DO j = 1, Active_hrus
@@ -979,10 +961,8 @@
 
       IF ( Use_pandata==1 ) THEN
         IF ( getparam(MODNAME, 'hru_pansta', Nhru, 'integer', Hru_pansta)/=0 ) CALL read_error(2, 'hru_pansta')
-        IF ( Parameter_check_flag>0 ) THEN
-          CALL checkdim_bounded_limits('hru_pansta', 'nevap', Hru_pansta, Nhru, 1, Nevap, ierr)
-          IF ( ierr==1 ) Inputerror_flag = 1
-        ENDIF
+        IF ( Parameter_check_flag>0 ) &
+     &       CALL checkdim_bounded_limits('hru_pansta', 'nevap', Hru_pansta, Nhru, 0, Nevap, Inputerror_flag)
       ENDIF
 
       IF ( getparam('intcp', 'epan_coef', Nhru*12, 'real', Epan_coef)/=0 ) CALL read_error(2, 'epan_coef')
@@ -1112,7 +1092,6 @@
       Hru_actet = 0.0
       Infil = 0.0
       Sroff = 0.0
-      IF ( Solrad_flag==2 .OR. Stream_temp_flag==1 ) Cloud_cover_hru = 0.0
 ! initialize arrays (dimensioned Nssr)
       Ssr_to_gw = 0.0
       Ssres_in = 0.0
@@ -1154,7 +1133,6 @@
       Basin_potet = 0.0D0
       Basin_humidity = 0.0D0
       Basin_orad = 0.0D0
-      Basin_cloud_cover = 0.0D0
       Basin_perv_et = 0.0D0
       Basin_actet = 0.0D0
       Basin_lakeevap = 0.0D0
@@ -1343,7 +1321,7 @@
         WRITE ( Restart_outunit ) MODNAME
         WRITE ( Restart_outunit ) Basin_ppt, Basin_rain, Basin_snow, Basin_obs_ppt, Basin_temp, Basin_orad, &
      &          Basin_tmax, Basin_tmin, Solrad_tmax, Solrad_tmin, Basin_transp_on, Basin_potet, Basin_horad, &
-     &          Basin_swrad, Orad, Flow_out, Basin_cloud_cover
+     &          Basin_swrad, Orad, Flow_out
         WRITE ( Restart_outunit ) Basin_cfs, Basin_cms, Basin_ssflow_cfs, Basin_sroff_cfs, Basin_stflow_in, &
      &          Basin_gwflow_cfs, Basin_stflow_out, Basin_ssflow, Basin_soil_to_gw, Basin_actet, &
      &          Basin_swale_et, Basin_perv_et, Basin_soil_moist, Basin_ssstor, Basin_lakeevap, Basin_lake_stor
@@ -1369,7 +1347,7 @@
         CALL check_restart(MODNAME, module_name)
         READ ( Restart_inunit ) Basin_ppt, Basin_rain, Basin_snow, Basin_obs_ppt, Basin_temp, Basin_orad, &
      &         Basin_tmax, Basin_tmin, Solrad_tmax, Solrad_tmin, Basin_transp_on, Basin_potet, Basin_horad, &
-     &         Basin_swrad, Orad, Flow_out, Basin_cloud_cover
+     &         Basin_swrad, Orad, Flow_out
         READ ( Restart_inunit ) Basin_cfs, Basin_cms, Basin_ssflow_cfs, Basin_sroff_cfs, Basin_stflow_in, &
      &         Basin_gwflow_cfs, Basin_stflow_out, Basin_ssflow, Basin_soil_to_gw, Basin_actet, &
      &         Basin_swale_et, Basin_perv_et, Basin_soil_moist, Basin_ssstor, Basin_lakeevap, Basin_lake_stor

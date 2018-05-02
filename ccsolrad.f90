@@ -14,8 +14,8 @@
         INTEGER, SAVE :: Observed_flag
         CHARACTER(LEN=8), SAVE :: MODNAME
         ! Declared Variables
-        DOUBLE PRECISION, SAVE :: Basin_radadj
-        REAL, SAVE, ALLOCATABLE :: Cloud_radadj(:)
+        DOUBLE PRECISION, SAVE :: Basin_radadj, Basin_cloud_cover
+        REAL, SAVE, ALLOCATABLE :: Cloud_radadj(:), Cloud_cover_hru(:)
         ! Declared Parameters
         REAL, SAVE, ALLOCATABLE :: Crad_coef(:, :), Crad_exp(:, :)
         REAL, SAVE, ALLOCATABLE :: Ccov_slope(:, :), Ccov_intcp(:, :)
@@ -27,8 +27,7 @@
       USE PRMS_BASIN, ONLY: Active_hrus, Hru_route_order, Hru_area, Basin_area_inv
       USE PRMS_CLIMATEVARS, ONLY: Swrad, Basin_orad, Orad_hru, &
      &    Rad_conv, Hru_solsta, Basin_horad, Basin_potsw, Basin_swrad, Basin_solsta, Orad, Hru_ppt, &
-     &    Tmax_hru, Tmin_hru, Solsta_flag, Radj_sppt, Radj_wppt, Ppt_rad_adj, Radmax, &
-     &    Basin_cloud_cover, Cloud_cover_hru
+     &    Tmax_hru, Tmin_hru, Solsta_flag, Radj_sppt, Radj_wppt, Ppt_rad_adj, Radmax
       USE PRMS_SOLTAB, ONLY: Soltab_potsw, Soltab_basinpotsw, Hru_cossl, Soltab_horad_potsw
       USE PRMS_SET_TIME, ONLY: Jday, Nowmonth, Summer_flag
       USE PRMS_OBS, ONLY: Solrad
@@ -112,7 +111,7 @@
         Basin_cloud_cover = Basin_cloud_cover*Basin_area_inv
 
       ELSEIF ( Process(:4)=='decl' ) THEN
-        Version_ccsolrad = 'ccsolrad.f90 2018-02-28 14:42:00Z'
+        Version_ccsolrad = 'ccsolrad.f90 2018-04-17 14:43:00Z'
         CALL print_module(Version_ccsolrad, 'Solar Radiation Distribution', 90)
         MODNAME = 'ccsolrad'
 
@@ -124,6 +123,15 @@
         IF ( declvar(MODNAME, 'basin_radadj', 'one', 1, 'double', &
      &       'Basin area-weighted average radiation adjustment for cloud cover', &
      &       'decimal fraction', Basin_radadj)/=0 ) CALL read_error(3, 'basin_radadj')
+
+        ALLOCATE ( Cloud_cover_hru(Nhru) )
+        IF ( declvar(MODNAME, 'cloud_cover_hru', 'nhru', Nhru, 'real', &
+     &       'Cloud cover proportion of each HRU', &
+     &       'decimal fraction', Cloud_cover_hru)/=0 ) CALL read_error(3, 'cloud_cover_hru')
+
+        IF ( declvar(MODNAME, 'basin_cloud_cover', 'one', 1, 'double', &
+     &       'Basin area-weighted average cloud cover proportion', &
+     &       'decimal fraction', Basin_cloud_cover)/=0 ) CALL read_error(3, 'basin_cloud_cover')
 
         ! Declare Parameters
         ALLOCATE ( Crad_coef(Nhru,12) )
@@ -163,6 +171,8 @@
 
         Cloud_radadj = 0.0
         Basin_radadj = 0.0D0
+        Basin_cloud_cover = 0.0D0
+        Cloud_cover_hru = 0.0
 
         Observed_flag = 0
         IF ( Nsol>0 .AND. Basin_solsta>0 ) Observed_flag = 1

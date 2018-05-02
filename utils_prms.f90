@@ -1,4 +1,4 @@
-      ! utils_prms.f90 2018-02-23 14:04:00Z
+      ! utils_prms.f90 2018-04-25 14:20:00Z
 !***********************************************************************
 !     Read CBH File to current time
 !***********************************************************************
@@ -152,7 +152,7 @@
               EXIT
             ENDIF
             IF ( dim/=Nhru ) THEN
-              PRINT '(/,2(A,I0))', '***CBH file dimension incorrect*** nhru= ', Nhru, ' CBH dimension=', dim, ' File: '//Fname
+              PRINT '(/,2(A,I0))', '***CBH file dimension incorrect*** nhru= ', Nhru, ' CBH dimension= ', dim, ' File: '//Fname
               STOP 'ERROR: update Control File with correct CBH files'
             ENDIF
             IF ( Cbh_binary_flag==0 ) THEN
@@ -959,7 +959,6 @@
 ! Local Variable
       INTEGER :: i
 !***********************************************************************
-      Iret = 0
       DO i = 1, Num_values
         IF ( Param_value(i)<Lower_val .OR. Param_value(i)>Upper_val ) THEN
           PRINT *, 'ERROR, out-of-bounds value for bounded parameter: ', Param
@@ -987,29 +986,3 @@
         Iret = 1
       ENDIF
       END SUBROUTINE check_param_zero
-
-!***********************************************************************
-! checks values of basin wide parameters
-! and compute some basin variables
-!***********************************************************************
-      SUBROUTINE check_nhru_params()
-      USE PRMS_MODULE, ONLY: Temp_flag, Ntemp, Nevap, Inputerror_flag
-      USE PRMS_BASIN, ONLY: Active_hrus, Hru_route_order
-      USE PRMS_CLIMATEVARS, ONLY: Hru_tsta, Hru_pansta, Use_pandata
-      IMPLICIT NONE
-! Functions
-      EXTERNAL :: checkdim_param_limits
-! Local variables
-      INTEGER :: i, j, check_tsta
-!***********************************************************************
-      check_tsta = 0
-      IF ( Temp_flag==1 .OR. Temp_flag==2 ) check_tsta = 1
-
-      ! Sanity checks for parameters
-      DO j = 1, Active_hrus
-        i = Hru_route_order(j)
-        IF ( check_tsta==1 ) CALL checkdim_param_limits(i, 'hru_tsta', 'ntemp', Hru_tsta(i), 1, Ntemp, Inputerror_flag)
-        IF ( Use_pandata==1 ) CALL checkdim_param_limits(i, 'hru_pansta', 'nevap', Hru_pansta(i), 1, Nevap, Inputerror_flag)
-      ENDDO
-
-      END SUBROUTINE check_nhru_params

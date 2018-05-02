@@ -82,11 +82,11 @@
 !***********************************************************************
       cascdecl = 0
 
-      Version_cascade = 'cascade.f90 2018-04-19 16:18:00Z'
+      Version_cascade = 'cascade.f90 2018-05-25 15:11:00Z'
       CALL print_module(Version_cascade, 'Cascading Flow              ', 90)
       MODNAME = 'cascade'
 
-      IF ( Cascade_flag==1 .OR. Model==99 ) ALLOCATE ( Ncascade_hru(Nhru) )
+      IF ( Cascade_flag>0 .OR. Model==99 ) ALLOCATE ( Ncascade_hru(Nhru) )
 
       IF ( Cascadegw_flag>0 .OR. Model==99 ) ALLOCATE ( Ncascade_gwr(Ngw) )
 
@@ -216,7 +216,7 @@
         IF ( getparam(MODNAME, 'circle_switch', 1, 'integer', Circle_switch)/=0 ) CALL read_error(2, 'circle_switch')
       ENDIF
 
-      IF ( Cascade_flag==1 ) CALL init_cascade(cascinit)
+      IF ( Cascade_flag>0 ) CALL init_cascade(cascinit)
 
       iret = 0
       IF ( Cascadegw_flag>0 ) THEN
@@ -251,7 +251,7 @@
       IF ( cascinit/=0 .OR. iret/=0 ) STOP
 
       IF ( Print_debug==13 ) THEN
-        IF ( Cascade_flag==1 ) THEN
+        IF ( Cascade_flag>0 ) THEN
           WRITE ( MSGUNT, 9001 )
           k = 0
           DO ii = 1, Active_hrus
@@ -322,6 +322,7 @@
       Iret = 0
 
 ! Cascade parameters
+      Ndown = 1
       IF ( Cascade_flag==2 ) THEN
         ! simple 1 to 1 cascades, ncascade = nhru
         IF ( getparam(MODNAME, 'hru_segment', Nhru, 'integer', Hru_segment)/=0 ) CALL read_error(2, 'hru_segment')
@@ -338,36 +339,43 @@
      &       CALL read_error(2, 'hru_strmseg_down_id')
         IF ( getparam(MODNAME, 'hru_down_id', Ncascade, 'integer', Hru_down_id)/=0 ) CALL read_error(2, 'hru_down_id')
         IF ( getparam(MODNAME, 'hru_pct_up', Ncascade, 'real', Hru_pct_up)/=0 ) CALL read_error(2, 'hru_pct_up')
-      ENDIF
-
-      Ncascade_hru = 0
-      Ndown = 1
-      DO i = 1, Ncascade
-        k = Hru_up_id(i)
-        IF ( k>0 ) THEN
-          jdn = Hru_down_id(i)
-          Ncascade_hru(k) = Ncascade_hru(k) + 1
-          IF ( Ncascade_hru(k)>Ndown ) Ndown = Ncascade_hru(k)
-        ENDIF
-      ENDDO
-
-      IF ( Cascadegw_flag==1 ) THEN
-        IF ( getparam(MODNAME, 'gw_up_id', Ncascdgw, 'integer', Gw_up_id)/=0 ) CALL read_error(2, 'gw_up_id')
-        IF ( getparam(MODNAME, 'gw_down_id', Ncascdgw, 'integer', Gw_down_id)/=0 ) CALL read_error(2, 'gw_down_id')
-        IF ( getparam(MODNAME, 'gw_pct_up', Ncascdgw, 'real', Gw_pct_up)/=0 ) CALL read_error(2, 'gw_pct_up')
-        IF ( getparam(MODNAME, 'gw_strmseg_down_id', Ncascdgw, 'integer', Gw_strmseg_down_id)/=0 ) &
-     &       CALL read_error(2, 'gw_strmseg_down_id')
-        Ncascade_gwr = 0
-        DO i = 1, Ncascdgw
-          k = Gw_up_id(i)
+        ! figure out the maximum number of cascades links from all HRUs, to set dimensions for 2-D arrays
+        Ncascade_hru = 0
+        DO i = 1, Ncascade
+          k = Hru_up_id(i)
           IF ( k>0 ) THEN
-            jdn = Gw_down_id(i)
-            Ncascade_gwr(k) = Ncascade_gwr(k) + 1
-            IF ( Ncascade_gwr(k)>Ndown ) Ndown = Ncascade_gwr(k)
+            jdn = Hru_down_id(i)
+            Ncascade_hru(k) = Ncascade_hru(k) + 1
+            IF ( Ncascade_hru(k)>Ndown ) Ndown = Ncascade_hru(k)
           ENDIF
         ENDDO
       ENDIF
 
+      IF ( Cascadegw_flag==1 ) THEN
+        IF ( Cascade_flag==2 ) THEN
+          Gw_up_id = Hru_up_id(i)
+          Gw_strmseg_down_id =  Hru_strmseg_down_id
+          Gw_down_id = 0
+          Gw_pct_up = 1.0
+        ELSE
+          IF ( getparam(MODNAME, 'gw_up_id', Ncascdgw, 'integer', Gw_up_id)/=0 ) CALL read_error(2, 'gw_up_id')
+          IF ( getparam(MODNAME, 'gw_down_id', Ncascdgw, 'integer', Gw_down_id)/=0 ) CALL read_error(2, 'gw_down_id')
+          IF ( getparam(MODNAME, 'gw_pct_up', Ncascdgw, 'real', Gw_pct_up)/=0 ) CALL read_error(2, 'gw_pct_up')
+          IF ( getparam(MODNAME, 'gw_strmseg_down_id', Ncascdgw, 'integer', Gw_strmseg_down_id)/=0 ) &
+     &         CALL read_error(2, 'gw_strmseg_down_id')
+          Ncascade_gwr = 0
+          DO i = 1, Ncascdgw
+            k = Gw_up_id(i)
+            IF ( k>0 ) THEN
+              jdn = Gw_down_id(i)
+              Ncascade_gwr(k) = Ncascade_gwr(k) + 1
+              IF ( Ncascade_gwr(k)>Ndown ) Ndown = Ncascade_gwr(k)
+            ENDIF
+          ENDDO
+        ENDIF
+      ENDIF
+
+! ??rsr, why 15??
       IF ( Ndown>15 .AND. Print_debug==13 ) WRITE ( MSGUNT, * ) 'possible ndown issue', Ndown
 
 ! allocate HRU variables
@@ -391,8 +399,6 @@
         frac = Hru_pct_up(i)
         IF ( frac>0.9998 ) frac = 1.0
         istrm = Hru_strmseg_down_id(i)
-
-        IF ( Iret==1 ) RETURN
 
         IF ( frac<0.00001 ) THEN
           IF ( Print_debug==13 ) WRITE (MSGUNT, 9004) 'Cascade ignored as hru_pct_up=0.0', &

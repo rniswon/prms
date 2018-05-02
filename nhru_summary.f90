@@ -6,19 +6,19 @@
       IMPLICIT NONE
 ! Module Variables
       INTEGER, SAVE :: Begin_results, Begyr, Lastyear
-      INTEGER, SAVE, ALLOCATABLE :: Dailyunit(:), Nc_vars(:), Nhru_var_type(:)
+      INTEGER, SAVE, ALLOCATABLE :: Dailyunit(:), Nc_vars(:), Nhru_var_type(:), Nhru_var_int(:, :)
       REAL, SAVE, ALLOCATABLE :: Nhru_var_daily(:, :)
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Nhru_var_dble(:, :)
-      CHARACTER(LEN=48), SAVE :: Output_fmt, Output_fmt2, Output_fmt3
+      CHARACTER(LEN=48), SAVE :: Output_fmt, Output_fmt2, Output_fmt3, Output_fmtint
       CHARACTER(LEN=12), SAVE :: MODNAME
-      INTEGER, SAVE :: Daily_flag, Double_vars, Yeardays, Monthly_flag
+      INTEGER, SAVE :: Daily_flag, Double_vars, Yeardays, Monthly_flag, Integer_vars
       DOUBLE PRECISION, SAVE :: Monthdays
       INTEGER, SAVE, ALLOCATABLE :: Monthlyunit(:), Yearlyunit(:)
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Nhru_var_monthly(:, :), Nhru_var_yearly(:, :)
 ! Paramters
       INTEGER, SAVE, ALLOCATABLE :: Nhm_id(:)
 ! Control Parameters
-      INTEGER, SAVE :: NhruOutVars, NhruOut_freq
+      INTEGER, SAVE :: NhruOutVars, NhruOut_freq, NhruOut_format
       CHARACTER(LEN=36), SAVE, ALLOCATABLE :: NhruOutVar_names(:)
       CHARACTER(LEN=MAXFILE_LENGTH), SAVE :: NhruOutBaseFileName
       END MODULE PRMS_NHRU_SUMMARY
@@ -72,13 +72,15 @@
       INTEGER :: i
       CHARACTER(LEN=80), SAVE :: Version_nhru_summary
 !***********************************************************************
-      Version_nhru_summary = 'nhru_summary.f90 2018-04-06 14:14:00Z'
+      Version_nhru_summary = 'nhru_summary.f90 2018-04-27 11:24:00Z'
       CALL print_module(Version_nhru_summary, 'Nhru Output Summary         ', 90)
       MODNAME = 'nhru_summary'
 
       IF ( control_integer(NhruOutVars, 'nhruOutVars')/=0 ) NhruOutVars = 0
       ! 1 = daily, 2 = monthly, 3 = both, 4 = mean monthly, 5 = mean yearly, 6 = yearly total
       IF ( control_integer(NhruOut_freq, 'nhruOut_freq')/=0 ) NhruOut_freq = 0
+      ! 1 = ES10.3; 2 = F0.2; 3 = F0.3; 4 = F0.4; 5 = F0.5
+      IF ( control_integer(NhruOut_format, 'nhruOut_format')/=0 ) NhruOut_format = 1
 
       IF ( NhruOutVars==0 ) THEN
         IF ( Model/=99 ) THEN
@@ -125,17 +127,30 @@
       Begyr = Start_year + Prms_warmup
       Lastyear = Begyr
 
-      WRITE ( Output_fmt, 9001 ) Nhru
+      IF ( NhruOut_format==1 ) THEN
+        WRITE ( Output_fmt, 9001 ) Nhru
+      ELSEIF ( NhruOut_format==2 ) THEN
+        WRITE ( Output_fmt, 9007 ) Nhru
+      ELSEIF ( NhruOut_format==3 ) THEN
+        WRITE ( Output_fmt, 9006 ) Nhru
+      ELSEIF ( NhruOut_format==4 ) THEN
+        WRITE ( Output_fmt, 9005 ) Nhru
+      ELSEIF ( NhruOut_format==5 ) THEN
+        WRITE ( Output_fmt, 9012 ) Nhru
+      ENDIF
+      WRITE ( Output_fmtint, 9004 ) Nhru
 
       Double_vars = 0
+      Integer_vars = 0
       ierr = 0
       DO jj = 1, NhruOutVars
         Nc_vars(jj) = numchars(NhruOutVar_names(jj))
         Nhru_var_type(jj) = getvartype(NhruOutVar_names(jj)(:Nc_vars(jj)), Nhru_var_type(jj) )
         IF ( Nhru_var_type(jj)==3 ) Double_vars = 1
-        IF ( Nhru_var_type(jj)/=2 .AND. Nhru_var_type(jj)/=3 ) THEN
+        IF ( Nhru_var_type(jj)==1 ) Integer_vars = 1
+        IF ( Nhru_var_type(jj)/=2 .AND. Nhru_var_type(jj)/=3 .AND. Nhru_var_type(jj)/=1 ) THEN
           PRINT *, 'ERROR, invalid nhru_summary variable:', NhruOutVar_names(jj)(:Nc_vars(jj))
-          PRINT *, '       only real or double variables allowed'
+          PRINT *, '       only integer, real or double variables allowed'
           ierr = 1
         ENDIF
         size = getvarsize(NhruOutVar_names(jj)(:Nc_vars(jj)), dim )
@@ -149,6 +164,10 @@
       IF ( Double_vars==1 ) THEN
         ALLOCATE ( Nhru_var_dble(Nhru, NhruOutVars) )
         Nhru_var_dble = 0.0D0
+      ENDIF
+      IF ( Integer_vars==1 ) THEN
+        ALLOCATE ( Nhru_var_int(Nhru, NhruOutVars) )
+        Nhru_var_int = 0
       ENDIF
 
       Daily_flag = 0
@@ -166,7 +185,17 @@
         ALLOCATE ( Nhru_var_yearly(Nhru, NhruOutVars), Yearlyunit(NhruOutVars) )
         Nhru_var_yearly = 0.0D0
         Yearlyunit = 0
-        WRITE ( Output_fmt3, 9003 ) Nhru
+        IF ( NhruOut_format==1 ) THEN
+          WRITE ( Output_fmt3, 9003 ) Nhru
+        ELSEIF ( NhruOut_format==2 ) THEN
+          WRITE ( Output_fmt3, 9010 ) Nhru
+        ELSEIF ( NhruOut_format==3 ) THEN
+          WRITE ( Output_fmt3, 9009 ) Nhru
+        ELSEIF ( NhruOut_format==4 ) THEN
+          WRITE ( Output_fmt3, 9008 ) Nhru
+        ELSEIF ( NhruOut_format==5 ) THEN
+          WRITE ( Output_fmt3, 9011 ) Nhru
+        ENDIF
       ELSEIF ( Monthly_flag==1 ) THEN
         Monthdays = 0.0D0
         ALLOCATE ( Nhru_var_monthly(Nhru, NhruOutVars), Monthlyunit(NhruOutVars) )
@@ -227,10 +256,19 @@
         ENDIF
       ENDDO
 
- 9001 FORMAT ('(I4, 2(''-'',I2.2),',I0,'('',''ES10.3))')
+ 9001 FORMAT ('(I4, 2(''-'',I2.2),',I0,'('','',ES10.3))')
  9002 FORMAT ('("Date"',I0,'('', ''I0))')
- 9003 FORMAT ('(I4,', I0,'('',''ES10.3))')
-
+ 9003 FORMAT ('(I4,', I0,'('','',ES10.3))')
+ 9004 FORMAT ('(I4, 2(''-'',I2.2),',I0,'('','',I0))')
+ 9005 FORMAT ('(I4, 2(''-'',I2.2),',I0,'('','',F0.4))')
+ 9006 FORMAT ('(I4, 2(''-'',I2.2),',I0,'('','',F0.3))')
+ 9007 FORMAT ('(I4, 2(''-'',I2.2),',I0,'('','',F0.2))')
+ 9008 FORMAT ('(I4,', I0,'('','',F0.4))')
+ 9009 FORMAT ('(I4,', I0,'('','',F0.3))')
+ 9010 FORMAT ('(I4,', I0,'('','',F0.2))')
+ 9011 FORMAT ('(I4,', I0,'('','',F0.5))')
+ 9012 FORMAT ('(I4, 2(''-'',I2.2),',I0,'('','',F0.5))')
+      
       END SUBROUTINE nhru_summaryinit
 
 !***********************************************************************
@@ -263,8 +301,11 @@
         IF ( Nhru_var_type(jj)==2 ) THEN
           IF ( getvar(MODNAME, NhruOutVar_names(jj)(:Nc_vars(jj)), Nhru, 'real', Nhru_var_daily(1, jj))/=0 ) &
      &         CALL read_error(4, NhruOutVar_names(jj)(:Nc_vars(jj)))
-        ELSEIF ( Nhru_var_type(jj)==3 ) THEN  ! probably don't need double
+        ELSEIF ( Nhru_var_type(jj)==3 ) THEN
           IF ( getvar(MODNAME, NhruOutVar_names(jj)(:Nc_vars(jj)), Nhru, 'double', Nhru_var_dble(1, jj))/=0 ) &
+     &         CALL read_error(4, NhruOutVar_names(jj)(:Nc_vars(jj)))
+        ELSEIF ( Nhru_var_type(jj)==1 ) THEN
+          IF ( getvar(MODNAME, NhruOutVar_names(jj)(:Nc_vars(jj)), Nhru, 'integer', Nhru_var_int(1, jj))/=0 ) &
      &         CALL read_error(4, NhruOutVar_names(jj)(:Nc_vars(jj)))
         ENDIF
       ENDDO
@@ -283,7 +324,14 @@
                   Nhru_var_yearly(i, jj) = Nhru_var_yearly(i, jj)/Yeardays
                 ENDDO
               ENDIF
-              WRITE ( Yearlyunit(jj), Output_fmt3) Lastyear, (Nhru_var_yearly(j,jj), j=1,Nhru)
+              IF ( Nhru_var_type(jj)/=1 ) THEN
+                WRITE ( Yearlyunit(jj), Output_fmt3) Lastyear, (Nhru_var_yearly(j,jj), j=1,Nhru)
+              ELSE
+                DO i = 1, Nhru
+                  Nhru_var_int(i, jj) = INT( Nhru_var_yearly(i, jj) )
+                ENDDO
+                WRITE ( Yearlyunit(jj), Output_fmtint) Lastyear, (Nhru_var_int(j,jj), j=1,Nhru)
+              ENDIF              
             ENDDO
             Nhru_var_yearly = 0.0D0
             Yeardays = 0
@@ -314,6 +362,17 @@
         ENDDO
       ENDIF
 
+      IF ( Integer_vars==1 ) THEN
+        DO jj = 1, NhruOutVars
+          IF ( Nhru_var_type(jj)==1 ) THEN
+            DO j = 1, Active_hrus
+              i = Hru_route_order(j)
+              Nhru_var_daily(i, jj) = FLOAT( Nhru_var_int(i, jj) )
+            ENDDO
+          ENDIF
+        ENDDO
+      ENDIF
+
       IF ( NhruOut_freq>4 ) THEN
         DO jj = 1, NhruOutVars
           DO j = 1, Active_hrus
@@ -337,8 +396,26 @@
       ENDIF
 
       DO jj = 1, NhruOutVars
-        IF ( Daily_flag==1 ) WRITE ( Dailyunit(jj), Output_fmt) Nowyear, Nowmonth, Nowday, (Nhru_var_daily(j,jj), j=1,Nhru)
-        IF ( write_month==1 ) WRITE ( Monthlyunit(jj), Output_fmt) Nowyear, Nowmonth, Nowday, (Nhru_var_monthly(j,jj), j=1,Nhru)
+        IF ( Daily_flag==1 ) THEN
+          IF ( Nhru_var_type(jj)/=1 ) THEN
+            WRITE ( Dailyunit(jj), Output_fmt) Nowyear, Nowmonth, Nowday, (Nhru_var_daily(j,jj), j=1,Nhru)
+          ELSE
+            DO i = 1, Nhru
+              Nhru_var_int(i, jj) = INT( Nhru_var_daily(i, jj) )
+            ENDDO
+            WRITE ( Dailyunit(jj), Output_fmtint) Nowyear, Nowmonth, Nowday, (Nhru_var_int(j,jj), j=1,Nhru)
+          ENDIF
+        ENDIF
+        IF ( write_month==1 ) THEN
+          IF ( Nhru_var_type(jj)/=1 ) THEN
+            WRITE ( Monthlyunit(jj), Output_fmt) Nowyear, Nowmonth, Nowday, (Nhru_var_monthly(j,jj), j=1,Nhru)
+          ELSE
+            DO i = 1, Nhru
+              Nhru_var_int(i, jj) = INT( Nhru_var_monthly(i, jj) )
+            ENDDO
+            WRITE ( Monthlyunit(jj), Output_fmtint) Nowyear, Nowmonth, Nowday, (Nhru_var_int(j,jj), j=1,Nhru)
+          ENDIF
+        ENDIF
       ENDDO
       IF ( write_month==1 ) THEN
         Monthdays = 0.0D0

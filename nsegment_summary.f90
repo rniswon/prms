@@ -18,7 +18,7 @@
 ! Paramters
       INTEGER, SAVE, ALLOCATABLE :: Nhm_seg(:)
 ! Control Parameters
-      INTEGER, SAVE :: NsegmentOutVars, NsegmentOut_freq
+      INTEGER, SAVE :: NsegmentOutVars, NsegmentOut_freq, NsegmentOut_format
       CHARACTER(LEN=36), SAVE, ALLOCATABLE :: NsegmentOutVar_names(:)
       CHARACTER(LEN=MAXFILE_LENGTH), SAVE :: NsegmentOutBaseFileName
       END MODULE PRMS_NSEGMENT_SUMMARY
@@ -72,13 +72,15 @@
       INTEGER :: i
       CHARACTER(LEN=80), SAVE :: Version_nsegment_summary
 !***********************************************************************
-      Version_nsegment_summary = 'nsegment_summary.f90 2018-04-06 14:19:00Z'
+      Version_nsegment_summary = 'nsegment_summary.f90 2018-05-02 09:58:00Z'
       CALL print_module(Version_nsegment_summary, 'Nsegment Output Summary     ', 90)
       MODNAME = 'nsegment_summary'
 
       IF ( control_integer(NsegmentOutVars, 'nsegmentOutVars')/=0 ) NsegmentOutVars = 0
       ! 1 = daily, 2 = monthly, 3 = both, 4 = mean monthly, 5 = mean yearly, 6 = yearly total
       IF ( control_integer(NsegmentOut_freq, 'nsegmentOut_freq')/=0 ) NsegmentOut_freq = 0
+      ! 1 = ES10.3; 2 = F0.2; 3 = F0.3; 4 = F0.4; 5 = F0.5
+      IF ( control_integer(NsegmentOut_format, 'nsegmentOut_format')/=0 ) NsegmentOut_format = 1
 
       IF ( NsegmentOutVars==0 ) THEN
         IF ( Model/=99 ) THEN
@@ -125,7 +127,17 @@
       Begyr = Start_year + Prms_warmup
       Lastyear = Begyr
 
-      WRITE ( Output_fmt, 9001 ) Nsegment
+      IF ( NsegmentOut_format==1 ) THEN
+        WRITE ( Output_fmt, 9001 ) Nsegment
+      ELSEIF ( NsegmentOut_format==2 ) THEN
+        WRITE ( Output_fmt, 9007 ) Nsegment
+      ELSEIF ( NsegmentOut_format==3 ) THEN
+        WRITE ( Output_fmt, 9006 ) Nsegment
+      ELSEIF ( NsegmentOut_format==4 ) THEN
+        WRITE ( Output_fmt, 9005 ) Nsegment
+      ELSEIF ( NsegmentOut_format==5 ) THEN
+        WRITE ( Output_fmt, 9012 ) Nsegment
+      ENDIF
 
       Double_vars = 0
       ierr = 0
@@ -166,7 +178,17 @@
         ALLOCATE ( Nsegment_var_yearly(Nsegment, NsegmentOutVars), Yearlyunit(NsegmentOutVars) )
         Nsegment_var_yearly = 0.0D0
         Yearlyunit = 0
-        WRITE ( Output_fmt3, 9003 ) Nsegment
+        IF ( NsegmentOut_format==1 ) THEN
+          WRITE ( Output_fmt3, 9003 ) Nsegment
+        ELSEIF ( NsegmentOut_format==2 ) THEN
+          WRITE ( Output_fmt3, 9010 ) Nsegment
+        ELSEIF ( NsegmentOut_format==3 ) THEN
+          WRITE ( Output_fmt3, 9009 ) Nsegment
+        ELSEIF ( NsegmentOut_format==4 ) THEN
+          WRITE ( Output_fmt3, 9008 ) Nsegment
+        ELSEIF ( NsegmentOut_format==5 ) THEN
+          WRITE ( Output_fmt3, 9011 ) Nsegment
+        ENDIF
       ENDIF
       IF ( Monthly_flag==1 ) THEN
         Monthdays = 0.0D0
@@ -233,7 +255,16 @@
 
  9001 FORMAT ('(I4, 2(''-'',I2.2),',I0,'('',''ES10.3))')
  9002 FORMAT ('("Date"',I0,'('', ''I0))')
- 9003 FORMAT ('(I4,', I0,'('',''ES10.3))')
+ 9003 FORMAT ('(I4,', I0,'('','',ES10.3))')
+ 9004 FORMAT ('(I4, 2(''-'',I2.2),',I0,'('','',I0))')
+ 9005 FORMAT ('(I4, 2(''-'',I2.2),',I0,'('','',F0.4))')
+ 9006 FORMAT ('(I4, 2(''-'',I2.2),',I0,'('','',F0.3))')
+ 9007 FORMAT ('(I4, 2(''-'',I2.2),',I0,'('','',F0.2))')
+ 9008 FORMAT ('(I4,', I0,'('','',F0.4))')
+ 9009 FORMAT ('(I4,', I0,'('','',F0.3))')
+ 9010 FORMAT ('(I4,', I0,'('','',F0.2))')
+ 9011 FORMAT ('(I4,', I0,'('','',F0.5))')
+ 9012 FORMAT ('(I4, 2(''-'',I2.2),',I0,'('','',F0.5))')
 
       END SUBROUTINE nsegment_summaryinit
 

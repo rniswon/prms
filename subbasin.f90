@@ -70,7 +70,7 @@
 !***********************************************************************
       subdecl = 0
 
-      Version_subbasin = 'subbasin.f90 2017-11-15 15:11:00Z'
+      Version_subbasin = 'subbasin.f90 2018-04-25 15:27:00Z'
       CALL print_module(Version_subbasin, 'Output Summary              ', 90)
       MODNAME = 'subbasin'
 
@@ -381,7 +381,7 @@
               landstor = Lake_vol(Lake_hru_id(j))*12.0D0
               srq = Lake_outcfs(Lake_hru_id(j))*Cfs2inches
               ssq = 0.0D0
-            ELSEIF ( Cascade_flag==1 ) THEN
+            ELSEIF ( Cascade_flag>0 ) THEN
               srq = Hortonian_lakes(j)*harea
               ssq = Lakein_sz(j)*harea
             ELSE
@@ -523,7 +523,7 @@
               landstor = Lake_vol(Lake_hru_id(j))*12.0D0
               srq = Lake_outcfs(Lake_hru_id(j))*Cfs2inches
               ssq = 0.0D0
-            ELSEIF ( Cascade_flag==1 ) THEN
+            ELSEIF ( Cascade_flag>0 ) THEN
               srq = Hortonian_lakes(j)*harea
               ssq = Lakein_sz(j)*harea
             ELSE

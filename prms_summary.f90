@@ -4,7 +4,7 @@
       MODULE PRMS_PRMS_SUMMARY
         IMPLICIT NONE
         ! Local Variables
-        INTEGER, PARAMETER :: NVARS = 51
+        INTEGER, PARAMETER :: NVARS = 53
         CHARACTER(LEN=12), SAVE :: MODNAME
         INTEGER, SAVE :: Iunit
         INTEGER, SAVE, ALLOCATABLE :: Gageid_len(:)
@@ -23,8 +23,9 @@
 
       SUBROUTINE prms_summary()
       USE PRMS_PRMS_SUMMARY
-      USE PRMS_MODULE, ONLY: Model, Process, Nsegment, Csv_output_file, Inputerror_flag, Nobs, MAXDIM, Npoigages
-      USE PRMS_CLIMATEVARS, ONLY: Basin_potet, Basin_tmax, Basin_tmin, Basin_swrad, Basin_ppt
+      USE PRMS_MODULE, ONLY: Model, Process, Nsegment, Csv_output_file, Inputerror_flag, Nobs, &
+     &    MAXDIM, Npoigages, Parameter_check_flag
+      USE PRMS_CLIMATEVARS, ONLY: Basin_potet, Basin_tmax, Basin_tmin, Basin_swrad, Basin_ppt, Basin_rain, Basin_snow, Basin_temp
       USE PRMS_FLOWVARS, ONLY: Basin_soil_moist, Basin_ssstor, Basin_soil_to_gw, &
      &    Basin_lakeevap, Basin_perv_et, Basin_actet, Basin_lake_stor, &
      &    Basin_gwflow_cfs, Basin_sroff_cfs, Basin_ssflow_cfs, Basin_cfs, Basin_stflow_in, &
@@ -38,15 +39,15 @@
       USE PRMS_SOILZONE, ONLY: Basin_capwaterin, Basin_pref_flow_infil, Basin_prefflow, Basin_recharge, Basin_slowflow, &
      &    Basin_pref_stor, Basin_slstor, Basin_soil_rechr, Basin_sz2gw, Basin_dunnian
       USE PRMS_GWFLOW, ONLY: Basin_gwstor, Basin_gwin, Basin_gwsink, Basin_gwflow, &
-     &    Basin_gwstor_minarea_wb, Basin_dnflow
+     &    Basin_gwstor_minarea_wb
       IMPLICIT NONE
 ! Functions
       INTRINSIC CHAR, INDEX, MAX
       INTEGER, EXTERNAL :: declparam, declvar, getparam !, control_integer
-      EXTERNAL :: read_error, PRMS_open_output_file, print_module, statvar_to_csv
+      EXTERNAL :: read_error, PRMS_open_output_file, print_module, statvar_to_csv, checkdim_bounded_limits
       INTEGER, EXTERNAL :: getparamstring, control_string
 ! Local Variables
-      INTEGER :: i, ios, ierr, foo, idim !, statsON_OFF
+      INTEGER :: i, ios, foo, idim !, statsON_OFF
       DOUBLE PRECISION :: gageflow
       CHARACTER(LEN=10) :: chardate
       CHARACTER(LEN=80), SAVE :: Version_prms_summary
@@ -75,15 +76,15 @@
      &          Basin_capwaterin, Basin_dprst_seep, Basin_gwin, Basin_pref_flow_infil, Basin_recharge, Basin_snowmelt, &
      &          Basin_soil_to_gw, Basin_sz2gw, &
      &          Basin_gwsink, Basin_prefflow, Basin_slowflow, Basin_hortonian, Basin_dunnian, &
-     &          Basin_stflow_in, Basin_stflow_out, Basin_gwflow, Basin_dnflow, &
-     &          Basin_gwstor_minarea_wb, &
+     &          Basin_stflow_in, Basin_stflow_out, Basin_gwflow, &
+     &          Basin_gwstor_minarea_wb, Basin_rain, Basin_snow, Basin_temp, &
      &          Basin_cfs, Basin_gwflow_cfs, Basin_sroff_cfs, Basin_ssflow_cfs, gageflow, &
      &          (Segmentout(i), i = 1, Npoigages)
 !     &          (Segmentout(i), Gageout(i), i = 1, Npoigages)
 
 ! Declare procedure
       ELSEIF ( Process(:4)=='decl' ) THEN
-        Version_prms_summary = 'prms_summary.f90 2017-11-20 13:03:00Z'
+        Version_prms_summary = 'prms_summary.f90 2018-04-26 15:10:00Z'
         CALL print_module(Version_prms_summary, 'Output Summary              ', 90)
         MODNAME = 'prms_summary'
 
@@ -137,6 +138,8 @@
 !     &         CALL read_error(2, 'parent_poigages')
           IF ( getparam(MODNAME, 'poi_gage_segment', Npoigages, 'integer', Poi_gage_segment)/=0 ) &
      &         CALL read_error(2, 'poi_gage_segment')
+          IF ( Parameter_check_flag>0 ) &
+     &      CALL checkdim_bounded_limits('poi_gage_segment', 'nsegment', Poi_gage_segment, Npoigages, 1, Nsegment, Inputerror_flag)
           DO i = 1, Npoigages
             Poi_gage_id(i) = '                '
           ENDDO
@@ -151,34 +154,25 @@
           !print *, "second", poi_gage_id
 
           DO i = 1, Npoigages
-            ierr = 0
-            IF ( Poi_gage_segment(i)<1 ) THEN
-              ierr = 1
-              PRINT *, 'ERROR, invalid poi_gage_segment for POI:', i, '; child segment:', &
-     &                 Poi_gage_segment(i), '; nsegment:', Nsegment
-            ENDIF
-            IF ( ierr==1 ) THEN
-              Inputerror_flag = 1
-              CYCLE
-            ENDIF
+            IF ( Poi_gage_segment(i)<1 .OR. Poi_gage_segment(i)>Nsegment ) CYCLE
             Gageid_len(i) = INDEX( Poi_gage_id(i), ' ' ) - 1
             IF ( Gageid_len(i)<0 ) Gageid_len(i) = INDEX( Poi_gage_id(i), CHAR(0) ) - 1
 !            PRINT *, 'gageid_len ', Gageid_len(i), ' :', Poi_gage_id(i), ':'
             IF ( Gageid_len(i)<1 ) Gageid_len(i) = 0
             IF ( Gageid_len(i)>0 ) THEN
               IF ( Gageid_len(i)>15 ) Gageid_len(i) = 15
-              WRITE (Streamflow_pairs(i), '(A,I5.5,2A)' ) ',seg_outflow_', Poi_gage_segment(i), '_gage_', &
+              WRITE (Streamflow_pairs(i), '(A,I0,2A)' ) ',seg_outflow_', Poi_gage_segment(i), '_gage_', &
      &                                                    Poi_gage_id(i)(:Gageid_len(i))
             ELSE
               Gageid_len(i) = -6
-              WRITE (Streamflow_pairs(i), '(2(A,I5.5))' ) ',seg_outflow_', Poi_gage_segment(i)
+              WRITE (Streamflow_pairs(i), '(A,I0)' ) ',seg_outflow_', Poi_gage_segment(i)
             ENDIF
           ENDDO
           !print *, 'pairs', streamflow_pairs
         ENDIF
 
-!        WRITE ( Fmt, '(A,I4,A)' ) '( ', 2*Npoigages+14, 'A )'
-        WRITE ( Fmt, '(A,I4,A)' ) '( ', Npoigages+14, 'A )'
+!        WRITE ( Fmt, '(A,I0,A)' ) '( ', 2*Npoigages+14, 'A )'
+        WRITE ( Fmt, '(A,I0,A)' ) '( ', Npoigages+14, 'A )'
         WRITE ( Iunit, Fmt ) 'Date,', &
      &          'basin_potet,basin_actet,basin_dprst_evap,basin_imperv_evap,basin_intcp_evap,basin_lakeevap,', &
      &          'basin_perv_et,basin_snowevap,basin_swrad,basin_ppt,basin_pk_precip,', &
@@ -190,8 +184,8 @@
      &          'basin_capwaterin,basin_dprst_seep,basin_gwin,basin_pref_flow_in,basin_recharge,basin_snowmelt,', &
      &          'basin_soil_to_gw,basin_sz2gw,', &
      &          'basin_gwsink,basin_prefflow,basin_slowflow,basin_hortonian,basin_dunnian,', &
-     &          'basin_stflow_in,basin_stflow_out,basin_gwflow,basin_dnflow,', &
-     &          'basin_gwstor_minarea_wb,', &
+     &          'basin_stflow_in,basin_stflow_out,basin_gwflow,', &
+     &          'basin_gwstor_minarea_wb,basin_rain,basin_snow,basin_temp,', &
      &          'basin_cfs,basin_gwflow_cfs,basin_sroff_cfs,basin_ssflow_cfs,runoff_cfs', &
      &          (Streamflow_pairs(i)(:Gageid_len(i)+23), i = 1, Npoigages)
 
@@ -206,13 +200,13 @@
      &          'inches/day,inches/day,inches/day,inches/day,inches/day,inches/day,', &
      &          'inches/day,inches/day,', &
      &          'inches/day,inches/day,inches/day,inches/day,inches/day,', &
-     &          'inches/day,inches/day,inches/day,inches/day,', &
-     &          'inches,', &
+     &          'inches/day,inches/day,inches/day,', &
+     &          'inches,inches/day,inches/day,degrees,', &
      &          'cfs,cfs,cfs,cfs,cfs', &
      &          (Cfs_strings(i), i = 1, Npoigages)
 
-        WRITE ( Fmt2, '(A,I4,A)' )  '( A,', Npoigages+NVARS, '(",",SPES10.3) )'
-!        WRITE ( Fmt2, '(A,I4,A)' )  '( A,', 2*Npoigages+NVARS, '(",",SPES10.3) )'
+        WRITE ( Fmt2, '(A,I0,A)' )  '( A,', Npoigages+NVARS, '(",",SPES10.3) )'
+!        WRITE ( Fmt2, '(A,I0,A)' )  '( A,', 2*Npoigages+NVARS, '(",",SPES10.3) )'
 
       ELSEIF ( Process(:5)=='clean' ) THEN
         !IF ( control_integer(statsON_OFF, 'statsON_OFF')/=0 ) statsON_OFF = 1
@@ -250,18 +244,18 @@
       READ ( inunit, * ) numvariables
       ALLOCATE ( varname(numvariables), varindex(numvariables), values(numvariables), nc(numvariables) )
       DO i = 1, numvariables
-        READ ( inunit, '(A,I3)', IOSTAT=ios ) varname(i)
+        READ ( inunit, '(A)', IOSTAT=ios ) varname(i)
         IF ( ios/=0 ) STOP 'ERROR, reading statvar file'
         num = numchars(varname(i))
         READ ( varname(i)(num+1:32), '(I5)' ) varindex(i)
-        WRITE ( varname(i), '(A,I5.5)' ) varname(i)(:num)//'_', varindex(i)
+        WRITE ( varname(i), '(A,I0)' ) varname(i)(:num)//'_', varindex(i)
         nc(i) = num + 6
       ENDDO
-      WRITE ( fmt, '(A,I5,A)' ) '( A, ', 2*numvariables, 'A )'
+      WRITE ( fmt, '(A,I0,A)' ) '( A, ', 2*numvariables, 'A )'
       WRITE ( outunit, fmt ) 'Date,', ( varname(i)(:nc(i)), ',', i = 1, numvariables )
-      WRITE ( fmt3, '(A,I5,A)' ) '(A, ', 2*numvariables, '(I5,A))'
+      WRITE ( fmt3, '(A,I0,A)' ) '(A, ', 2*numvariables, '(I0,A))'
       WRITE ( outunit, fmt3 ) 'date,', ( varindex(i), ',', i = 1, numvariables )
-      WRITE ( fmt2, '(A,I6,A)' ) '( A, ', numvariables, '(",",E14.6) )'
+      WRITE ( fmt2, '(A,I0,A)' ) '( A, ', numvariables, '(",",E14.6) )'
       DO WHILE ( ios/=-1 )
         READ ( inunit, *, IOSTAT=ios ) ts, yr, mo, day, hr, mn, sec, (values(i), i = 1, numvariables )
         IF ( ios==-1 ) EXIT
@@ -271,7 +265,7 @@
           PRINT *, (values(i), i = 1, numvariables )
           STOP 
         ENDIF
-        WRITE ( chardate, '(I4.4,2("-",I2.2))' )  yr, mo, day
+        WRITE ( chardate, '(I0,2("-",I2.2))' )  yr, mo, day
         WRITE ( outunit, fmt2 ) chardate, (values(i), i = 1, numvariables )
       ENDDO
       CLOSE ( outunit )
