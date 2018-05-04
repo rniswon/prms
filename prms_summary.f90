@@ -4,7 +4,7 @@
       MODULE PRMS_PRMS_SUMMARY
         IMPLICIT NONE
         ! Local Variables
-        INTEGER, PARAMETER :: NVARS = 53
+        INTEGER, PARAMETER :: NVARS = 51
         CHARACTER(LEN=12), SAVE :: MODNAME
         INTEGER, SAVE :: Iunit
         INTEGER, SAVE, ALLOCATABLE :: Gageid_len(:)
@@ -25,7 +25,7 @@
       USE PRMS_PRMS_SUMMARY
       USE PRMS_MODULE, ONLY: Model, Process, Nsegment, Csv_output_file, Inputerror_flag, Nobs, &
      &    MAXDIM, Npoigages, Parameter_check_flag
-      USE PRMS_CLIMATEVARS, ONLY: Basin_potet, Basin_tmax, Basin_tmin, Basin_swrad, Basin_ppt, Basin_rain, Basin_snow, Basin_temp
+      USE PRMS_CLIMATEVARS, ONLY: Basin_potet, Basin_tmax, Basin_tmin, Basin_swrad, Basin_ppt
       USE PRMS_FLOWVARS, ONLY: Basin_soil_moist, Basin_ssstor, Basin_soil_to_gw, &
      &    Basin_lakeevap, Basin_perv_et, Basin_actet, Basin_lake_stor, &
      &    Basin_gwflow_cfs, Basin_sroff_cfs, Basin_ssflow_cfs, Basin_cfs, Basin_stflow_in, &
@@ -39,7 +39,7 @@
       USE PRMS_SOILZONE, ONLY: Basin_capwaterin, Basin_pref_flow_infil, Basin_prefflow, Basin_recharge, Basin_slowflow, &
      &    Basin_pref_stor, Basin_slstor, Basin_soil_rechr, Basin_sz2gw, Basin_dunnian
       USE PRMS_GWFLOW, ONLY: Basin_gwstor, Basin_gwin, Basin_gwsink, Basin_gwflow, &
-     &    Basin_gwstor_minarea_wb
+     &    Basin_gwstor_minarea_wb, Basin_dnflow
       IMPLICIT NONE
 ! Functions
       INTRINSIC CHAR, INDEX, MAX
@@ -76,15 +76,15 @@
      &          Basin_capwaterin, Basin_dprst_seep, Basin_gwin, Basin_pref_flow_infil, Basin_recharge, Basin_snowmelt, &
      &          Basin_soil_to_gw, Basin_sz2gw, &
      &          Basin_gwsink, Basin_prefflow, Basin_slowflow, Basin_hortonian, Basin_dunnian, &
-     &          Basin_stflow_in, Basin_stflow_out, Basin_gwflow, &
-     &          Basin_gwstor_minarea_wb, Basin_rain, Basin_snow, Basin_temp, &
+     &          Basin_stflow_in, Basin_stflow_out, Basin_gwflow, Basin_dnflow, &
+     &          Basin_gwstor_minarea_wb, &
      &          Basin_cfs, Basin_gwflow_cfs, Basin_sroff_cfs, Basin_ssflow_cfs, gageflow, &
      &          (Segmentout(i), i = 1, Npoigages)
 !     &          (Segmentout(i), Gageout(i), i = 1, Npoigages)
 
 ! Declare procedure
       ELSEIF ( Process(:4)=='decl' ) THEN
-        Version_prms_summary = 'prms_summary.f90 2018-04-26 15:10:00Z'
+        Version_prms_summary = 'prms_summary.f90 2018-04-25 12:34:00Z'
         CALL print_module(Version_prms_summary, 'Output Summary              ', 90)
         MODNAME = 'prms_summary'
 
@@ -184,8 +184,8 @@
      &          'basin_capwaterin,basin_dprst_seep,basin_gwin,basin_pref_flow_in,basin_recharge,basin_snowmelt,', &
      &          'basin_soil_to_gw,basin_sz2gw,', &
      &          'basin_gwsink,basin_prefflow,basin_slowflow,basin_hortonian,basin_dunnian,', &
-     &          'basin_stflow_in,basin_stflow_out,basin_gwflow,', &
-     &          'basin_gwstor_minarea_wb,basin_rain,basin_snow,basin_temp,', &
+     &          'basin_stflow_in,basin_stflow_out,basin_gwflow,basin_dnflow,', &
+     &          'basin_gwstor_minarea_wb,', &
      &          'basin_cfs,basin_gwflow_cfs,basin_sroff_cfs,basin_ssflow_cfs,runoff_cfs', &
      &          (Streamflow_pairs(i)(:Gageid_len(i)+23), i = 1, Npoigages)
 
@@ -200,8 +200,8 @@
      &          'inches/day,inches/day,inches/day,inches/day,inches/day,inches/day,', &
      &          'inches/day,inches/day,', &
      &          'inches/day,inches/day,inches/day,inches/day,inches/day,', &
-     &          'inches/day,inches/day,inches/day,', &
-     &          'inches,inches/day,inches/day,degrees,', &
+     &          'inches/day,inches/day,inches/day,inches/day,', &
+     &          'inches,', &
      &          'cfs,cfs,cfs,cfs,cfs', &
      &          (Cfs_strings(i), i = 1, Npoigages)
 
