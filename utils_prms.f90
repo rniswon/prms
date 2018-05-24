@@ -1,4 +1,4 @@
-      ! utils_prms.f90 2018-04-25 14:20:00Z
+      ! utils_prms.f90 2018-05-24 09:44:00Z
 !***********************************************************************
 !     Read CBH File to current time
 !***********************************************************************
@@ -833,7 +833,7 @@
 ! print module version information to user's screen
 !***********************************************************************
       SUBROUTINE print_module(Versn, Description, Ftntype)
-      USE PRMS_MODULE, ONLY: PRMS_output_unit, Model, Print_debug !, Logunt
+      USE PRMS_MODULE, ONLY: PRMS_output_unit, Model, Print_debug, Logunt
       IMPLICIT NONE
       ! Arguments
       CHARACTER(LEN=*), INTENT(IN) :: Description, Versn
@@ -845,7 +845,6 @@
       CHARACTER(LEN=28) :: blanks
       CHARACTER(LEN=80) :: string
 !***********************************************************************
-      IF ( Print_debug==-2 ) RETURN
       nc = INDEX( Versn, 'Z' ) - 10
       n = INDEX( Versn, '.f' ) - 1
       IF ( n<1 ) n = 1
@@ -857,9 +856,11 @@
       blanks = ' '
       nb = 29 - (n + 3)
       string = Description//'   '//Versn(:n)//blanks(:nb)//Versn(n+is:nc)
-      PRINT '(A)', TRIM( string )
-!      WRITE ( Logunt, '(A)' ) TRIM( string )
-      IF ( Model/=2 ) WRITE ( PRMS_output_unit, '(A)' ) TRIM( string )
+      IF ( Print_debug>-2 ) THEN
+        PRINT '(A)', TRIM( string )
+        IF ( Model/=2 ) WRITE ( PRMS_output_unit, '(A)' ) TRIM( string )
+      ENDIF
+      WRITE ( Logunt, '(A)' ) TRIM( string )
       END SUBROUTINE print_module
 
 !***********************************************************************
