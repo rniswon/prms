@@ -19,10 +19,11 @@
      &      Cbh_check_flag, Cbh_binary_flag, Windspeed_day, Humidity_day
         USE GSFSUM, ONLY: Gsf_rpt, Rpt_days, Gsflow_output_file, Csv_output_file
         USE PRMS_MAP_RESULTS, ONLY: NmapOutVars, MapOutVar_names
-        USE PRMS_NHRU_SUMMARY, ONLY: NhruOutVars, NhruOut_freq, NhruOutBaseFileName, NhruOutVar_names
-        USE PRMS_NSUB_SUMMARY, ONLY: NsubOutVars, NsubOut_freq, NsubOutBaseFileName, NsubOutVar_names
+        USE PRMS_NHRU_SUMMARY, ONLY: NhruOutVars, NhruOut_freq, NhruOutBaseFileName, NhruOutVar_names, NhruOut_format
+        USE PRMS_NSUB_SUMMARY, ONLY: NsubOutVars, NsubOut_freq, NsubOutBaseFileName, NsubOutVar_names, NsubOut_format
         USE PRMS_BASIN_SUMMARY, ONLY: BasinOutVars, BasinOut_freq, BasinOutBaseFileName, BasinOutVar_names
-        USE PRMS_NSEGMENT_SUMMARY, ONLY: NsegmentOutVars, NsegmentOut_freq, NsegmentOutBaseFileName, NsegmentOutVar_names
+        USE PRMS_NSEGMENT_SUMMARY, ONLY: NsegmentOutVars, NsegmentOut_freq, NsegmentOutBaseFileName, &
+     &      NsegmentOutVar_names, NsegmentOut_format
         USE PRMS_DYNAMIC_PARAM_READ, ONLY: imperv_frac_dynamic, imperv_stor_dynamic, dprst_depth_dynamic, dprst_frac_dynamic, &
      &      wrain_intcp_dynamic, srain_intcp_dynamic, snow_intcp_dynamic, covtype_dynamic, &
      &      potetcoef_dynamic, transpbeg_dynamic, transpend_dynamic, &
@@ -30,7 +31,7 @@
      &      fallfrost_dynamic, springfrost_dynamic, transp_on_dynamic, snareathresh_dynamic, &
      &      covden_sum_dynamic, covden_win_dynamic, sro2dprst_perv_dyn, sro2dprst_imperv_dyn
 
-        INTEGER, PARAMETER :: Max_num_control_parameters = 150 ! WARNING, hard coded, DANGER, DANGER
+        INTEGER, PARAMETER :: Max_num_control_parameters = 160 ! WARNING, hard coded, DANGER, DANGER
         CHARACTER(LEN=MAXFILE_LENGTH), SAVE :: Data_file, Var_init_file, Stat_var_file, Ani_out_file
         CHARACTER(LEN=MAXFILE_LENGTH), SAVE :: Executable_desc, Executable_model, Var_save_file
         CHARACTER(LEN=MAXFILE_LENGTH) :: Control_file, Ani_output_file, Control_description
@@ -70,7 +71,7 @@
       CHARACTER(LEN=MAXCONTROL_LENGTH) :: paramstring
       REAL, ALLOCATABLE :: real_parameter_values(:)
 !***********************************************************************
-      Version_read_control_file = 'read_control_file.f90 2018-04-17 16:55:00Z'
+      Version_read_control_file = 'read_control_file.f90 2018-06-07 10:44:00Z'
 
       ! control filename cannot include blanks
       CALL get_control_filename(Model_control_file, nchars)
@@ -231,6 +232,10 @@
       NhruOut_freq = 1
       Control_parameter_data(i)%values_int(1) = NhruOut_freq
       i = i + 1
+      Control_parameter_data(i)%name = 'nhruOut_format'
+      NhruOut_format = 1
+      Control_parameter_data(i)%values_int(1) = NhruOut_format
+      i = i + 1
       Control_parameter_data(i)%name = 'nhruOutVars'
       NhruOutVars = 0
       i = i + 1
@@ -280,12 +285,21 @@
       NsubOut_freq = 1
       Control_parameter_data(i)%values_int(1) = NsubOut_freq
       i = i + 1
+      Control_parameter_data(i)%name = 'nsubOut_format'
+      NsubOut_format = 1
+      Control_parameter_data(i)%values_int(1) = NsubOut_format
+      i = i + 1
       Control_parameter_data(i)%name = 'basinOut_freq'
       BasinOut_freq = 1
       Control_parameter_data(i)%values_int(1) = BasinOut_freq
       i = i + 1
       Control_parameter_data(i)%name = 'nsegmentOut_freq'
       NsegmentOut_freq = 1
+      Control_parameter_data(i)%values_int(1) = NsegmentOut_freq
+      i = i + 1
+      Control_parameter_data(i)%name = 'nsegmentOut_format'
+      NsegmentOut_format = 1
+      Control_parameter_data(i)%values_int(1) = NsegmentOut_format
       i = i + 1
       Control_parameter_data(i)%name = 'prms_warmup'
       Prms_warmup = 0
