@@ -72,7 +72,7 @@
       INTEGER :: i
       CHARACTER(LEN=80), SAVE :: Version_nsegment_summary
 !***********************************************************************
-      Version_nsegment_summary = 'nsegment_summary.f90 2018-05-02 09:58:00Z'
+      Version_nsegment_summary = 'nsegment_summary.f90 2018-06-11 11:10:00Z'
       CALL print_module(Version_nsegment_summary, 'Nsegment Output Summary     ', 90)
       MODNAME = 'nsegment_summary'
 
@@ -299,7 +299,12 @@
         ELSEIF ( Nsegment_var_type(jj)==3 ) THEN
           IF ( getvar(MODNAME, NsegmentOutVar_names(jj)(:Nc_vars(jj)), Nsegment, 'double', Nsegment_var_dble(1, jj))/=0 ) &
      &         CALL read_error(4, NsegmentOutVar_names(jj)(:Nc_vars(jj)))
+          DO i = 1, Nsegment
+            Nsegment_var_daily(i, jj) = SNGL( Nsegment_var_dble(i, jj) )
+          ENDDO
         ENDIF
+        IF ( Daily_flag==1 ) WRITE ( Dailyunit(jj), Output_fmt) Nowyear, Nowmonth, Nowday, &
+     &                                                          (Nsegment_var_daily(j,jj), j=1,Nsegment)
       ENDDO
 
       write_month = 0
@@ -335,16 +340,6 @@
         Monthdays = Monthdays + 1.0D0
       ENDIF
 
-      IF ( Double_vars==1 ) THEN
-        DO jj = 1, NsegmentOutVars
-          IF ( Nsegment_var_type(jj)==3 ) THEN
-            DO i = 1, Nsegment
-              Nsegment_var_daily(i, jj) = SNGL( Nsegment_var_dble(i, jj) )
-            ENDDO
-          ENDIF
-        ENDDO
-      ENDIF
-
       IF ( NsegmentOut_freq>4 ) THEN
         DO jj = 1, NsegmentOutVars
           DO i = 1, Nsegment
@@ -365,13 +360,11 @@
         ENDDO
       ENDIF
 
-      DO jj = 1, NsegmentOutVars
-        IF ( Daily_flag==1 ) WRITE ( Dailyunit(jj), Output_fmt) Nowyear, Nowmonth, Nowday, &
-     &                               (Nsegment_var_daily(j,jj), j=1,Nsegment)
-        IF ( write_month==1 ) WRITE ( Monthlyunit(jj), Output_fmt) Nowyear, Nowmonth, Nowday, &
-     &                               (Nsegment_var_monthly(j,jj), j=1,Nsegment)
-      ENDDO
       IF ( write_month==1 ) THEN
+        DO jj = 1, NsegmentOutVars
+          WRITE ( Monthlyunit(jj), Output_fmt) Nowyear, Nowmonth, Nowday, &
+     &                                         (Nsegment_var_monthly(j,jj), j=1,Nsegment)
+        ENDDO
         Monthdays = 0.0D0
         Nsegment_var_monthly = 0.0D0
       ENDIF
