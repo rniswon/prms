@@ -72,7 +72,7 @@
       INTEGER :: i
       CHARACTER(LEN=80), SAVE :: Version_nhru_summary
 !***********************************************************************
-      Version_nhru_summary = 'nhru_summary.f90 2018-04-27 11:24:00Z'
+      Version_nhru_summary = 'nhru_summary.f90 2018-06-11 11:13:00Z'
       CALL print_module(Version_nhru_summary, 'Nhru Output Summary         ', 90)
       MODNAME = 'nhru_summary'
 
@@ -268,7 +268,7 @@
  9010 FORMAT ('(I4,', I0,'('','',F0.2))')
  9011 FORMAT ('(I4,', I0,'('','',F0.5))')
  9012 FORMAT ('(I4, 2(''-'',I2.2),',I0,'('','',F0.5))')
-      
+
       END SUBROUTINE nhru_summaryinit
 
 !***********************************************************************
@@ -301,8 +301,25 @@
           CALL getvar_real(MODNAME, NhruOutVar_names(jj)(:Nc_vars(jj)), Nhru, Nhru_var_daily(1, jj))
         ELSEIF ( Nhru_var_type(jj)==3 ) THEN
           CALL getvar_dble(MODNAME, NhruOutVar_names(jj)(:Nc_vars(jj)), Nhru, Nhru_var_dble(1, jj))
+          DO j = 1, Active_hrus
+            i = Hru_route_order(j)
+            Nhru_var_daily(i, jj) = SNGL( Nhru_var_dble(i, jj) )
+          ENDDO
         ELSEIF ( Nhru_var_type(jj)==1 ) THEN
           CALL getvar_int(MODNAME, NhruOutVar_names(jj)(:Nc_vars(jj)), Nhru, Nhru_var_int(1, jj))
+          IF ( NhruOut_freq>1 ) THEN
+            DO j = 1, Active_hrus
+              i = Hru_route_order(j)
+              Nhru_var_daily(i, jj) = FLOAT( Nhru_var_int(i, jj) )
+            ENDDO
+          ENDIF
+        ENDIF
+        IF ( Daily_flag==1 ) THEN
+          IF ( Nhru_var_type(jj)/=1 ) THEN
+            WRITE ( Dailyunit(jj), Output_fmt) Nowyear, Nowmonth, Nowday, (Nhru_var_daily(j,jj), j=1,Nhru)
+          ELSE
+            WRITE ( Dailyunit(jj), Output_fmtint) Nowyear, Nowmonth, Nowday, (Nhru_var_int(j,jj), j=1,Nhru)
+          ENDIF
         ENDIF
       ENDDO
 
@@ -347,28 +364,6 @@
         Monthdays = Monthdays + 1.0D0
       ENDIF
 
-      IF ( Double_vars==1 ) THEN
-        DO jj = 1, NhruOutVars
-          IF ( Nhru_var_type(jj)==3 ) THEN
-            DO j = 1, Active_hrus
-              i = Hru_route_order(j)
-              Nhru_var_daily(i, jj) = SNGL( Nhru_var_dble(i, jj) )
-            ENDDO
-          ENDIF
-        ENDDO
-      ENDIF
-
-      IF ( Integer_vars==1 ) THEN
-        DO jj = 1, NhruOutVars
-          IF ( Nhru_var_type(jj)==1 ) THEN
-            DO j = 1, Active_hrus
-              i = Hru_route_order(j)
-              Nhru_var_daily(i, jj) = FLOAT( Nhru_var_int(i, jj) )
-            ENDDO
-          ENDIF
-        ENDDO
-      ENDIF
-
       IF ( NhruOut_freq>4 ) THEN
         DO jj = 1, NhruOutVars
           DO j = 1, Active_hrus
@@ -391,18 +386,8 @@
         ENDDO
       ENDIF
 
-      DO jj = 1, NhruOutVars
-        IF ( Daily_flag==1 ) THEN
-          IF ( Nhru_var_type(jj)/=1 ) THEN
-            WRITE ( Dailyunit(jj), Output_fmt) Nowyear, Nowmonth, Nowday, (Nhru_var_daily(j,jj), j=1,Nhru)
-          ELSE
-            DO i = 1, Nhru
-              Nhru_var_int(i, jj) = INT( Nhru_var_daily(i, jj) )
-            ENDDO
-            WRITE ( Dailyunit(jj), Output_fmtint) Nowyear, Nowmonth, Nowday, (Nhru_var_int(j,jj), j=1,Nhru)
-          ENDIF
-        ENDIF
-        IF ( write_month==1 ) THEN
+      IF ( write_month==1 ) THEN
+        DO jj = 1, NhruOutVars
           IF ( Nhru_var_type(jj)/=1 ) THEN
             WRITE ( Monthlyunit(jj), Output_fmt) Nowyear, Nowmonth, Nowday, (Nhru_var_monthly(j,jj), j=1,Nhru)
           ELSE
@@ -411,9 +396,7 @@
             ENDDO
             WRITE ( Monthlyunit(jj), Output_fmtint) Nowyear, Nowmonth, Nowday, (Nhru_var_int(j,jj), j=1,Nhru)
           ENDIF
-        ENDIF
-      ENDDO
-      IF ( write_month==1 ) THEN
+        ENDDO
         Monthdays = 0.0D0
         Nhru_var_monthly = 0.0D0
       ENDIF
