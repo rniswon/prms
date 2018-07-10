@@ -425,10 +425,12 @@
      &     'inches', Basin_soil_to_gw)/=0 ) CALL read_error(3, 'basin_soil_to_gw')
 
 ! gwflow
-      ALLOCATE ( Gwres_stor(Nhru) )
-      IF ( declvar('gwflow', 'gwres_stor', 'ngw', Nhru, 'double', &
-     &     'Storage in each GWR', &
-     &     'inches', Gwres_stor)/=0 ) CALL read_error(3, 'gwres_stor')
+      IF ( Model/=0 ) THEN
+        ALLOCATE ( Gwres_stor(Nhru) )
+        IF ( declvar('gwflow', 'gwres_stor', 'ngw', Nhru, 'double', &
+     &       'Storage in each GWR', &
+     &       'inches', Gwres_stor)/=0 ) CALL read_error(3, 'gwres_stor')
+      ENDIF
 
 ! srunoff
       ALLOCATE ( Imperv_stor(Nhru) )
@@ -822,7 +824,7 @@
       USE PRMS_MODULE, ONLY: Temp_flag, Precip_flag, Nhru, Nssr, Temp_module, Precip_module, Parameter_check_flag, &
      &    Solrad_module, Soilzone_module, Srunoff_module, Stream_order_flag, Ntemp, Nrain, Nsol, Nevap, &
      &    Init_vars_from_file, Inputerror_flag, Dprst_flag, Solrad_flag, Et_flag, Nlake, Et_module, Humidity_cbh_flag, &
-     &    PRMS4_flag, Print_debug
+     &    PRMS4_flag, Print_debug, Model
       USE PRMS_BASIN, ONLY: Elev_units, FEET2METERS, METERS2FEET, Active_hrus, Hru_route_order, Hru_type
       IMPLICIT NONE
 ! Functions
@@ -1161,7 +1163,7 @@
 ! initialize storage variables
       Imperv_stor = 0.0
       Pkwater_equiv = 0.0D0
-      Gwres_stor = 0.0D0
+      IF ( Model/=0 ) Gwres_stor = 0.0D0 ! not needed for GSFLOW
       IF ( Dprst_flag==1 ) THEN
         Dprst_vol_open = 0.0D0
         Dprst_vol_clos = 0.0D0
@@ -1307,7 +1309,7 @@
 !     Write or read restart file
 !***********************************************************************
       SUBROUTINE climateflow_restart(In_out)
-      USE PRMS_MODULE, ONLY: Restart_outunit, Restart_inunit, Stream_order_flag, Dprst_flag, Nlake
+      USE PRMS_MODULE, ONLY: Restart_outunit, Restart_inunit, Stream_order_flag, Dprst_flag, Nlake, Model
       USE PRMS_CLIMATEVARS
       USE PRMS_FLOWVARS
       IMPLICIT NONE
@@ -1332,7 +1334,7 @@
         WRITE ( Restart_outunit ) Ssres_stor
         WRITE ( Restart_outunit ) Soil_rechr
         WRITE ( Restart_outunit ) Imperv_stor
-        WRITE ( Restart_outunit ) Gwres_stor
+        IF ( Model/=0 ) WRITE ( Restart_outunit ) Gwres_stor
         IF ( Dprst_flag==1 ) THEN
           WRITE ( Restart_outunit ) Dprst_vol_open
           WRITE ( Restart_outunit ) Dprst_vol_clos
@@ -1358,7 +1360,7 @@
         READ ( Restart_inunit ) Ssres_stor
         READ ( Restart_inunit ) Soil_rechr
         READ ( Restart_inunit ) Imperv_stor
-        READ ( Restart_inunit ) Gwres_stor
+        IF ( Model/=0 ) READ ( Restart_inunit ) Gwres_stor
         IF ( Dprst_flag==1 ) THEN
           READ ( Restart_inunit ) Dprst_vol_open
           READ ( Restart_inunit ) Dprst_vol_clos
