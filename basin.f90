@@ -75,7 +75,7 @@
 !***********************************************************************
       basdecl = 0
 
-      Version_basin = 'basin.f90 2018-04-06 15:43:00Z'
+      Version_basin = 'basin.f90 2018-09-05 12:43:00Z'
       CALL print_module(Version_basin, 'Basin Definition            ', 90)
       MODNAME = 'basin'
 
@@ -419,8 +419,8 @@
       IF ( Nlake>0 ) THEN
         IF ( Numlake_hrus/=Nlake_hrus ) THEN
           PRINT *, 'ERROR, number of lake HRUs specified in hru_type'
-          PRINT *, 'does not equal dimension nlake:', Nlake, ', number of lake HRUs:', Numlake_hrus
-          PRINT *, 'For PRMS lake routing each lake must be a single HRU'
+          PRINT *, 'does not equal dimension nlake_hrus:', Nlake_hrus, ', number of lake HRUs:', Numlake_hrus
+!          PRINT *, 'For PRMS lake routing each lake must be a single HRU'
           basinit = 1
         ENDIF
         IF ( Numlakes_check/=Nlake ) THEN

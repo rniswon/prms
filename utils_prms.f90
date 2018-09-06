@@ -1,4 +1,4 @@
-      ! utils_prms.f90 2018-04-25 14:20:00Z
+      ! utils_prms.f90 2018-09-05 12:55:00Z
 !***********************************************************************
 !     Read CBH File to current time
 !***********************************************************************
@@ -847,7 +847,6 @@
       CHARACTER(LEN=28) :: blanks
       CHARACTER(LEN=80) :: string
 !***********************************************************************
-      IF ( Print_debug==-2 ) RETURN
       nc = INDEX( Versn, 'Z' ) - 10
       n = INDEX( Versn, '.f' ) - 1
       IF ( n<1 ) n = 1
@@ -860,8 +859,10 @@
       nb = 29 - (n + 3)
       string = Description//'   '//Versn(:n)//blanks(:nb)//Versn(n+is:nc)
       IF ( Print_debug>-1 ) PRINT '(A)', TRIM( string )
+      IF ( Print_debug>-2 ) THEN
+        IF ( Model/=2 .AND. Model/=12 ) WRITE ( PRMS_output_unit, '(A)' ) TRIM( string )
+      ENDIF
       WRITE ( Logunt, '(A)' ) TRIM( string )
-      IF ( Model/=2 .AND. Model/=12 ) WRITE ( PRMS_output_unit, '(A)' ) TRIM( string )
       END SUBROUTINE print_module
 
 !***********************************************************************

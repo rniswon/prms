@@ -50,28 +50,28 @@
             PRINT *, 'Change parameter names sro_to_dprst_perv to sro_to_dprst and dprst_frac to dprst_frac_hru'
           ENDIF
           WRITE ( ounit, 100 ) 'soil_rechr_init', Nhru
-          WRITE ( ounit, '(F9.7)' ) ( Soil_rechr_init(i), i = 1, Nhru )
+          WRITE ( ounit, 300 ) ( Soil_rechr_init(i), i = 1, Nhru )
 
           WRITE ( ounit, 100 ) 'soil_rechr_max', Nhru
-          WRITE ( ounit, '(F9.7)' ) ( Soil_rechr_max(i), i = 1, Nhru )
+          WRITE ( ounit, 300 ) ( Soil_rechr_max(i), i = 1, Nhru )
 
           WRITE ( ounit, 100 ) 'soil_moist_init', Nhru
-          WRITE ( ounit, '(F9.7)' ) ( Soil_moist_init(i), i = 1, Nhru )
+          WRITE ( ounit, 300 ) ( Soil_moist_init(i), i = 1, Nhru )
 
           WRITE ( ounit, 110 ) 'ssstor_init', Nhru
-          WRITE ( ounit, '(F9.7)' ) ( Ssstor_init(i), i = 1, Nhru )
+          WRITE ( ounit, 300 ) ( Ssstor_init(i), i = 1, Nhru )
 
 !          IF ( Dprst_flag==1 ) THEN
 !            WRITE ( ounit, 100 ) 'sro_to_dprst_perv', Nhru
-!            WRITE ( ounit, '(F9.7)' ) ( Sro_to_dprst(i), i = 1, Nhru )
+!            WRITE ( ounit, 300 ) ( Sro_to_dprst(i), i = 1, Nhru )
 !            WRITE ( ounit, 100 ) 'dprst_frac', Nhru
-!            WRITE ( ounit, '(F9.7)' ) ( Dprst_frac(i), i = 1, Nhru )
+!            WRITE ( ounit, 300 ) ( Dprst_frac(i), i = 1, Nhru )
 !          ENDIF
 
           WRITE ( ounit, 200 ) 'tmax_allrain_offset', Nhru*12
           DO i = 1, 12
             DO j = 1, Nhru
-              WRITE ( ounit, '(F10.7)' ) Tmax_allrain_offset(j, i)
+              WRITE ( ounit, 300 ) Tmax_allrain_offset(j, i)
             ENDDO
           ENDDO
         ELSE
@@ -121,29 +121,29 @@
           ENDIF
 
           WRITE ( ounit, 100 ) 'soil_rechr_init_frac', Nhru
-          WRITE ( ounit, '(F9.7)' ) ( Soil_rechr_init_frac(i), i = 1, Nhru )
+          WRITE ( ounit, 300 ) ( Soil_rechr_init_frac(i), i = 1, Nhru )
 
           WRITE ( ounit, 100 ) 'soil_rechr_max_frac', Nhru
-          WRITE ( ounit, '(F9.7)' ) ( Soil_rechr_max_frac(i), i = 1, Nhru )
+          WRITE ( ounit, 300 ) ( Soil_rechr_max_frac(i), i = 1, Nhru )
 
           WRITE ( ounit, 100 ) 'soil_moist_init_frac', Nhru
-          WRITE ( ounit, '(F9.7)' ) ( Soil_moist_init_frac(i), i = 1, Nhru )
+          WRITE ( ounit, 300 ) ( Soil_moist_init_frac(i), i = 1, Nhru )
 
           WRITE ( ounit, 110 ) 'ssstor_init_frac', Nhru
-          WRITE ( ounit, '(F9.7)' ) ( Ssstor_init_frac(i), i = 1, Nhru )
+          WRITE ( ounit, 300 ) ( Ssstor_init_frac(i), i = 1, Nhru )
 
           IF ( Dprst_flag==1 ) THEN
  !           WRITE ( ounit, 100 ) 'sro_to_dprst_perv', Nhru
- !           WRITE ( ounit, '(F9.7)' ) ( Sro_to_dprst(i), i = 1, Nhru )
+ !           WRITE ( ounit, 300 ) ( Sro_to_dprst(i), i = 1, Nhru )
 
             WRITE ( ounit, 100 ) 'dprst_frac', Nhru
-            WRITE ( ounit, '(F9.7)' ) ( Dprst_frac(i), i = 1, Nhru )
+            WRITE ( ounit, 300 ) ( Dprst_frac(i), i = 1, Nhru )
           ENDIF
 
           WRITE ( ounit, 200 ) 'tmax_allrain_offset', Nhru*12
           DO i = 1, 12
             DO j = 1, Nhru
-              WRITE ( ounit, '(F10.7)' ) Tmax_allrain_offset(j, i)
+              WRITE ( ounit, 300 ) Tmax_allrain_offset(j, i)
             ENDDO
           ENDDO
         ENDIF
@@ -152,6 +152,7 @@
  100    FORMAT ('####', /, A, /, '1', /, 'nhru', /, I0, /, '2')
  110    FORMAT ('####', /, A, /, '1', /, 'nssr', /, I0, /, '2')
  200    FORMAT ('####', /, A, /, '2', /, 'nhru', /, 'nmonths', /, I0, /, '2')
+ 300    FORMAT (F0.7)
 
       ELSEIF ( Process(:4)=='decl' ) THEN
         Version_convert_params = 'convert_params.f90 2018-03-15 11:44:00Z'
