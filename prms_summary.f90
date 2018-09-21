@@ -84,7 +84,7 @@
 
 ! Declare procedure
       ELSEIF ( Process(:4)=='decl' ) THEN
-        Version_prms_summary = 'prms_summary.f90 2018-04-25 12:34:00Z'
+        Version_prms_summary = 'prms_summary.f90 2018-09-21 10:06:00Z'
         CALL print_module(Version_prms_summary, 'Output Summary              ', 90)
         MODNAME = 'prms_summary'
 
@@ -143,9 +143,6 @@
           DO i = 1, Npoigages
             Poi_gage_id(i) = '                '
           ENDDO
-          IF ( getparam(MODNAME, 'poi_gage_id', Npoigages, 'string', Poi_gage_id)/=0 ) &
-     &         CALL read_error(2, 'poi_gage_id')
-          !print *, poi_gage_id
 
           DO i = 1, Npoigages
             foo = getparamstring(MODNAME, 'poi_gage_id', Npoigages, 'string', &
@@ -163,6 +160,14 @@
               IF ( Gageid_len(i)>15 ) Gageid_len(i) = 15
               WRITE (Streamflow_pairs(i), '(A,I0,2A)' ) ',seg_outflow_', Poi_gage_segment(i), '_gage_', &
      &                                                    Poi_gage_id(i)(:Gageid_len(i))
+              IF ( Poi_gage_segment(i)>9 ) Gageid_len(i) = Gageid_len(i) + 1
+              IF ( Poi_gage_segment(i)>99 ) Gageid_len(i) = Gageid_len(i) + 1
+              IF ( Poi_gage_segment(i)>999 ) Gageid_len(i) = Gageid_len(i) + 1
+              IF ( Poi_gage_segment(i)>9999 ) Gageid_len(i) = Gageid_len(i) + 1
+              IF ( Poi_gage_segment(i)>99999 ) Gageid_len(i) = Gageid_len(i) + 1
+              IF ( Poi_gage_segment(i)>999999 ) Gageid_len(i) = Gageid_len(i) + 1
+              IF ( Poi_gage_segment(i)>9999999 ) Gageid_len(i) = Gageid_len(i) + 1
+              IF ( Poi_gage_segment(i)>99999999 ) Gageid_len(i) = Gageid_len(i) + 1
             ELSE
               Gageid_len(i) = -6
               WRITE (Streamflow_pairs(i), '(A,I0)' ) ',seg_outflow_', Poi_gage_segment(i)
@@ -205,7 +210,7 @@
      &          'cfs,cfs,cfs,cfs,cfs', &
      &          (Cfs_strings(i), i = 1, Npoigages)
 
-        WRITE ( Fmt2, '(A,I0,A)' )  '( A,', Npoigages+NVARS, '(",",SPES10.3) )'
+        WRITE ( Fmt2, '(A,I0,A)' )  '( A,', Npoigages+NVARS, '(",",F0.4) )'
 !        WRITE ( Fmt2, '(A,I0,A)' )  '( A,', 2*Npoigages+NVARS, '(",",SPES10.3) )'
 
       ELSEIF ( Process(:5)=='clean' ) THEN
