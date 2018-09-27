@@ -125,7 +125,7 @@
 !***********************************************************************
       szdecl = 0
 
-      Version_soilzone = 'soilzone.f90 2018-04-25 15:08:00Z'
+      Version_soilzone = 'soilzone.f90 2018-09-19 17:00:00Z'
       CALL print_module(Version_soilzone, 'Soil Zone Computations      ', 90 )
       MODNAME = 'soilzone'
 
@@ -1545,10 +1545,10 @@
       IF ( Coef_lin<=0.0 .AND. Ssres_in<=0.0 ) THEN
         c1 = Coef_sq*Storage
         Inter_flow = Storage*(c1/(1.0+c1))
-      ELSEIF ( Coef_sq<=0.0 ) THEN
+      ELSEIF ( Coef_lin>0.0 .AND. Coef_sq<=0.0 ) THEN
         c2 = 1.0 - EXP(-Coef_lin)
         Inter_flow = Ssres_in*(1.0-c2/Coef_lin) + Storage*c2
-      ELSE
+      ELSEIF ( Coef_sq>0.0 ) THEN
         c3 = SQRT(Coef_lin**2.0+4.0*Coef_sq*Ssres_in)
         sos = Storage - ((c3-Coef_lin)/(2.0*Coef_sq))
         IF ( c3==0.0 ) STOP 'ERROR, in compute_interflow sos=0, please contact code developers'
@@ -1556,22 +1556,20 @@
         c2 = 1.0 - EXP(-c3)
         IF ( 1.0+c1*c2>0.0 ) THEN
           Inter_flow = Ssres_in + (sos*(1.0+c1)*c2)/(1.0+c1*c2)
-!          IF ( Inter_flow<-NEARZERO ) PRINT *, Inter_flow, 'Inter_flow<0'
-!          IF ( Inter_flow<CLOSEZERO ) Inter_flow = 0.0
         ELSE
           Inter_flow = Ssres_in
         ENDIF
+      ELSE
+        Inter_flow = 0.0
       ENDIF
 
 ! sanity check
-!      IF ( Inter_flow<0.0 ) THEN
+      IF ( Inter_flow<0.0 ) THEN
 !        IF ( Inter_flow<-NEARZERO ) PRINT *, 'interflow<0', Inter_flow, Ssres_in, Storage
-!        Storage = Storage - Inter_flow
-!        Inter_flow = 0.0
-!      ELSEIF ( Inter_flow>Storage ) THEN
-!        Inter_flow = Storage
-!      ENDIF
-      IF ( Inter_flow>Storage ) Inter_flow = Storage
+        Inter_flow = 0.0
+      ELSEIF ( Inter_flow>Storage ) THEN
+        Inter_flow = Storage
+      ENDIF
       Storage = Storage - Inter_flow
 !      IF ( Storage<0.0 ) THEN
 !        IF ( Storage<-CLOSEZERO ) PRINT *, 'Sanity check, ssres_stor<0.0', Storage

@@ -132,7 +132,7 @@
 !***********************************************************************
       climateflow_decl = 0
 
-      Version_climateflow = 'climateflow.f90 2018-04-25 14:43:00Z'
+      Version_climateflow = 'climateflow.f90 2018-09-19 16:58:00Z'
       CALL print_module(Version_climateflow, 'Common States and Fluxes    ', 90)
       MODNAME = 'climateflow'
 
@@ -1001,6 +1001,14 @@
           DO i = 1, Nhru
             IF ( Hru_type(i)==0 .OR. Hru_type(i)==2 ) CYCLE
             ! hru_type = 1 or 3
+            IF ( Soil_moist_max(i)<0.00001 ) THEN
+              PRINT 9006, i, Soil_moist_max(i)
+              ierr = 1
+            ENDIF
+            IF ( Soil_rechr_max(i)<0.00001 ) THEN
+              PRINT 9007, i, Soil_rechr_max(i)
+              ierr = 1
+            ENDIF
             IF ( Soil_rechr_max(i)>Soil_moist_max(i) ) THEN
               IF ( Parameter_check_flag>0 ) THEN
                 PRINT 9002, i, Soil_rechr_max(i), Soil_moist_max(i)
@@ -1175,6 +1183,8 @@
  9003 FORMAT (/, 'ERROR, HRU: ', I0, ' soil_rechr_init > soil_rechr_max', 2F10.4)
  9004 FORMAT (/, 'ERROR, HRU: ', I0, ' soil_moist_init > soil_moist_max', 2F10.4)
  9005 FORMAT (/, 'ERROR, HRU: ', I0, ' soil_rechr > soil_moist based on init and max values', 2F10.4)
+ 9006 FORMAT (/, 'ERROR, HRU: ', I0, ' soil_moist_max < 0.00001', F10.4)
+ 9007 FORMAT (/, 'ERROR, HRU: ', I0, ' soil_rechr_max < 0.00001', F10.4)
  9012 FORMAT ('WARNING, HRU: ', I0, ' soil_rechr_max > soil_moist_max,', 2F10.4, /, 9X, &
      &        'soil_rechr_max set to soil_moist_max')
  9013 FORMAT ('WARNING, HRU: ', I0, ' soil_rechr_init > soil_rechr_max,', 2F10.4, /, 9X, &
