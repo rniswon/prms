@@ -65,19 +65,19 @@
 !***********************************************************************
       sthdecl = 0
 
-      Version_soltab = 'soltab.f90 2016-09-27 12:19:00Z'
+      Version_soltab = 'soltab.f90 2016-10-01 10:41:00Z'
       CALL print_module(Version_soltab, 'Potential Solar Radiation   ', 90)
       MODNAME = 'soltab'
 
       ALLOCATE ( Soltab_potsw(366, Nhru) )
-      CALL declvar_dble(MODNAME, 'soltab_potsw', 'ndays,nhru', 366*Nhru, 'double', &
-     &     'Potential solar radiation for each Julian Day, for each HRU', &
-     &     'Langleys', Soltab_potsw)
+!      CALL declvar_dble(MODNAME, 'soltab_potsw', 'ndays,nhru', 366*Nhru, 'double', &
+!     &     'Potential solar radiation for each Julian Day, for each HRU', &
+!     &     'Langleys', Soltab_potsw)
 
       ALLOCATE ( Soltab_horad_potsw(366, Nhru) )
-      CALL declvar_dble(MODNAME, 'soltab_horad_potsw', 'ndays,nhru', 366*Nhru, 'double', &
-     &     'Potential solar radiation on a horizontal plane for each Julian Day, for each HRU', &
-     &     'Langleys', Soltab_horad_potsw)
+!      CALL declvar_dble(MODNAME, 'soltab_horad_potsw', 'ndays,nhru', 366*Nhru, 'double', &
+!     &     'Potential solar radiation on a horizontal plane for each Julian Day, for each HRU', &
+!     &     'Langleys', Soltab_horad_potsw)
 
       ALLOCATE ( Hru_cossl(Nhru), Soltab_sunhrs(366, Nhru) )
 

@@ -123,7 +123,8 @@
       INTEGER, EXTERNAL :: numchars, isdeclared, getdim
       EXTERNAL :: check_parameters_declared, read_error
       ! Local Variables
-      INTEGER :: comma, ndimen, nval, nvals, nvals2, declared, numvalues, type_flag, iset
+      INTEGER :: comma, ndimen, nval, nvals, nvals2, declared, numvalues, type_flag, iset, i, itemp
+      REAL :: temp
       CHARACTER(LEN=MAXCONTROL_LENGTH) dimen1, dimen2
 !***********************************************************************
       !!!!!!!!!!!! check to see if already in data structure
@@ -177,13 +178,27 @@
 
       ! could add string and double
       IF ( type_flag==1 ) THEN
-        READ ( defvalue, * ) Parameter_data(Num_parameters)%default_int
+        READ ( defvalue, * ) itemp
+        Parameter_data(Num_parameters)%default_int = itemp
         ALLOCATE ( Parameter_data(Num_parameters)%int_values(numvalues) )
-        Parameter_data(Num_parameters)%int_values = Parameter_data(Num_parameters)%default_int
+        IF ( numvalues>50000 ) THEN
+          DO i = 1, numvalues
+            Parameter_data(Num_parameters)%int_values(i) = itemp
+          ENDDO
+        ELSE
+          Parameter_data(Num_parameters)%int_values = itemp
+        ENDIF
       ELSEIF ( type_flag==2 ) THEN
-        READ ( defvalue, * ) Parameter_data(Num_parameters)%default_real
+        READ ( defvalue, * ) temp
+        Parameter_data(Num_parameters)%default_real = temp
         ALLOCATE ( Parameter_data(Num_parameters)%values(numvalues) )
-        Parameter_data(Num_parameters)%values = Parameter_data(Num_parameters)%default_real
+        IF ( numvalues>50000 ) THEN
+          DO i = 1, numvalues
+            Parameter_data(Num_parameters)%values(i) = temp
+          ENDDO
+        ELSE
+          Parameter_data(Num_parameters)%values = temp
+        ENDIF
       ENDIF
 
       iset = 0
