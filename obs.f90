@@ -5,7 +5,7 @@
       IMPLICIT NONE
 !   Local Variables
       CHARACTER(LEN=3), SAVE :: MODNAME
-      INTEGER, SAVE :: Nsnow, Nlakeelev, Nwind, Nhumid, Rain_flag
+      INTEGER, SAVE :: Nlakeelev, Nwind, Nhumid, Rain_flag
 !   Declared Variables
       INTEGER, SAVE :: Rain_day
       REAL, SAVE, ALLOCATABLE :: Pan_evap(:), Runoff(:), Precip(:)
@@ -52,7 +52,6 @@
 !***********************************************************************
       obssetdims = 0
 
-      IF ( decldim('nsnow', 0, MAXDIM, 'Number of snow-depth-measurement stations')/=0 ) CALL read_error(7, 'nsnow')
       IF ( decldim('nlakeelev', 0, MAXDIM, &
      &     'Maximum number of lake elevations for any rating table data set')/=0 ) CALL read_error(7, 'nlakeelev')
       IF ( decldim('nwind', 0, MAXDIM, 'Number of wind-speed measurement stations')/=0 ) CALL read_error(7, 'nwind')
@@ -67,7 +66,7 @@
 !***********************************************************************
       INTEGER FUNCTION obsdecl()
       USE PRMS_OBS
-      USE PRMS_MODULE, ONLY: Precip_flag, Model, Nratetbl, Ntemp, Nrain, Nsol, Nobs, Nevap
+      USE PRMS_MODULE, ONLY: Precip_flag, Model, Nratetbl, Ntemp, Nrain, Nsol, Nobs, Nevap, Nsnow
       IMPLICIT NONE
 ! Functions
       INTEGER, EXTERNAL :: getdim, declparam
@@ -126,8 +125,6 @@
      &       'Langleys', Solrad)
       ENDIF
 
-      Nsnow = getdim('nsnow')
-      IF ( Nsnow==-1 ) CALL read_error(6, 'nsnow')
       Nhumid = getdim('nhumid')
       IF ( Nhumid==-1 ) CALL read_error(6, 'nhumid')
       Nwind = getdim('nwind')
@@ -213,7 +210,7 @@
 !***********************************************************************
       INTEGER FUNCTION obsinit()
       USE PRMS_OBS
-      USE PRMS_MODULE, ONLY: Nratetbl, Ntemp, Nrain, Nsol, Nobs, Nevap
+      USE PRMS_MODULE, ONLY: Nratetbl, Ntemp, Nrain, Nsol, Nobs, Nevap, Nsnow
       IMPLICIT NONE
 ! Functions
       INTEGER, EXTERNAL :: getparam
