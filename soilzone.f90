@@ -123,7 +123,7 @@
 !***********************************************************************
       szdecl = 0
 
-      Version_soilzone = 'soilzone.f90 2018-09-19 17:00:00Z'
+      Version_soilzone = 'soilzone.f90 2018-04-25 15:08:00Z'
       CALL print_module(Version_soilzone, 'Soil Zone Computations      ', 90 )
       MODNAME = 'soilzone'
 
@@ -846,7 +846,7 @@
       INTEGER FUNCTION szrun()
       USE PRMS_SOILZONE
       USE PRMS_MODULE, ONLY: Dprst_flag, Print_debug, Kkiter, &
-     &    Model, Nlake, Cascade_flag, Dprst_flag
+     &    Model, Nlake, Cascade_flag, Dprst_flag, soilzone_gain
       USE PRMS_BASIN, ONLY: Hru_type, Hru_perv, Hru_frac_perv, &
      &    Hru_route_order, Active_hrus, Basin_area_inv, Hru_area, &
      &    NEARZERO, Lake_hru_id, Cov_type, Numlake_hrus, Hru_area_dble
@@ -904,7 +904,7 @@
           DO k = 1, Active_hrus
             i = Hru_route_order(k)
             Soil_rechr(i) = It0_soil_rechr(i)
-            Soil_moist(i) = It0_soil_moist(i)
+            Soil_moist(i) = It0_soil_moist(i) + soilzone_gain(i)
             Ssres_stor(i) = It0_ssres_stor(i)
             Pref_flow_stor(i) = It0_pref_flow_stor(i)
             Slow_stor(i) = It0_slow_stor(i)
@@ -1525,10 +1525,10 @@
       IF ( Coef_lin<=0.0 .AND. Ssres_in<=0.0 ) THEN
         c1 = Coef_sq*Storage
         Inter_flow = Storage*(c1/(1.0+c1))
-      ELSEIF ( Coef_lin>0.0 .AND. Coef_sq<=0.0 ) THEN
+      ELSEIF ( Coef_sq<=0.0 ) THEN
         c2 = 1.0 - EXP(-Coef_lin)
         Inter_flow = Ssres_in*(1.0-c2/Coef_lin) + Storage*c2
-      ELSEIF ( Coef_sq>0.0 ) THEN
+      ELSE
         c3 = SQRT(Coef_lin**2.0+4.0*Coef_sq*Ssres_in)
         sos = Storage - ((c3-Coef_lin)/(2.0*Coef_sq))
         IF ( c3==0.0 ) STOP 'ERROR, in compute_interflow sos=0, please contact code developers'
@@ -1536,20 +1536,22 @@
         c2 = 1.0 - EXP(-c3)
         IF ( 1.0+c1*c2>0.0 ) THEN
           Inter_flow = Ssres_in + (sos*(1.0+c1)*c2)/(1.0+c1*c2)
+!          IF ( Inter_flow<-NEARZERO ) PRINT *, Inter_flow, 'Inter_flow<0'
+!          IF ( Inter_flow<CLOSEZERO ) Inter_flow = 0.0
         ELSE
           Inter_flow = Ssres_in
         ENDIF
-      ELSE
-        Inter_flow = 0.0
       ENDIF
 
 ! sanity check
-      IF ( Inter_flow<0.0 ) THEN
+!      IF ( Inter_flow<0.0 ) THEN
 !        IF ( Inter_flow<-NEARZERO ) PRINT *, 'interflow<0', Inter_flow, Ssres_in, Storage
-        Inter_flow = 0.0
-      ELSEIF ( Inter_flow>Storage ) THEN
-        Inter_flow = Storage
-      ENDIF
+!        Storage = Storage - Inter_flow
+!        Inter_flow = 0.0
+!      ELSEIF ( Inter_flow>Storage ) THEN
+!        Inter_flow = Storage
+!      ENDIF
+      IF ( Inter_flow>Storage ) Inter_flow = Storage
       Storage = Storage - Inter_flow
 !      IF ( Storage<0.0 ) THEN
 !        IF ( Storage<-CLOSEZERO ) PRINT *, 'Sanity check, ssres_stor<0.0', Storage
@@ -1618,6 +1620,7 @@
       USE PRMS_SOILZONE, ONLY: Gravity_stor_res, Sm2gw_grav, Hru_gvr_count, Hru_gvr_index, &
      &    Gw2sm_grav, Gvr_hru_pct_adjusted
       USE PRMS_MODULE, ONLY: Dprst_flag, Print_debug
+      USE PRMS_BASIN, ONLY: NEARZERO
       USE PRMS_SRUNOFF, ONLY: Dprst_seep_hru
       IMPLICIT NONE
 ! Functions
@@ -1675,7 +1678,7 @@
 
 ! compute flow to groundwater, if any
         IF ( depth>0.0 ) THEN
-          IF ( Ssr2gw_rate>0.0 ) THEN
+          IF ( Ssr2gw_rate>NEARZERO ) THEN
 ! use VKS instead of rate  ???????????????
             perc = Ssr2gw_rate*(depth**Ssr2gw_exp)
             IF ( perc<0.0 ) THEN
