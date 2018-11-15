@@ -132,7 +132,7 @@
 !***********************************************************************
       climateflow_decl = 0
 
-      Version_climateflow = 'climateflow.f90 2018-09-19 16:58:00Z'
+      Version_climateflow = 'climateflow.f90 2018-11-14 17:04:00Z'
       CALL print_module(Version_climateflow, 'Common States and Fluxes    ', 90)
       MODNAME = 'climateflow'
 
@@ -998,63 +998,6 @@
           Soil_rechr = Soil_rechr_init_frac
           Soil_moist = Soil_moist_init_frac
           Ssres_stor = Ssstor_init_frac
-          DO i = 1, Nhru
-            IF ( Hru_type(i)==0 .OR. Hru_type(i)==2 ) CYCLE
-            ! hru_type = 1 or 3
-            IF ( Soil_moist_max(i)<0.00001 ) THEN
-              PRINT 9006, i, Soil_moist_max(i)
-              ierr = 1
-            ENDIF
-            IF ( Soil_rechr_max(i)<0.00001 ) THEN
-              PRINT 9007, i, Soil_rechr_max(i)
-              ierr = 1
-            ENDIF
-            IF ( Soil_rechr_max(i)>Soil_moist_max(i) ) THEN
-              IF ( Parameter_check_flag>0 ) THEN
-                PRINT 9002, i, Soil_rechr_max(i), Soil_moist_max(i)
-                ierr = 1
-              ELSE
-                IF ( Print_debug>-1 ) PRINT 9012, i, Soil_rechr_max(i), Soil_moist_max(i)
-                Soil_rechr_max(i) = Soil_moist_max(i)
-              ENDIF
-            ENDIF
-            IF ( Soil_rechr(i)>Soil_rechr_max(i) ) THEN
-              IF ( Parameter_check_flag>0 ) THEN
-                PRINT 9003, i, Soil_rechr(i), Soil_rechr_max(i)
-                ierr = 1
-              ELSE
-                IF ( Print_debug>-1 ) PRINT 9013, i, Soil_rechr(i), Soil_rechr_max(i)
-                Soil_rechr(i) = Soil_rechr_max(i)
-              ENDIF
-            ENDIF
-            IF ( Soil_moist(i)>Soil_moist_max(i) ) THEN
-              IF ( Parameter_check_flag>0 ) THEN
-                PRINT 9004, i, Soil_moist(i), Soil_moist_max(i)
-                ierr = 1
-              ELSE
-                IF ( Print_debug>-1 ) PRINT 9014, i, Soil_moist(i), Soil_moist_max(i)
-                Soil_moist(i) = Soil_moist_max(i)
-              ENDIF
-            ENDIF
-            IF ( Soil_rechr(i)>Soil_moist(i) ) THEN
-              IF ( Parameter_check_flag>0 ) THEN
-                PRINT 9005, i, Soil_rechr(i), Soil_moist(i)
-                ierr = 1
-              ELSE
-                IF ( Print_debug>-1 ) PRINT 9015, i, Soil_rechr(i), Soil_moist(i)
-                Soil_rechr(i) = Soil_moist(i)
-              ENDIF
-            ENDIF
-            IF ( Ssres_stor(i)>Sat_threshold(i) ) THEN
-              IF ( Parameter_check_flag>0 ) THEN
-                PRINT *, 'ERROR, HRU:', i, Ssres_stor(i), Sat_threshold(i), ' ssres_stor > sat_threshold'
-                ierr = 1
-              ELSE
-                PRINT *, 'WARNING, HRU:', i, Ssres_stor(i), Sat_threshold(i), ' ssres_stor > sat_threshold, ssres_stor set to max'
-                Ssres_stor(i) = Sat_threshold(i)
-              ENDIF
-            ENDIF
-          ENDDO
 ! PRMS 5 parameters
         ELSE
           IF ( getparam(Soilzone_module, 'soil_moist_init_frac', Nhru, 'real', Soil_moist_init_frac)/=0 ) &
@@ -1071,6 +1014,74 @@
         ENDIF
         DEALLOCATE ( Soil_moist_init_frac, Soil_rechr_init_frac, Ssstor_init_frac )
       ENDIF
+      ! check parameters
+      DO i = 1, Nhru
+        IF ( Hru_type(i)==0 .OR. Hru_type(i)==2 ) CYCLE
+        ! hru_type = 1 or 3
+        IF ( Soil_moist_max(i)<0.00001 ) THEN
+          IF ( Parameter_check_flag==1 ) THEN
+            PRINT 9006, i, Soil_moist_max(i)
+            ierr = 1
+          ELSE
+            Soil_moist_max = 0.00001
+            IF ( Print_debug>-1 ) PRINT 9008, i
+          ENDIF
+        ENDIF
+        IF ( Soil_rechr_max(i)<0.00001 ) THEN
+          IF ( Parameter_check_flag==1 ) THEN
+            PRINT 9007, i, Soil_rechr_max(i)
+            ierr = 1
+          ELSE
+            Soil_rechr_max = 0.00001
+            IF ( Print_debug>-1 ) PRINT 9008, i
+          ENDIF
+        ENDIF
+        IF ( Soil_rechr_max(i)>Soil_moist_max(i) ) THEN
+          IF ( Parameter_check_flag>0 ) THEN
+            PRINT 9002, i, Soil_rechr_max(i), Soil_moist_max(i)
+            ierr = 1
+          ELSE
+            IF ( Print_debug>-1 ) PRINT 9012, i, Soil_rechr_max(i), Soil_moist_max(i)
+            Soil_rechr_max(i) = Soil_moist_max(i)
+          ENDIF
+        ENDIF
+        IF ( Soil_rechr(i)>Soil_rechr_max(i) ) THEN
+          IF ( Parameter_check_flag>0 ) THEN
+            PRINT 9003, i, Soil_rechr(i), Soil_rechr_max(i)
+            ierr = 1
+          ELSE
+            IF ( Print_debug>-1 ) PRINT 9013, i, Soil_rechr(i), Soil_rechr_max(i)
+            Soil_rechr(i) = Soil_rechr_max(i)
+          ENDIF
+        ENDIF
+        IF ( Soil_moist(i)>Soil_moist_max(i) ) THEN
+          IF ( Parameter_check_flag>0 ) THEN
+            PRINT 9004, i, Soil_moist(i), Soil_moist_max(i)
+            ierr = 1
+          ELSE
+            IF ( Print_debug>-1 ) PRINT 9014, i, Soil_moist(i), Soil_moist_max(i)
+            Soil_moist(i) = Soil_moist_max(i)
+          ENDIF
+        ENDIF
+        IF ( Soil_rechr(i)>Soil_moist(i) ) THEN
+          IF ( Parameter_check_flag>0 ) THEN
+            PRINT 9005, i, Soil_rechr(i), Soil_moist(i)
+            ierr = 1
+          ELSE
+            IF ( Print_debug>-1 ) PRINT 9015, i, Soil_rechr(i), Soil_moist(i)
+            Soil_rechr(i) = Soil_moist(i)
+          ENDIF
+        ENDIF
+        IF ( Ssres_stor(i)>Sat_threshold(i) ) THEN
+          IF ( Parameter_check_flag>0 ) THEN
+            PRINT *, 'ERROR, HRU:', i, Ssres_stor(i), Sat_threshold(i), ' ssres_stor > sat_threshold'
+            ierr = 1
+          ELSE
+            PRINT *, 'WARNING, HRU:', i, Ssres_stor(i), Sat_threshold(i), ' ssres_stor > sat_threshold, ssres_stor set to max'
+            Ssres_stor(i) = Sat_threshold(i)
+          ENDIF
+        ENDIF
+      ENDDO
 
       IF ( ierr>0 ) Inputerror_flag = 1
 
@@ -1185,6 +1196,8 @@
  9005 FORMAT (/, 'ERROR, HRU: ', I0, ' soil_rechr > soil_moist based on init and max values', 2F10.4)
  9006 FORMAT (/, 'ERROR, HRU: ', I0, ' soil_moist_max < 0.00001', F10.4)
  9007 FORMAT (/, 'ERROR, HRU: ', I0, ' soil_rechr_max < 0.00001', F10.4)
+ 9008 FORMAT (/, 'WARNING, HRU: ', I0, ' soil_moist_max < 0.00001, set to 0.00001')
+ 9009 FORMAT (/, 'WARNING, HRU: ', I0, ' soil_rechr_max < 0.00001, set to 0.00001')
  9012 FORMAT ('WARNING, HRU: ', I0, ' soil_rechr_max > soil_moist_max,', 2F10.4, /, 9X, &
      &        'soil_rechr_max set to soil_moist_max')
  9013 FORMAT ('WARNING, HRU: ', I0, ' soil_rechr_init > soil_rechr_max,', 2F10.4, /, 9X, &
