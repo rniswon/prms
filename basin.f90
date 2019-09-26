@@ -66,8 +66,8 @@
 !***********************************************************************
       INTEGER FUNCTION basdecl()
       USE PRMS_BASIN
-      USE PRMS_MODULE, ONLY: Model, Nhru, Nlake, Dprst_flag, Lake_route_flag, &
-     &    Et_flag, Precip_flag, Cascadegw_flag, Stream_temp_flag, PRMS4_flag, GSFLOW_flag
+      USE PRMS_MODULE, ONLY: Model, Nhru, Dprst_flag, Lake_route_flag, &
+     &    Et_flag, Precip_flag, Nlake, Cascadegw_flag, Stream_temp_flag, PRMS4_flag, GSFLOW_flag
       IMPLICIT NONE
 ! Functions
       INTEGER, EXTERNAL :: declparam
@@ -436,6 +436,7 @@
           ENDIF
         ENDDO
       ENDIF
+
       IF ( basinit==1 ) STOP
 
       Active_hrus = j

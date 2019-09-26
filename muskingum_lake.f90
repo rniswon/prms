@@ -8,6 +8,7 @@
 ! going to stream segment associated with the lake, which would be a
 ! problem
 !
+! nlake_hrus set to nlake for version 5.0.0, nlake_hrus to be added in 5.0.1
 ! in future this module may be used for muskingum only, so would need to 
 ! check lake_route_flag = 1 in a bunch of places
 !
@@ -220,6 +221,8 @@
       IF ( Mxnsos==-1 ) CALL read_error(1, 'mxnsos')
       IF ( Model==99 .AND. Mxnsos<1 ) Mxnsos = 1
 
+! Nlake_hrus set to nlake in call_modules for 5.0.0, dimension nlake_hrus will be in 5.0.1
+! 5.0.0 assumes lakes are 1 HRU
       IF ( Mxnsos>0 ) ALLOCATE ( Wvd(Mxnsos, Nlake), S24(Mxnsos, Nlake), C24(Mxnsos, Nlake) )
 
       Ngate = 0

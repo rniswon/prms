@@ -106,7 +106,7 @@
       CHARACTER(LEN=4) :: dum
       CHARACTER(LEN=80) :: dum2
 !***********************************************************************
-      Iunit = get_ftnunit(777)
+      Iunit = get_ftnunit(7777)
       IF ( Cbh_binary_flag==0 ) THEN
         OPEN ( Iunit, FILE=trim(Fname), STATUS='OLD', IOSTAT=ios )
       ELSE
@@ -734,7 +734,7 @@
       INTEGER :: ios, nchars
 !***********************************************************************
       Iret = 0
-      Iunit = get_ftnunit(777)
+      Iunit = get_ftnunit(7777)
       nchars = numchars(Fname)
       IF ( Ftype==0 ) THEN
         OPEN ( Iunit, FILE=Fname(:nchars), STATUS='OLD', IOSTAT=ios )
@@ -765,7 +765,7 @@
       INTEGER :: ios, nchars
 !***********************************************************************
       Iret = 0
-      Iunit = get_ftnunit(888)
+      Iunit = get_ftnunit(8888)
       nchars = numchars(Fname)
 
       IF ( Ftype==0 ) THEN
@@ -797,7 +797,7 @@
 ! Local Variables
       INTEGER :: ios, nchars
 !***********************************************************************
-      Iunit = get_ftnunit(888)
+      Iunit = get_ftnunit(8888)
       nchars = numchars(Fname)
       OPEN ( Iunit, FILE=Fname(:nchars), STATUS='REPLACE', IOSTAT=ios )
       IF ( ios/=0 ) THEN
@@ -858,9 +858,9 @@
       blanks = ' '
       nb = 29 - (n + 3)
       string = Description//'   '//Versn(:n)//blanks(:nb)//Versn(n+is:nc)
-      IF ( Print_debug>-1 ) PRINT '(A)', TRIM( string )
       IF ( Print_debug>-2 ) THEN
-        IF ( Model/=2 .AND. Model/=12 ) WRITE ( PRMS_output_unit, '(A)' ) TRIM( string )
+        PRINT '(A)', TRIM( string )
+        IF ( Model/=2 ) WRITE ( PRMS_output_unit, '(A)' ) TRIM( string )
       ENDIF
       WRITE ( Logunt, '(A)' ) TRIM( string )
       END SUBROUTINE print_module
