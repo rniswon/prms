@@ -81,19 +81,21 @@
         CALL declvar_real(MODNAME, 'tmax_rain_sta','nrain',Nrain,'real',
      +       'Maximum temperature distributed to the precipitation'//
      +       ' measurement stations',
-     +       'degrees Fahrenheit', Tmax_rain_sta)
+     +       'degrees Fahrenheit',
+     +       Tmax_rain_sta)
 
         ALLOCATE ( Tmin_rain_sta(Nrain) )
         CALL declvar_real(MODNAME, 'tmin_rain_sta','nrain',Nrain,'real',
      +       'Minimum temperature distributed to the precipitation'//
      +       ' measurement stations',
-     +       'degrees Fahrenheit', Tmin_rain_sta)
+     +       'degrees Fahrenheit',
+     +       Tmin_rain_sta)
       ENDIF
 
 ! declare parameters
       ALLOCATE ( Adjust_snow(Nrain,12) )
       IF ( declparam(MODNAME, 'adjust_snow', 'nrain,nmonths', 'real',
-     +     '-0.4', '-0.6', '0.6',
+     +     '-0.4', '-0.5', '2.0',
      +     'Monthly (January to December) snow downscaling adjustment'//
      +     ' factor for each precipitation measurement station',
      +     'Monthly (January to December) snow downscaling adjustment'//
@@ -102,7 +104,7 @@
 
       ALLOCATE ( Adjust_rain(Nrain,12) )
       IF ( declparam(MODNAME, 'adjust_rain', 'nrain,nmonths', 'real',
-     +     '-0.4', '-0.6', '0.6',
+     +     '-0.4', '-0.5', '2.0',
      +     'Monthly (January to December) rain downscaling adjustment'//
      +     ' factor for each precipitation measurement station',
      +     'Monthly (January to December) rain downscaling adjustment'//
@@ -339,9 +341,9 @@
       Basin_centroid_y = 0.0D0
       DO ii = 1, Active_hrus
         i = Hru_route_order(ii)
-        Basin_centroid_x = Basin_centroid_x + 
+        Basin_centroid_x = Basin_centroid_x +
      +                     DBLE( (Hru_area(i)*Hru_x(i)) )
-        Basin_centroid_y = Basin_centroid_y + 
+        Basin_centroid_y = Basin_centroid_y +
      +                     DBLE( (Hru_area(i)*Hru_y(i)) )
       ENDDO
       Basin_centroid_x = Basin_centroid_x*Basin_area_inv
@@ -963,7 +965,7 @@
 !
 !=============================================================
       END SUBROUTINE compute_elv
- 
+
 !***********************************************************************
 !***********************************************************************
       SUBROUTINE SORT2(Imax, N, Ra, Rb)

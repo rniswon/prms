@@ -361,7 +361,7 @@
       DO j = 1, Ntemp - 1
 
 ! check for missing or bad temps based on min and max daily values
-! observed for each month. 
+! observed for each month.
 
 ! the value of  -9999 = missing in HDB, and rdb
 

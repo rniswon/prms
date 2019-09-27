@@ -43,12 +43,14 @@
       REAL, SAVE, ALLOCATABLE :: Hortonian_flow(:)
       REAL, SAVE, ALLOCATABLE :: Hru_impervevap(:), Hru_impervstor(:)
       DOUBLE PRECISION, SAVE, ALLOCATABLE :: Strm_seg_in(:), Hortonian_lakes(:), Hru_hortn_cascflow(:)
-      REAL, SAVE, ALLOCATABLE :: Cfgi(:), Cfgi_prev(:)
-      INTEGER, SAVE, ALLOCATABLE :: Frozen(:)
 !   Declared Parameters
-      REAL, SAVE :: Cfgi_thrshld, Cfgi_decay
       REAL, SAVE, ALLOCATABLE :: Smidx_coef(:), Smidx_exp(:)
       REAL, SAVE, ALLOCATABLE :: Carea_min(:), Carea_max(:)
+!   Declared Parameters for Frozen Ground
+      REAL, SAVE :: Cfgi_thrshld, Cfgi_decay
+!   Declared Variables for Frozen Ground
+      REAL, SAVE, ALLOCATABLE :: Cfgi(:), Cfgi_prev(:)
+      INTEGER, SAVE, ALLOCATABLE :: Frozen(:)
 !   Declared Parameters for Depression Storage
       REAL, SAVE, ALLOCATABLE :: Op_flow_thres(:), Sro_to_dprst_perv(:)
       REAL, SAVE, ALLOCATABLE :: Va_clos_exp(:), Va_open_exp(:)
@@ -99,7 +101,8 @@
       INTEGER FUNCTION srunoffdecl()
       USE PRMS_SRUNOFF
       USE PRMS_MODULE, ONLY: Model, Dprst_flag, Nhru, Nsegment, Print_debug, &
-     &    Cascade_flag, Sroff_flag, Nlake, Init_vars_from_file, Call_cascade, Frozen_flag, PRMS4_flag
+     &    Cascade_flag, Sroff_flag, Nlake, Init_vars_from_file, Call_cascade, PRMS4_flag, &
+     &    Frozen_flag
       IMPLICIT NONE
 ! Functions
       INTEGER, EXTERNAL :: declparam
@@ -109,7 +112,7 @@
 !***********************************************************************
       srunoffdecl = 0
 
-      Version_srunoff = 'srunoff.f90 2019-05-24 14:50:00Z'
+      Version_srunoff = 'srunoff.f90 2019-09-26 16:18:00Z'
       IF ( Sroff_flag==1 ) THEN
         MODNAME = 'srunoff_smidx'
       ELSE
@@ -323,7 +326,7 @@
      &       'decimal fraction')/=0 ) CALL read_error(1, 'cfgi_decay')
 
         IF ( declparam(MODNAME, 'cfgi_thrshld', 'one', 'real', &
-     &       '83.0', '1.0', '500.0', &
+     &       '52.55', '1.0', '500.0', &
      &       'CFGI threshold value indicating frozen soil', &
      &       'CFGI threshold value indicating frozen soil', &
      &       'index')/=0 ) CALL read_error(1, 'cfgi_thrshld')
@@ -455,7 +458,7 @@
      &       'Coefficient in the exponential equation relating'// &
      &       ' maximum surface area to the fraction that open'// &
      &       ' depressions are full to compute current surface area for each HRU;'// &
-     &       ' 0.001 is an approximate rectangle; 1.0 is a triangle', &
+     &       ' 0.001 is an approximate cylinder; 1.0 is a cone', &
      &       'none')/=0 ) CALL read_error(1, 'va_open_exp')
 
         ALLOCATE ( Va_clos_exp(Nhru) )
@@ -466,7 +469,7 @@
      &       'Coefficient in the exponential equation relating'// &
      &       ' maximum surface area to the fraction that closed'// &
      &       ' depressions are full to compute current surface area for each HRU;'// &
-     &       ' 0.001 is an approximate rectangle; 1.0 is a triangle', &
+     &       ' 0.001 is an approximate cylinder; 1.0 is a cone', &
      &       'none')/=0 ) CALL read_error(1, 'va_clos_exp')
       ENDIF
 
@@ -624,8 +627,8 @@
 ! Local Variables
       INTEGER :: i, k, dprst_chk, frzen
       REAL :: srunoff, avail_et, hperv, sra, availh2o
-      DOUBLE PRECISION :: hru_sroff_down, runoff, apply_sroff
-      REAL :: cfgi_sroff, cfgi_k, depth_cm
+      DOUBLE PRECISION :: hru_sroff_down, runoff, apply_sroff, cfgi_sroff
+      REAL :: cfgi_k, depth_cm !frozen ground
 !***********************************************************************
       srunoffrun = 0
 
@@ -696,6 +699,7 @@
         Hru_impervevap(i) = 0.0
 
         avail_et = Potet(i) - Snow_evap(i) - Hru_intcpevap(i)
+        availh2o = Intcp_changeover(i) + Net_rain(i)
 
         frzen = 0
         IF ( Frozen_flag==1 ) THEN
@@ -704,14 +708,18 @@
           ELSE
             cfgi_k = 0.08
           ENDIF
-          depth_cm = Pk_depth(i)*2.54
-          Cfgi(i) = (Cfgi_decay*Cfgi_prev(i)) - (Tavgc(i)*(2.71828**(-0.4*cfgi_k*depth_cm)))
+          depth_cm = SNGL(Pk_depth(i))*2.54 !depth of snow cover averaged over HRU
+          Cfgi(i) = Cfgi_decay*Cfgi_prev(i) - Tavgc(i)*( 2.71828**(-0.4*cfgi_k*depth_cm) )
           IF ( Cfgi(i)<0.0 ) Cfgi(i) = 0.0
           Cfgi_prev(i) = Cfgi(i)
           IF ( Cfgi(i)>=Cfgi_thrshld ) THEN
             frzen = 1
             ! depression storage states are not changed if frozen
-            cfgi_sroff = (Snowmelt(i) + Net_rain(i) + Upslope_hortonian(i))*Hruarea
+            IF ( Cascade_flag>0 ) THEN
+              cfgi_sroff = (Snowmelt(i) + availh2o + Upslope_hortonian(i))*Hruarea
+            ELSE
+              cfgi_sroff = (Snowmelt(i) + availh2o)*Hruarea
+            ENDIF
             IF ( Use_sroff_transfer==1 ) cfgi_sroff = cfgi_sroff + Net_apply(i)*Hruarea
             runoff = runoff + cfgi_sroff
             Basin_cfgi_sroff = Basin_cfgi_sroff + cfgi_sroff
@@ -719,7 +727,6 @@
           Frozen(i) = frzen
         ENDIF
 
-        availh2o = Intcp_changeover(i) + Net_rain(i)
 !******Compute runoff for pervious, impervious, and depression storage area, only if not frozen ground
         IF ( frzen==0 ) THEN
 ! DO IRRIGATION APPLICATION, ONLY DONE HERE, ASSUMES NO SNOW and
@@ -828,6 +835,7 @@
       Basin_imperv_evap = Basin_imperv_evap*Basin_area_inv
       Basin_imperv_stor = Basin_imperv_stor*Basin_area_inv
       Basin_infil = Basin_infil*Basin_area_inv
+      ! doesn't include CFGI runoff
       Basin_sroffp = Basin_sroffp*Basin_area_inv
       Basin_sroffi = Basin_sroffi*Basin_area_inv
       Basin_hortonian = Basin_hortonian*Basin_area_inv

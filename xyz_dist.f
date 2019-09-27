@@ -130,29 +130,34 @@
       xyzdecl = 0
 
       Version_xyz_dist =
-     +'xyz_dist.f 2018-04-18 11:09:00Z'
+     +'xyz_dist.f 2019-09-26 12:36:00Z'
       CALL print_module(Version_xyz_dist,
      +                  'Temp & Precip Distribution  ', 77)
       MODNAME = 'xyz_dist'
 
       CALL declvar_int(MODNAME, 'is_rain_day', 'one', 1, 'integer',
      +     'Flag to indicate if it is raining anywhere in the basin',
-     +     'none', Is_rain_day)
+     +     'none',
+     +     Is_rain_day)
 
       ALLOCATE ( Tmax_rain_sta(Nrain) )
       CALL declvar_real(MODNAME, 'tmax_rain_sta', 'nrain', Nrain,'real',
      +     'Maximum temperature distributed to the precipitation'//
-     +     ' measurement stations', 'degrees Fahrenheit', Tmax_rain_sta)
+     +     ' measurement stations',
+     +     'degrees Fahrenheit',
+     +     Tmax_rain_sta)
 
       ALLOCATE ( Tmin_rain_sta(Nrain) )
       CALL declvar_real(MODNAME, 'tmin_rain_sta', 'nrain', Nrain,'real',
      +     'Minimum temperature distributed to the precipitation'//
-     +     ' measurement stations', 'degrees Fahrenheit', Tmin_rain_sta)
+     +     ' measurement stations',
+     +     'degrees Fahrenheit',
+     +     Tmin_rain_sta)
 
 ! declare parameters
       ALLOCATE ( Adjust_snow(Nrain,12) )
       IF ( declparam(MODNAME, 'adjust_snow', 'nrain,nmonths', 'real',
-     +     '-0.4', '-0.5', '0.5',
+     +     '-0.4', '-0.5', '3.0',
      +     'Monthly (January to December) snow downscaling adjustment'//
      +     ' factor for each precipitation measurement station',
      +     'Monthly (January to December) snow downscaling adjustment'//
@@ -161,7 +166,7 @@
 
       ALLOCATE ( Adjust_rain(Nrain,12) )
       IF ( declparam(MODNAME, 'adjust_rain', 'nrain,nmonths', 'real',
-     +     '-0.4', '-0.5', '0.5',
+     +     '-0.4', '-0.5', '3.0',
      +     'Monthly (January to December) rain downscaling adjustment'//
      +     ' factor for each precipitation measurement station',
      +     'Monthly (January to December) rain downscaling adjustment'//

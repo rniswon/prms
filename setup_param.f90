@@ -34,7 +34,7 @@
 !***********************************************************************
       setupdecl = 0
 
-      Version_setup = 'setup_param.f90 2016-11-28 09:44:00Z'
+      Version_setup = 'setup_param.f90 2019-09-26 10:24:00Z'
       CALL print_module(Version_setup, 'Parameter Setup             ', 90)
       MODNAME = 'setup'
 
