@@ -67,7 +67,7 @@
 !***********************************************************************
       routingdecl = 0
 
-      Version_routing = 'routing.f90 2019-09-26 16:04:00Z'
+      Version_routing = 'routing.f90 2019-09-27 15:54:00Z'
       CALL print_module(Version_routing, 'Routing Initialization      ', 90)
       MODNAME = 'routing'
 
@@ -214,8 +214,8 @@
      &       'cfs')/=0 ) CALL read_error(1, 'segment_flow_init')
       ENDIF
 
+      IF ( Strmflow_flag==3 .OR. Strmflow_flag==4 .OR. Strmflow_flag==7 ) ALLOCATE ( K_coef(Nsegment) )
       IF ( Strmflow_flag==3 .OR. Strmflow_flag==4 .OR. Model==99 ) THEN
-        ALLOCATE ( K_coef(Nsegment) )
         IF ( declparam(MODNAME, 'K_coef', 'nsegment', 'real', &
      &       '1.0', '0.01', '24.0', &
      &       'Muskingum storage coefficient', &
@@ -309,7 +309,7 @@
      &    Water_use_flag, Segment_transferON_OFF, Inputerror_flag, Parameter_check_flag !, Print_debug
       USE PRMS_SET_TIME, ONLY: Timestep_seconds
       USE PRMS_BASIN, ONLY: FT2_PER_ACRE, DNEARZERO, Active_hrus, Hru_route_order, Hru_area_dble, NEARZERO !, Active_area
-      USE PRMS_FLOWVARS, ONLY: Seg_outflow
+      USE PRMS_FLOWVARS, ONLY: Seg_outflow, Seg_inflow
       IMPLICIT NONE
 ! Functions
       INTRINSIC MOD
@@ -398,6 +398,7 @@
      &       CALL read_error(2,'segment_flow_init')
         DO i = 1, Nsegment
           Seg_outflow(i) = Segment_flow_init(i)
+          Seg_inflow(tosegment(i)) = Seg_outflow(i)
         ENDDO
         DEALLOCATE ( Segment_flow_init )
       ENDIF

@@ -841,7 +841,7 @@
       INTEGER FUNCTION szrun(AFR)
       USE PRMS_SOILZONE
       USE PRMS_MODULE, ONLY: Dprst_flag, Print_debug, Kkiter, &
-     &    GSFLOW_flag, Nlake, Cascade_flag, Dprst_flag, Frozen_flag, Hru_ag_irr
+     &    GSFLOW_flag, Nlake, Cascade_flag, Dprst_flag, Frozen_flag, Hru_ag_irr, Diversion2soil_flag
       USE PRMS_BASIN, ONLY: Hru_type, Hru_perv, Hru_frac_perv, &
      &    Hru_route_order, Active_hrus, Basin_area_inv, Hru_area, &
      &    NEARZERO, Lake_hru_id, Cov_type, Numlake_hrus, Hru_area_dble
@@ -1010,7 +1010,8 @@
 !****** add soil excess (Dunnian flow) to infiltration
         ! perv_frac has to be > 0.001
         ! infil for pervious portion of HRU
-        capwater_maxin = Infil(i) + Hru_ag_irr(i)
+        capwater_maxin = Infil(i)
+        IF ( Diversion2soil_flag==1 ) capwater_maxin = capwater_maxin + Hru_ag_irr(i)
 
         cfgi_frozen_hru = 0
         !Frozen is HRU variable that says if frozen gravity reservoir
