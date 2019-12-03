@@ -1,4 +1,4 @@
-!***********************************************************************
+﻿!***********************************************************************
 ! Compute potential solar radiation and sunlight hours for each HRU for
 ! each day of year; modification of soltab_prms
 !
@@ -67,7 +67,7 @@
 ! Functions
       INTRINSIC INDEX
       INTEGER, EXTERNAL :: declparam
-      EXTERNAL read_error, print_module, declvar_dble
+      EXTERNAL read_error, print_module !, declvar_dble
 ! Local Variables
       CHARACTER(LEN=80), SAVE :: Version_soltab
 !***********************************************************************

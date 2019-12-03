@@ -39,7 +39,7 @@
         CHARACTER(LEN=MAXFILE_LENGTH) :: imperv_frac_dynamic, imperv_stor_dynamic, dprst_depth_dynamic, dprst_frac_dynamic
         CHARACTER(LEN=MAXFILE_LENGTH) :: wrain_intcp_dynamic, srain_intcp_dynamic, snow_intcp_dynamic, covtype_dynamic
         CHARACTER(LEN=MAXFILE_LENGTH) :: potetcoef_dynamic, transpbeg_dynamic, transpend_dynamic
-        CHARACTER(LEN=MAXFILE_LENGTH) :: soilmoist_dynamic, soilrechr_dynamic, radtrncf_dynamic
+        CHARACTER(LEN=MAXFILE_LENGTH) :: soilmoist_dynamic, soilrechr_dynamic, radtrncf_dynamic, dynamic_param_log_file
         CHARACTER(LEN=MAXFILE_LENGTH) :: fallfrost_dynamic, springfrost_dynamic, transp_on_dynamic, snareathresh_dynamic
         CHARACTER(LEN=MAXFILE_LENGTH) :: covden_sum_dynamic, covden_win_dynamic, sro2dprst_perv_dyn, sro2dprst_imperv_dyn
       END MODULE PRMS_DYNAMIC_PARAM_READ
@@ -62,7 +62,7 @@
       IF ( Process(:3)=='run' ) THEN
         dynamic_param_read = dynparamrun()
       ELSEIF ( Process(:4)=='decl' ) THEN
-        Version_dynamic_param_read = 'dynamic_param_read.f90 2019-09-06 16:05:00Z'
+        Version_dynamic_param_read = 'dynamic_param_read.f90 2019-11-14 11:47:00Z'
         CALL print_module(Version_dynamic_param_read, 'Time Series Data            ', 90)
         !MODNAME = 'dynamic_param_read'
       ELSEIF ( Process(:4)=='init' ) THEN
@@ -81,8 +81,8 @@
      &    Dyn_sro2dprst_perv_flag, Dyn_sro2dprst_imperv_flag, Transp_flag, Dprst_flag, Dyn_fallfrost_flag, &
      &    Dyn_springfrost_flag, Dyn_snareathresh_flag, Print_debug, PRMS4_flag
       IMPLICIT NONE
-      INTEGER, EXTERNAL :: control_string, get_ftnunit
-      EXTERNAL read_error, find_header_end, find_current_file_time
+      INTEGER, EXTERNAL :: control_string, numchars
+      EXTERNAL read_error, find_header_end, find_current_file_time, PRMS_open_output_file
       INTRINSIC ABS
 ! Local Variables
       INTEGER :: year, month, day, istop, ierr
@@ -379,13 +379,14 @@
         ENDIF
       ENDIF
 
-      IF ( istop==1 ) STOP 'ERROR in dynamic_param_read initialize procedure'
-
       IF ( Print_debug>-2 ) THEN
-        Output_unit = get_ftnunit(520)
-        OPEN ( Output_unit, FILE='dynamic_parameter.out' )
-        PRINT '(/,A,//)', 'A summary of dynamic parameter events are written to file: dynamic_parameter.out'
+        IF ( control_string(dynamic_param_log_file, 'dynamic_param_log_file')/=0 ) CALL read_error(5, 'dynamic_param_log_file')
+        CALL PRMS_open_output_file(Output_unit, dynamic_param_log_file, 'dynamic_param_log_file', 0, ierr)
+        PRINT '(/,A,//)', 'A summary of dynamic parameter events are written to file:', &
+     &                    dynamic_param_log_file(:numchars(dynamic_param_log_file))
       ENDIF
+
+      IF ( istop==1 .OR. ierr/=0 ) STOP 'ERROR in dynamic_param_read initialize procedure'
 
       END FUNCTION dynparaminit
 
@@ -480,6 +481,7 @@
 
         IF ( Check_imperv==1 .OR. Check_dprst_frac==1 .OR. check_dprst_depth_flag==1 ) THEN
           Basin_soil_moist = 0.0D0
+          Basin_soil_rechr = 0.0D0
           DO i = 1, Nhru
             IF ( Hru_type(i)==2 .OR. Hru_type(i)==0 ) CYCLE ! skip lake and inactive HRUs
             harea = Hru_area(i)
@@ -773,6 +775,8 @@
       ENDIF
 
       IF ( check_sm_max_flag==1 .OR. check_srechr_max_flag==1 ) THEN
+        Basin_soil_moist = 0.0D0
+        Basin_soil_rechr = 0.0D0
         DO i = 1, Nhru
           IF ( Hru_type(i)==2 .OR. Hru_type(i)==0 ) CYCLE ! skip lake and inactive HRUs
 
@@ -793,9 +797,14 @@
             CYCLE
           ENDIF
           Soil_zone_max(i) = Sat_threshold(i) + Soil_moist_max(i)*Hru_frac_perv(i)
+          Soil_moist_tot(i) = Ssres_stor(i) + Soil_moist(i)*Hru_frac_perv(i)
           Soil_lower_stor_max(i) = Soil_moist_max(i) - Soil_rechr_max(i)
           Replenish_frac(i) = Soil_rechr_max(i)/Soil_moist_max(i)
+          Basin_soil_moist = Basin_soil_moist + DBLE( Soil_moist(i)*Hru_perv(i) )
+          Basin_soil_rechr = Basin_soil_rechr + DBLE( Soil_rechr(i)*Hru_perv(i) )
         ENDDO
+        Basin_soil_moist = Basin_soil_moist*Basin_area_inv
+        Basin_soil_rechr = Basin_soil_rechr*Basin_area_inv
       ENDIF
 
       IF ( Dyn_radtrncf_flag==1 ) THEN

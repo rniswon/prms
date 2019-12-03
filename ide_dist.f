@@ -95,7 +95,7 @@
 ! declare parameters
       ALLOCATE ( Adjust_snow(Nrain,12) )
       IF ( declparam(MODNAME, 'adjust_snow', 'nrain,nmonths', 'real',
-     +     '-0.4', '-0.5', '2.0',
+     +     '-0.4', '-0.6', '0.6',
      +     'Monthly (January to December) snow downscaling adjustment'//
      +     ' factor for each precipitation measurement station',
      +     'Monthly (January to December) snow downscaling adjustment'//
@@ -104,7 +104,7 @@
 
       ALLOCATE ( Adjust_rain(Nrain,12) )
       IF ( declparam(MODNAME, 'adjust_rain', 'nrain,nmonths', 'real',
-     +     '-0.4', '-0.5', '2.0',
+     +     '-0.4', '-0.6', '0.6',
      +     'Monthly (January to December) rain downscaling adjustment'//
      +     ' factor for each precipitation measurement station',
      +     'Monthly (January to December) rain downscaling adjustment'//
@@ -341,9 +341,9 @@
       Basin_centroid_y = 0.0D0
       DO ii = 1, Active_hrus
         i = Hru_route_order(ii)
-        Basin_centroid_x = Basin_centroid_x +
+        Basin_centroid_x = Basin_centroid_x + 
      +                     DBLE( (Hru_area(i)*Hru_x(i)) )
-        Basin_centroid_y = Basin_centroid_y +
+        Basin_centroid_y = Basin_centroid_y + 
      +                     DBLE( (Hru_area(i)*Hru_y(i)) )
       ENDDO
       Basin_centroid_x = Basin_centroid_x*Basin_area_inv
@@ -965,7 +965,7 @@
 !
 !=============================================================
       END SUBROUTINE compute_elv
-
+ 
 !***********************************************************************
 !***********************************************************************
       SUBROUTINE SORT2(Imax, N, Ra, Rb)

@@ -66,9 +66,8 @@
 !***********************************************************************
       INTEGER FUNCTION basdecl()
       USE PRMS_BASIN
-      USE PRMS_MODULE, ONLY: Model, Nhru, Dprst_flag, Lake_route_flag, &
-     &    Et_flag, Precip_flag, Nlake, Cascadegw_flag, Stream_temp_flag, PRMS4_flag, &
-     &    GSFLOW_flag
+      USE PRMS_MODULE, ONLY: Model, Nhru, Dprst_flag, Lake_route_flag, DOCUMENTATION, &
+     &    Et_flag, Precip_flag, Nlake, Cascadegw_flag, Stream_temp_flag, PRMS4_flag, GSFLOW_flag
       IMPLICIT NONE
 ! Functions
       INTEGER, EXTERNAL :: declparam
@@ -76,7 +75,7 @@
 !***********************************************************************
       basdecl = 0
 
-      Version_basin = 'basin.f90 2019-09-25 13:17:00Z'
+      Version_basin = 'basin.f90 2019-11-14 15:58:00Z'
       CALL print_module(Version_basin, 'Basin Definition            ', 90)
       MODNAME = 'basin'
 
@@ -96,7 +95,7 @@
      &     'Fraction of HRU that is pervious', &
      &     'decimal fraction', Hru_frac_perv)
 
-      IF ( Dprst_flag==1 .OR. Model==99 ) THEN
+      IF ( Dprst_flag==1 .OR. Model==DOCUMENTATION ) THEN
         ALLOCATE ( Dprst_area_max(Nhru) )
         CALL declvar_real(MODNAME, 'dprst_area_max', 'nhru', Nhru, 'real', &
      &       'Aggregate sum of surface-depression storage areas of each HRU', &
@@ -113,7 +112,7 @@
      &       'acres', Dprst_area_clos_max)
 
         ALLOCATE ( Dprst_frac(Nhru) )
-        IF ( PRMS4_flag==1 ) THEN
+        IF ( PRMS4_flag==1 .OR. Model==DOCUMENTATION ) THEN
           ALLOCATE ( Dprst_area(Nhru) )
           IF ( declparam(MODNAME, 'dprst_area', 'nhru', 'real', &
      &         '0.0', '0.0', '1.0E9', &
@@ -125,7 +124,8 @@
      &         'Fraction of each HRU area that has surface depressions', &
      &         'Fraction of each HRU area that has surface depressions', &
      &         'decimal fraction')/=0 ) CALL read_error(1, 'dprst_frac_hru')
-        ELSE
+        ENDIF
+        IF ( PRMS4_flag==0 .OR. Model==DOCUMENTATION ) THEN
           IF ( declparam(MODNAME, 'dprst_frac', 'nhru', 'real', &
      &         '0.0', '0.0', '0.999', &
      &         'Fraction of each HRU area that has surface depressions', &
@@ -214,7 +214,7 @@
      &     'decimal fraction')/=0 ) CALL read_error(1, 'covden_win')
 
       ALLOCATE ( Lake_hru_id(Nhru) )
-      IF ( Nlake>0 .OR. Model==99 ) THEN
+      IF ( Nlake>0 .OR. Model==DOCUMENTATION ) THEN
         ! Local array
         ALLOCATE ( Lake_area(Nlake) )
         ! parameters
@@ -224,7 +224,7 @@
      &       'Identification number of the lake associated with an HRU;'// &
      &       ' more than one HRU can be associated with each lake', &
      &       'none')/=0 ) CALL read_error(1, 'lake_hru_id')
-        IF ( (Lake_route_flag==1 .AND. GSFLOW_flag==0) .OR. Model==99 ) THEN
+        IF ( (Lake_route_flag==1 .AND. GSFLOW_flag==0 ) .OR. Model==DOCUMENTATION ) THEN
           ALLOCATE ( Lake_type(Nlake) )
           IF ( declparam(MODNAME, 'lake_type', 'nlake', 'integer', &
      &         '1', '1', '6', &
@@ -247,8 +247,7 @@
       USE PRMS_BASIN
       USE PRMS_MODULE, ONLY: Nhru, Nlake, Dprst_flag, PRMS4_flag, &
      &    Print_debug, GSFLOW_flag, PRMS_VERSION, Starttime, Endtime, &
-     &    Lake_route_flag, Et_flag, Precip_flag, Cascadegw_flag, Parameter_check_flag, &
-     &    Stream_temp_flag, Nlake_hrus
+     &    Lake_route_flag, Et_flag, Precip_flag, Cascadegw_flag, Parameter_check_flag, Stream_temp_flag
       IMPLICIT NONE
 ! Functions
       INTEGER, EXTERNAL :: getparam
@@ -419,12 +418,12 @@
       IF ( Dprst_flag==1 .AND. PRMS4_flag==1 ) DEALLOCATE ( Dprst_area )
 
       IF ( Nlake>0 ) THEN
-        IF ( Numlake_hrus/=Nlake_hrus ) THEN
-          PRINT *, 'ERROR, number of lake HRUs specified in hru_type'
-          PRINT *, 'does not equal dimension nlake_hrus:', Nlake_hrus, ', number of lake HRUs:', Numlake_hrus
+!        IF ( Numlake_hrus/=Nlake_hrus ) THEN
+!          PRINT *, 'ERROR, number of lake HRUs specified in hru_type'
+!          PRINT *, 'does not equal dimension nlake:', Nlake, ', number of lake HRUs:', Numlake_hrus
 !          PRINT *, 'For PRMS lake routing each lake must be a single HRU'
-          basinit = 1
-        ENDIF
+!          basinit = 1
+!        ENDIF
         IF ( Numlakes_check/=Nlake ) THEN
           PRINT *, 'ERROR, number of lakes specified in lake_hru_id'
           PRINT *, 'does not equal dimension nlake:', Nlake, ', number of lakes:', Numlakes_check

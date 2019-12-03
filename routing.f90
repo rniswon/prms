@@ -67,7 +67,7 @@
 !***********************************************************************
       routingdecl = 0
 
-      Version_routing = 'routing.f90 2019-09-27 15:54:00Z'
+      Version_routing = 'routing.f90 2019-11-27 14:54:00Z'
       CALL print_module(Version_routing, 'Routing Initialization      ', 90)
       MODNAME = 'routing'
 
@@ -398,7 +398,7 @@
      &       CALL read_error(2,'segment_flow_init')
         DO i = 1, Nsegment
           Seg_outflow(i) = Segment_flow_init(i)
-          Seg_inflow(tosegment(i)) = Seg_outflow(i)
+          IF ( tosegment(i)>0 ) Seg_inflow(tosegment(i)) = Seg_outflow(i)
         ENDDO
         DEALLOCATE ( Segment_flow_init )
       ENDIF
@@ -527,7 +527,10 @@
           !K_coef(i) = Seg_length(i)*sqrt(1+ Seg_slope(i)**2)/(velocity*60.*60.) !want in hours
         ENDIF
 
-        IF ( Segment_type(i)==2 .AND. K_coef(i)<24.0 ) K_coef(i) = 24.0 !K_coef must be specified = 24.0 for lake segments'
+        IF ( Segment_type(i)==2 .AND. K_coef(i)<24.0 ) THEN
+          IF ( Parameter_check_flag>0 ) PRINT *, 'WARNING, K_coef must be specified = 24.0 for lake segments'
+          K_coef(i) = 24.0
+        ENDIF
         IF ( K_coef(i)<0.01 ) K_coef(i) = 0.01 !make compliant with old version of K_coef
         IF ( K_coef(i)>24.0 ) K_coef(i) = 24.0
         k = K_coef(i)
