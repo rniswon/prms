@@ -13,13 +13,14 @@
      &      Dyn_covtype_flag, Dyn_potet_flag, Dyn_transp_flag, Dyn_soil_flag, Dyn_radtrncf_flag, Dyn_transp_on_flag, &
      &      Dyn_sro2dprst_perv_flag, Dyn_sro2dprst_imperv_flag, Dyn_fallfrost_flag, NsegmentOutON_OFF, &
      &      Dyn_springfrost_flag, Dyn_snareathresh_flag, Dyn_covden_flag, Segment_transferON_OFF, Gwr_transferON_OFF, &
-     &      Lake_transferON_OFF, External_transferON_OFF, Dprst_transferON_OFF, BasinOutON_OFF, mappingFileName, xyFileName
+     &      Lake_transferON_OFF, External_transferON_OFF, Dprst_transferON_OFF, BasinOutON_OFF, mappingFileName, xyFileName, &
+	 &      Snarea_curve_flag, Soilzone_aet_flag
         USE GSFMODFLOW, ONLY: Modflow_name, Modflow_time_zero
         USE PRMS_CLIMATE_HRU, ONLY: Precip_day, Tmax_day, Tmin_day, Potet_day, Transp_day, Swrad_day, &
      &      Cbh_check_flag, Cbh_binary_flag, Windspeed_day, Humidity_day
         USE GSFSUM, ONLY: Gsf_rpt, Rpt_days, Gsflow_output_file, Csv_output_file
         USE PRMS_MAP_RESULTS, ONLY: NmapOutVars, MapOutVar_names
-        USE PRMS_NHRU_SUMMARY, ONLY: NhruOutVars, NhruOut_freq, NhruOutBaseFileName, NhruOutVar_names, NhruOut_format
+        USE PRMS_NHRU_SUMMARY, ONLY: NhruOutVars, NhruOut_freq, NhruOutBaseFileName, NhruOutVar_names, NhruOut_format, NhruOutNcol
         USE PRMS_NSUB_SUMMARY, ONLY: NsubOutVars, NsubOut_freq, NsubOutBaseFileName, NsubOutVar_names, NsubOut_format
         USE PRMS_BASIN_SUMMARY, ONLY: BasinOutVars, BasinOut_freq, BasinOutBaseFileName, BasinOutVar_names
         USE PRMS_NSEGMENT_SUMMARY, ONLY: NsegmentOutVars, NsegmentOut_freq, NsegmentOutBaseFileName, &
@@ -29,9 +30,9 @@
      &      potetcoef_dynamic, transpbeg_dynamic, transpend_dynamic, &
      &      soilmoist_dynamic, soilrechr_dynamic, radtrncf_dynamic, &
      &      fallfrost_dynamic, springfrost_dynamic, transp_on_dynamic, snareathresh_dynamic, &
-     &      covden_sum_dynamic, covden_win_dynamic, sro2dprst_perv_dyn, sro2dprst_imperv_dyn
+     &      covden_sum_dynamic, covden_win_dynamic, sro2dprst_perv_dyn, sro2dprst_imperv_dyn, Dynamic_param_log_file
 
-        INTEGER, PARAMETER :: Max_num_control_parameters = 160 ! WARNING, hard coded, DANGER, DANGER
+        INTEGER, PARAMETER :: Max_num_control_parameters = 180 ! WARNING, hard coded, DANGER, DANGER
         CHARACTER(LEN=MAXFILE_LENGTH), SAVE :: Data_file, Var_init_file, Stat_var_file, Ani_out_file
         CHARACTER(LEN=MAXFILE_LENGTH), SAVE :: Executable_desc, Executable_model, Var_save_file
         CHARACTER(LEN=MAXFILE_LENGTH) :: Control_file, Ani_output_file, Control_description
@@ -194,7 +195,14 @@
       Control_parameter_data(i)%name = 'strmtemp_humidity_flag'
       Strmtemp_humidity_flag = 0
       i = i + 1
+      Control_parameter_data(i)%name = 'stream_temp_shade_flag'
       Stream_temp_shade_flag = 0
+      i = i + 1
+      Control_parameter_data(i)%name = 'snarea_curve_flag'
+      Snarea_curve_flag = 0
+      i = i + 1
+      Control_parameter_data(i)%name = 'soilzone_aet_flag'
+      Soilzone_aet_flag = 0
       i = i + 1
       Control_parameter_data(i)%name = 'orad_flag'
       Orad_flag = 0
@@ -231,6 +239,9 @@
       Control_parameter_data(i)%name = 'nhruOut_freq'
       NhruOut_freq = 1
       Control_parameter_data(i)%values_int(1) = NhruOut_freq
+      i = i + 1
+      Control_parameter_data(i)%name = 'nhruOutNcol'
+	  NhruOutNcol = 0
       i = i + 1
       Control_parameter_data(i)%name = 'nhruOut_format'
       NhruOut_format = 1

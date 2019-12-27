@@ -203,6 +203,7 @@
       ENDIF
 
 !-----------------------------------------------------------------------
+! need getvars for each variable (only can have short string)
       DO jj = 1, BasinOutVars
         CALL getvar_dble( MODNAME, BasinOutVar_names(jj)(:Nc_vars(jj)), 1, Basin_var_daily(jj) )
       ENDDO
