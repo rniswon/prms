@@ -2,8 +2,8 @@
 ! Read Control File
 !***********************************************************************
       MODULE PRMS_CONTROL_FILE
-
-        USE PRMS_MODULE, ONLY: Print_debug, EQULS, statsON_OFF, MAXCONTROL_LENGTH, MAXFILE_LENGTH, &
+        USE PRMS_CONSTANTS, ONLY: MAXCONTROL_LENGTH, MAXFILE_LENGTH, INT_TYPE, REAL_TYPE, CHAR_TYPE, ERROR_control
+        USE PRMS_MODULE, ONLY: Print_debug, EQULS, statsON_OFF, &
      &      Init_vars_from_file, Save_vars_to_file, Parameter_check_flag, Param_file, Model_output_file, &
      &      Precip_module, Temp_module, Et_module, Srunoff_module, Solrad_module, Gwr_swale_flag, &
      &      Strmflow_module, Transp_module, Soilzone_module, Print_debug, Dprst_flag, Subbasin_flag, Frozen_flag, &
@@ -13,8 +13,7 @@
      &      Dyn_covtype_flag, Dyn_potet_flag, Dyn_transp_flag, Dyn_soil_flag, Dyn_radtrncf_flag, Dyn_transp_on_flag, &
      &      Dyn_sro2dprst_perv_flag, Dyn_sro2dprst_imperv_flag, Dyn_fallfrost_flag, NsegmentOutON_OFF, &
      &      Dyn_springfrost_flag, Dyn_snareathresh_flag, Dyn_covden_flag, Segment_transferON_OFF, Gwr_transferON_OFF, &
-     &      Lake_transferON_OFF, External_transferON_OFF, Dprst_transferON_OFF, BasinOutON_OFF, mappingFileName, xyFileName, &
-	 &      Snarea_curve_flag, Soilzone_aet_flag
+     &      Lake_transferON_OFF, External_transferON_OFF, Dprst_transferON_OFF, BasinOutON_OFF
         USE GSFMODFLOW, ONLY: Modflow_name, Modflow_time_zero
         USE PRMS_CLIMATE_HRU, ONLY: Precip_day, Tmax_day, Tmin_day, Potet_day, Transp_day, Swrad_day, &
      &      Cbh_check_flag, Cbh_binary_flag, Windspeed_day, Humidity_day
@@ -31,8 +30,10 @@
      &      soilmoist_dynamic, soilrechr_dynamic, radtrncf_dynamic, &
      &      fallfrost_dynamic, springfrost_dynamic, transp_on_dynamic, snareathresh_dynamic, &
      &      covden_sum_dynamic, covden_win_dynamic, sro2dprst_perv_dyn, sro2dprst_imperv_dyn, Dynamic_param_log_file
+        USE PRMS_SOILZONE, ONLY: Soilzone_aet_flag
+        USE PRMS_SNOW, ONLY: Snarea_curve_flag
 
-        INTEGER, PARAMETER :: Max_num_control_parameters = 180 ! WARNING, hard coded, DANGER, DANGER
+        INTEGER, PARAMETER :: Max_num_control_parameters = 200 ! WARNING, hard coded, DANGER, DANGER
         CHARACTER(LEN=MAXFILE_LENGTH), SAVE :: Data_file, Var_init_file, Stat_var_file, Ani_out_file
         CHARACTER(LEN=MAXFILE_LENGTH), SAVE :: Executable_desc, Executable_model, Var_save_file
         CHARACTER(LEN=MAXFILE_LENGTH) :: Control_file, Ani_output_file, Control_description
@@ -72,7 +73,7 @@
       CHARACTER(LEN=MAXCONTROL_LENGTH) :: paramstring
       REAL, ALLOCATABLE :: real_parameter_values(:)
 !***********************************************************************
-      Version_read_control_file = 'read_control_file.f90 2018-06-07 10:44:00Z'
+      Version_read_control_file = 'read_control_file.f90 2021-02-10 10:44:00Z'
 
       ! control filename cannot include blanks
       CALL get_control_filename(Model_control_file, nchars)
@@ -132,7 +133,7 @@
       ALLOCATE ( Control_parameter_data(Num_control_parameters) )
       DO i = 1, Num_control_parameters
         Control_parameter_data(i)%read_flag = 2 ! 2 = set to default; 1 = read from Control File
-        Control_parameter_data(i)%data_type = 1 ! 1 = integer, 2 = real, 4 = string
+        Control_parameter_data(i)%data_type = INT_TYPE ! 1 = integer, 2 = real, 4 = string
         Control_parameter_data(i)%allocate_flag = 0 ! set to 1 if allocatable
         Control_parameter_data(i)%numvals = 1
         Control_parameter_data(i)%name = ' '
@@ -398,47 +399,47 @@
 
       ! parameters that get allocated if in Control File
       Control_parameter_data(i)%name = 'mapOutVar_names'
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       Control_parameter_data(i)%allocate_flag = 1 ! need to allocate
       i = i + 1
       Control_parameter_data(i)%name = 'statVar_element'
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       Control_parameter_data(i)%allocate_flag = 1 ! need to allocate
       i = i + 1
       Control_parameter_data(i)%name = 'statVar_names'
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       Control_parameter_data(i)%allocate_flag = 1 ! need to allocate
       i = i + 1
       Control_parameter_data(i)%name = 'aniOutVar_names'
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       Control_parameter_data(i)%allocate_flag = 1 ! need to allocate
       i = i + 1
       Control_parameter_data(i)%name = 'dispVar_names'
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       Control_parameter_data(i)%allocate_flag = 1 ! need to allocate
       i = i + 1
       Control_parameter_data(i)%name = 'dispVar_plot'
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       Control_parameter_data(i)%allocate_flag = 1 ! need to allocate
       i = i + 1
       Control_parameter_data(i)%name = 'dispVar_element'
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       Control_parameter_data(i)%allocate_flag = 1 ! need to allocate
       i = i + 1
       Control_parameter_data(i)%name = 'nsubOutVar_names'
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       Control_parameter_data(i)%allocate_flag = 1 ! need to allocate
       i = i + 1
       Control_parameter_data(i)%name = 'basinOutVar_names'
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       Control_parameter_data(i)%allocate_flag = 1 ! need to allocate
       i = i + 1
       Control_parameter_data(i)%name = 'nsegmentOutVar_names'
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       Control_parameter_data(i)%allocate_flag = 1 ! need to allocate
       i = i + 1
       Control_parameter_data(i)%name = 'nhruOutVar_names'
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       Control_parameter_data(i)%allocate_flag = 1 ! need to allocate
       i = i + 1
 
@@ -457,317 +458,322 @@
       Control_parameter_data(i)%name = 'initial_deltat'
       Initial_deltat = 24.0
       Control_parameter_data(i)%values_real(1) = Initial_deltat
-      Control_parameter_data(i)%data_type = 2
+      Control_parameter_data(i)%data_type = REAL_TYPE
       i = i + 1
 
       ! assign default value for character parameters
       Control_parameter_data(i)%name = 'model_mode'
       Model_mode = 'GSFLOW'
       Control_parameter_data(i)%values_character(1) = Model_mode
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'executable_desc'
       Executable_desc = 'GSFLOW with MODSIM, MFNWT, and PRMS-5'
       Control_parameter_data(i)%values_character(1) = Executable_desc
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'executable_model'
       Executable_model = 'gsflow'
       Control_parameter_data(i)%values_character(1) = Executable_model
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'precip_module'
       Precip_module = 'precip_1sta'
       Control_parameter_data(i)%values_character(1) = Precip_module
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'temp_module'
       Temp_module = 'temp_1sta'
       Control_parameter_data(i)%values_character(1) = Temp_module
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'solrad_module'
       Solrad_module = 'ddsolrad'
       Control_parameter_data(i)%values_character(1) = Solrad_module
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'et_module'
       Et_module = 'potet_jh'
       Control_parameter_data(i)%values_character(1) = Et_module
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'srunoff_module'
       Srunoff_module = 'srunoff_smidx'
       Control_parameter_data(i)%values_character(1) = Srunoff_module
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'strmflow_module'
       Strmflow_module = 'strmflow'
       Control_parameter_data(i)%values_character(1) = Strmflow_module
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'transp_module'
       Transp_module = 'transp_tindex'
       Control_parameter_data(i)%values_character(1) = Transp_module
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'data_file'
       Data_file = 'prms.data'
       Control_parameter_data(i)%values_character(1) = Data_file
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'param_file'
       Param_file = 'prms.params'
       Control_parameter_data(i)%values_character(1) = Param_file
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       Control_parameter_data(i)%allocate_flag = 1 ! need to allocate
       Param_file_control_parameter_id = i
       i = i + 1
       Control_parameter_data(i)%name = 'model_output_file'
       Model_output_file = 'prms.out'
       Control_parameter_data(i)%values_character(1) = Model_output_file
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'mappingFileName'
       mappingFileName = 'MODSIM.map'
       Control_parameter_data(i)%values_character(1) = mappingFileName
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'xyFileName'
       xyFileName = 'MODSIM.xy'
       Control_parameter_data(i)%values_character(1) = xyFileName
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'csv_output_file'
       Csv_output_file = 'prms_summary.csv'
       Control_parameter_data(i)%values_character(1) = Csv_output_file
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'var_save_file'
       Var_save_file = 'prms_ic.out'
       Control_parameter_data(i)%values_character(1) = Var_save_file
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'var_init_file'
       Var_init_file = 'prms_ic.in'
       Control_parameter_data(i)%values_character(1) = Var_init_file
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'stat_var_file'
       Stat_var_file = 'statvar.out'
       Control_parameter_data(i)%values_character(1) = Stat_var_file
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'ani_output_file'
       Ani_output_file = 'animation.out'
       Control_parameter_data(i)%values_character(1) = Ani_output_file
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'nhruOutBaseFileName'
       NhruOutBaseFileName = 'nhruout_path'
       Control_parameter_data(i)%values_character(1) = NhruOutBaseFileName
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'nsubOutBaseFileName'
       NsubOutBaseFileName = 'nsubout_path'
       Control_parameter_data(i)%values_character(1) = NsubOutBaseFileName
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'basinOutBaseFileName'
       BasinOutBaseFileName = 'basinout_path'
       Control_parameter_data(i)%values_character(1) = BasinOutBaseFileName
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'nsegmentOutBaseFileName'
       NsubOutBaseFileName = 'nsegmentout_path'
       Control_parameter_data(i)%values_character(1) = NsegmentOutBaseFileName
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'tmax_day'
       Tmax_day = 'tmax_day'
       Control_parameter_data(i)%values_character(1) = Tmax_day
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'tmin_day'
       Tmin_day = 'tmin_day'
       Control_parameter_data(i)%values_character(1) = Tmin_day
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'precip_day'
       Precip_day = 'precip_day'
       Control_parameter_data(i)%values_character(1) = Precip_day
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'swrad_day'
       Swrad_day = 'swrad_day'
       Control_parameter_data(i)%values_character(1) = Swrad_day
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'potet_day'
       Potet_day = 'potet_day'
       Control_parameter_data(i)%values_character(1) = Potet_day
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'transp_day'
       Transp_day = 'transp_day'
       Control_parameter_data(i)%values_character(1) = Transp_day
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'windspeed_day'
       Windspeed_day = 'windspeed_day'
       Control_parameter_data(i)%values_character(1) = Windspeed_day
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'humidity_day'
       Humidity_day = 'humidity_day'
       Control_parameter_data(i)%values_character(1) = Humidity_day
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
+      i = i + 1
+      Control_parameter_data(i)%name = 'dynamic_param_log_file'
+      Dynamic_param_log_file = 'dynamic_parameter.out'
+      Control_parameter_data(i)%values_character(1) = Dynamic_param_log_file
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       ! GSFLOW parameters
       Control_parameter_data(i)%name = 'modflow_name'
       Modflow_name = 'modflow.nam'
       Control_parameter_data(i)%values_character(1) = Modflow_name
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'gsflow_output_file'
       Gsflow_output_file = 'gsflow.out'
       Control_parameter_data(i)%values_character(1) = Gsflow_output_file
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'dprst_depth_dynamic'
       Dprst_depth_dynamic = 'dyndprst_depth'
       Control_parameter_data(i)%values_character(1) = Dprst_depth_dynamic
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'dprst_frac_dynamic'
       Dprst_frac_dynamic = 'dyndprst_frac'
       Control_parameter_data(i)%values_character(1) = Dprst_frac_dynamic
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'snow_intcp_dynamic'
       Snow_intcp_dynamic = 'dynsnowintcp'
       Control_parameter_data(i)%values_character(1) = Snow_intcp_dynamic
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'srain_intcp_dynamic'
       Srain_intcp_dynamic = 'dynsrainintcp'
       Control_parameter_data(i)%values_character(1) = Srain_intcp_dynamic
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'wrain_intcp_dynamic'
       Wrain_intcp_dynamic = 'dynwrainintcp'
       Control_parameter_data(i)%values_character(1) = Wrain_intcp_dynamic
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'imperv_frac_dynamic'
       Imperv_frac_dynamic = 'dynimperv_frac'
       Control_parameter_data(i)%values_character(1) = Imperv_frac_dynamic
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'imperv_stor_dynamic'
       Imperv_stor_dynamic = 'dynimperv_stor'
       Control_parameter_data(i)%values_character(1) = Imperv_stor_dynamic
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'covtype_dynamic'
       Covtype_dynamic = 'dyncovtype'
       Control_parameter_data(i)%values_character(1) = Covtype_dynamic
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'covden_sum_dynamic'
       Covden_sum_dynamic = 'dyncovden_sum'
       Control_parameter_data(i)%values_character(1) = Covden_sum_dynamic
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'covden_win_dynamic'
       Covden_win_dynamic = 'dyncovden_win'
       Control_parameter_data(i)%values_character(1) = Covden_win_dynamic
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'potetcoef_dynamic'
       Potetcoef_dynamic = 'dynpotetcoef'
       Control_parameter_data(i)%values_character(1) = Potetcoef_dynamic
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'transpbeg_dynamic'
       Transpbeg_dynamic = 'dyntranspbeg'
       Control_parameter_data(i)%values_character(1) = Transpbeg_dynamic
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'transpend_dynamic'
       Transpend_dynamic = 'dyntranspend'
       Control_parameter_data(i)%values_character(1) = Transpend_dynamic
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'fallfrost_dynamic'
       Fallfrost_dynamic = 'dynfallfrost'
       Control_parameter_data(i)%values_character(1) = Fallfrost_dynamic
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'springfrost_dynamic'
       Springfrost_dynamic = 'dynspringfrost'
       Control_parameter_data(i)%values_character(1) = Springfrost_dynamic
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'soilrechr_dynamic'
       Soilrechr_dynamic = 'dynsoilrechr'
       Control_parameter_data(i)%values_character(1) = Soilrechr_dynamic
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'soilmoist_dynamic'
       Soilmoist_dynamic = 'dynsoilmoist'
       Control_parameter_data(i)%values_character(1) = Soilmoist_dynamic
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'radtrncf_dynamic'
-      Radtrncf_dynamic = 'dynradtrnch'
+      Radtrncf_dynamic = 'dynradtrncf'
       Control_parameter_data(i)%values_character(1) = Radtrncf_dynamic
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'sro2dprst_perv_dynamic'
       Sro2dprst_perv_dyn = 'dynsro2dprst_perv'
       Control_parameter_data(i)%values_character(1) = Sro2dprst_perv_dyn
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'sro2dprst_imperv_dynamic'
       Sro2dprst_imperv_dyn = 'dynsro2dprst_imperv'
       Control_parameter_data(i)%values_character(1) = Sro2dprst_imperv_dyn
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
       Control_parameter_data(i)%name = 'transp_on_dynamic'
       Transp_on_dynamic = 'dyntranspon'
       Control_parameter_data(i)%values_character(1) = Transp_on_dynamic
-      Control_parameter_data(i)%data_type = 4
+      Control_parameter_data(i)%data_type = CHAR_TYPE
       i = i + 1
 !      Control_parameter_data(i)%name = 'pkwater_equiv_day'
 !      Pkwater_equiv_day = 'pkwater_equiv.day'
 !      Control_parameter_data(i)%values_character(1) = Pkwater_equiv_day
-!      Control_parameter_data(i)%data_type = 4
+!      Control_parameter_data(i)%data_type = CHAR_TYPE
 !      i = i + 1
 !      Control_parameter_data(i)%name = 'pk_depth_day'
 !      Pk_depth_day = 'pk_depth.day'
 !      Control_parameter_data(i)%values_character(1) = Pk_depth_day
-!      Control_parameter_data(i)%data_type = 4
+!      Control_parameter_data(i)%data_type = CHAR_TYPE
 !      i = i + 1
 !      Control_parameter_data(i)%name = 'snow_evap_day'
 !      Snow_evap_day = 'snow_evap.day'
 !      Control_parameter_data(i)%values_character(1) = Snow_evap_day
-!      Control_parameter_data(i)%data_type = 4
+!      Control_parameter_data(i)%data_type = CHAR_TYPE
 !      i = i + 1
 !      Control_parameter_data(i)%name = 'snowcov_area_day'
 !      Snowcov_area_day = 'snowcov_area.day'
 !      Control_parameter_data(i)%values_character(1) = Snowcov_area_day
-!      Control_parameter_data(i)%data_type = 4
+!      Control_parameter_data(i)%data_type = CHAR_TYPE
 !      i = i + 1
 !      Control_parameter_data(i)%name = 'snowmelt_day'
 !      Snowmelt_day = 'snowmelt.day'
 !      Control_parameter_data(i)%values_character(1) = Snowmelt_day
-!      Control_parameter_data(i)%data_type = 4
+!      Control_parameter_data(i)%data_type = CHAR_TYPE
 !      i = i + 1
 !      Control_parameter_data(i)%name = 'gwres_flow_day'
 !      Gwres_flow_day = 'gwres_flow.day'
 !      Control_parameter_data(i)%values_character(1) = Gwres_flow_day
-!      Control_parameter_data(i)%data_type = 4
+!      Control_parameter_data(i)%data_type = CHAR_TYPE
 !      i = i + 1
           
       ! time arrays
@@ -818,14 +824,16 @@
 ! Get Control File from command line or user interaction.
 !***********************************************************************
       SUBROUTINE get_control_filename()
-      USE PRMS_MODULE, ONLY: MAXFILE_LENGTH, Print_debug, EQULS, Model_control_file
+      USE PRMS_CONSTANTS, ONLY: MAXFILE_LENGTH, ERROR_control
+      USE PRMS_MODULE, ONLY: Print_debug, EQULS, Model_control_file
       IMPLICIT NONE
       ! Functions
       INTRINSIC :: GET_COMMAND_ARGUMENT, COMMAND_ARGUMENT_COUNT, GET_COMMAND, TRIM
+      EXTERNAL :: error_stop
       ! Local Variables
       CHARACTER(LEN=MAXFILE_LENGTH) command_line_arg, command_line
-      LOGICAL exists
-      INTEGER status, nchars, numargs
+      LOGICAL :: exists
+      INTEGER :: status, nchars, numargs
 !***********************************************************************
 ! Subroutine GET_COMMAND_ARGUMENT may not be available with all compilers-it is a Fortran 2003 routine
 ! This routine expects the Control File name to be the first argument, if present
@@ -837,11 +845,11 @@
       IF ( status/=0 ) THEN
         WRITE ( *,'(/,A)' ) 'Enter the name of the PRMS Control File or quit:'
         READ ( *, '(A)' ) Model_control_file
-        IF ( Model_control_file(:4)=='quit' .OR. Model_control_file(:4)=='QUIT' ) STOP
+        IF ( Model_control_file(:4)=='quit' .OR. Model_control_file(:4)=='QUIT' ) ERROR STOP ERROR_control
       ELSE
         IF ( TRIM(command_line_arg)=='-C' ) THEN
           CALL GET_COMMAND_ARGUMENT(2, Model_control_file, nchars, status)
-          IF ( status/=0 ) STOP 'ERROR, bad argment value after -C argument'
+          IF ( status/=0 ) CALL error_stop('bad argment value after -C argument')
         ELSE
           Model_control_file = TRIM(command_line_arg)
         ENDIF
@@ -851,7 +859,7 @@
       IF ( .NOT.exists ) THEN
         WRITE ( *,'(/,A)' ) 'Control File does not exist, file name: '//TRIM(Model_control_file)
         PRINT *, 'Note: Control File names cannot include spaces'
-        STOP
+        ERROR STOP -2
       ENDIF
 
       END SUBROUTINE get_control_filename
@@ -860,14 +868,16 @@
 ! Get Control File set arguments from command line.
 !***********************************************************************
       SUBROUTINE get_control_arguments()
+      USE PRMS_CONSTANTS, ONLY: DEBUG_less, MAXFILE_LENGTH
       USE PRMS_CONTROL_FILE, ONLY: PlotsON_OFF, Num_control_parameters, Control_parameter_data
-      USE PRMS_MODULE, ONLY: MAXFILE_LENGTH, Print_debug, EQULS
+      USE PRMS_MODULE, ONLY: Print_debug, EQULS
       IMPLICIT NONE
       ! Functions
       INTRINSIC :: GET_COMMAND_ARGUMENT, COMMAND_ARGUMENT_COUNT, GET_COMMAND, TRIM
+      EXTERNAL :: error_stop
       ! Local Variables
       CHARACTER(LEN=MAXFILE_LENGTH) command_line_arg, command_line
-      INTEGER status, i, j, nchars, numargs, index, param_type, num_param_values
+      INTEGER :: status, i, j, nchars, numargs, index, param_type, num_param_values
 !***********************************************************************
 ! Subroutine GET_COMMAND_ARGUMENT may not be available with all compilers-it is a Fortran 2003 routine
 ! This routine expects the Control File name to be the first argument, if present
@@ -878,7 +888,7 @@
       DO WHILE ( i < numargs )
         i = i + 1
         CALL GET_COMMAND_ARGUMENT(i, command_line_arg, nchars, status)
-        IF ( status/=0 ) STOP 'ERROR, setting control parameters from command line'
+        IF ( status/=0 ) CALL error_stop('setting control parameters from command line')
         IF ( TRIM(command_line_arg)=='-C' ) THEN
           i = i + 2
           CYCLE
@@ -891,7 +901,7 @@
             ! find control file parameter and reset it, need type and number of values
             i = i + 1
             CALL GET_COMMAND_ARGUMENT(i, command_line_arg, nchars, status)
-            IF ( status/=0 ) STOP 'ERROR, bad argment value after -set argument'
+            IF ( status/=0 ) CALL error_stop('bad argment value after -set argument')
             IF ( Print_debug>-1 ) PRINT *, 'PRMS command line argument,', i, ': ', TRIM(command_line_arg)
             index = 0
             DO j = 1, Num_control_parameters
@@ -902,30 +912,30 @@
                 EXIT
               ENDIF
             ENDDO
-            IF ( index==0 ) STOP 'ERROR, control parameter argument not found'
+            IF ( index==0 ) CALL error_stop('control parameter argument not found')
             DO j = 1, num_param_values
               i = i + 1
               CALL GET_COMMAND_ARGUMENT(i, command_line_arg, nchars, status)
-              IF ( status/=0 ) STOP 'ERROR, bad value after -set argument'
+              IF ( status/=0 ) CALL error_stop('bad value after -set argument')
               IF ( Print_debug>-1 ) PRINT *, 'PRMS command line argument,', i, ': ', TRIM(command_line_arg)
               IF ( param_type==1 ) THEN
                 READ ( command_line_arg, *, IOSTAT=status ) Control_parameter_data(index)%values_int(j)
-                IF ( status/=0 ) STOP 'ERROR, reading integer command line argument'
+                IF ( status/=0 ) CALL error_stop('reading integer command line argument')
               ELSEIF ( param_type==4 ) THEN
                 Control_parameter_data(index)%values_character(j) = command_line_arg
               ELSEIF ( param_type==2 ) THEN
                 READ ( command_line_arg, * ) Control_parameter_data(index)%values_real(j)
               ELSE
-                STOP 'ERROR, control parameter type not implemented'
+                CALL error_stop('control parameter type not implemented')
               ENDIF
             ENDDO
           ELSE
-            STOP 'ERROR, command line argument invalid'
+            CALL error_stop('command line argument invalid')
           ENDIF
         ENDIF
       ENDDO
 
-      IF ( Print_debug>-1 ) PRINT '(A)', EQULS
+      IF ( Print_debug>DEBUG_less ) PRINT '(A)', EQULS
       END SUBROUTINE get_control_arguments
 
 !***********************************************************************
@@ -942,6 +952,7 @@
       CHARACTER(LEN=MAXFILE_LENGTH), INTENT(IN) :: Paramval_char(Numvalues)
       ! Functions
       INTRINSIC :: TRIM
+      EXTERNAL :: error_stop
       ! Local Variables
       INTEGER :: i, j, found, dtype
 !***********************************************************************
@@ -959,7 +970,7 @@
               DEALLOCATE ( Control_parameter_data(i)%values_character )
               ALLOCATE ( Control_parameter_data(i)%values_character(Numvalues) )
             ELSE
-              STOP 'ERROR, allocatable control parameter that is real'
+              CALL error_stop('allocatable control parameter that is real')
             ENDIF
           ENDIF
           Control_parameter_data(i)%read_flag = 1
@@ -980,9 +991,6 @@
         ENDIF
       ENDDO
 
-      IF ( found==0 ) THEN
-        PRINT *, 'WARNING, control parameter not used: ', TRIM(Paramname), ', ignored'
-        RETURN
-      ENDIF
+      IF ( found==0 ) PRINT *, 'WARNING, control parameter not used: ', TRIM(Paramname), ', ignored'
 
       END SUBROUTINE set_control_parameter

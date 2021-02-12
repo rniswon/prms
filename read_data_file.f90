@@ -2,6 +2,7 @@
 ! Read PRMS Data File
 !***********************************************************************
       MODULE PRMS_DATA_FILE
+        USE PRMS_CONSTANTS, ONLY: ERROR_open_in, ERROR_read
         INTEGER, SAVE :: Num_datafile_types, Num_datafile_columns, Datafile_unit
         CHARACTER(LEN=16), ALLOCATABLE, SAVE :: Data_varname(:)
         INTEGER, ALLOCATABLE, SAVE :: Data_varnum(:)
@@ -15,23 +16,25 @@
       IMPLICIT NONE
       ! Functions
       INTRINSIC LEN_TRIM, TRIM
-      EXTERNAL read_error, write_outfile, PRMS_open_input_file, find_current_time, print_module
+      EXTERNAL read_error, write_outfile, PRMS_open_input_file, find_current_time, print_module, error_stop
       INTEGER, EXTERNAL :: control_string, numchars, check_data_values
       ! Local Variables
+        ! Local Variables
+        character(len=*), parameter :: MODDESC = 'Read Data File'
+        character(len=*), parameter :: MODNAME = 'read_data_file'
+        character(len=*), parameter :: Version_read_data_file = '2021-02-09'
       CHARACTER(LEN=MAXFILE_LENGTH) :: data_filename, data_line, dmy
       CHARACTER(LEN=80) :: line
       INTEGER n, ierr, ios, numchrs, length
       INTEGER startyr, startmo, startdy, starthr, startmn, startsec
       INTEGER endyr, endmo, enddy, endhr, endmn, endsec, num_vars
       REAL, ALLOCATABLE :: var(:)
-      CHARACTER(LEN=80), SAVE :: Version_read_data_file
 !***********************************************************************
-      Version_read_data_file = 'read_data_file.f90 2019-12-02 14:20:00Z'
-      CALL print_module(Version_read_data_file, 'Read Data File              ', 90)
+      CALL print_module(MODDESC, MODNAME, Version_read_data_file)
 
       IF ( control_string(data_filename, 'data_file')/=0 ) CALL read_error(5, 'data_file')
       CALL PRMS_open_input_file(Datafile_unit, data_filename, 'data_file', 0, ios)
-      IF ( ios/=0 ) STOP
+      IF ( ios/=0 ) ERROR STOP ERROR_open_in
       CALL write_outfile(' ')
       CALL write_outfile(EQULS)
       CALL write_outfile('Using PRMS Data File: '//data_filename)
@@ -47,11 +50,11 @@
         IF ( ios==-1 ) CALL read_error(13, 'invalid Data File, end of file reached')
         IF ( ios/=0 ) CALL read_error(13, 'comment')
         IF ( line(:4)=='    ' ) CYCLE
-        IF ( line(:2)=='//' ) CALL write_outfile(TRIM(line))
+        IF ( line(:2)=='//' .OR. line(:1)=='"' ) CALL write_outfile(TRIM(line))
         num_vars = num_vars + 1
         IF ( line(:4)=='####' ) EXIT
       ENDDO
-      IF ( line(:4)/='####' ) STOP 'ERROR, invalid Data File, data section not found'
+      IF ( line(:4)/='####' ) CALL error_stop('invalid Data File, data section not found')
       CALL write_outfile(EQULS)
       CALL write_outfile('measured variables')
 
@@ -66,7 +69,7 @@
       ierr = 0
       DO
         READ ( Datafile_unit, FMT='(A)' ) line
-        IF ( line(:4)=='    ' .OR. line(:2)=='//' ) CYCLE
+        IF ( line(:4)=='    ' .OR. line(:2)=='//' .OR. line(:1)=='"' ) CYCLE
         IF ( line(:4)=='####' ) EXIT
         length = LEN_TRIM(line)
         CALL write_outfile(line(:length))
@@ -85,7 +88,7 @@
         DEALLOCATE ( var )
         IF ( ios/=0 ) ierr = ios
       ENDDO
-      IF ( ierr==1 ) STOP
+      IF ( ierr==1 ) ERROR STOP ERROR_read
       CALL write_outfile(EQULS)
       ALLOCATE ( Data_line_values(Num_datafile_columns) )
 
@@ -94,6 +97,12 @@
       DO
         READ ( Datafile_unit, '(A)', IOSTAT=ios ) dmy
         IF ( ios==-1 ) EXIT ! found end of file
+        IF ( dmy(:4)=='    ' ) THEN ! assume a blank line is the end of the Data File
+          BACKSPACE Datafile_unit
+          BACKSPACE Datafile_unit
+          READ ( Datafile_unit, '(A)', IOSTAT=ios ) data_line
+          EXIT
+        ENDIF
         IF ( ios/=0 ) CALL read_error(13, 'data line')
         data_line = dmy
       ENDDO
@@ -115,7 +124,7 @@
           ierr = 1
         ENDIF
       ENDIF
-      IF ( ierr==1 ) STOP 'ERROR, simulation time begins before Data File'
+      IF ( ierr==1 ) CALL error_stop('simulation time begins before Data File')
 
       ierr = 0
       IF ( Endtime(1)>endyr ) THEN
@@ -127,7 +136,7 @@
           ierr = 1
         ENDIF
       ENDIF
-      IF ( ierr==1 ) STOP 'ERROR, simulation end time exceeds Data File'
+      IF ( ierr==1 ) CALL error_stop('simulation end time exceeds Data File')
       
       ! read to start of data
       REWIND Datafile_unit
@@ -139,7 +148,7 @@
       IF ( ios/=0 ) THEN
         PRINT *, 'End of file or error reading Data File to find the first simulation time step'
         PRINT *, 'Data File: ', data_filename
-        STOP
+        ERROR STOP ERROR_read
       ENDIF
 
       END SUBROUTINE read_prms_data_file
@@ -182,7 +191,7 @@
         IF ( ios/=0 ) THEN
           PRINT *, 'ERROR, Data File corrupted. Reading variable: ', Data_varname(jj)
           PRINT *, 'Date:', Nowtime(1), Nowtime(2), Nowtime(3)
-          STOP
+          ERROR STOP ERROR_read
         ENDIF
         column = column + nvals
       ENDDO
@@ -395,7 +404,7 @@
           IF ( now_julday-last_julday/=1 ) THEN
             PRINT *, 'ERROR, Data File timestep not equal to 1 day on:', Nowyear, Nowmonth, Nowday
             PRINT *, '       timestep =', now_julday - last_julday
-            STOP
+            STOP ERROR_read
           ENDIF
         ELSE
           init = 0

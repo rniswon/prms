@@ -4,10 +4,10 @@
 !  control_string, control_integer, control_string_array, getvartype
 !***********************************************************************
       MODULE PRMS_MMFAPI
-        USE PRMS_MODULE, ONLY: MAXCONTROL_LENGTH, MAXFILE_LENGTH
+        USE PRMS_CONSTANTS, ONLY: MAXCONTROL_LENGTH, MAXFILE_LENGTH, ERROR_var
         IMPLICIT NONE
         ! DANGER, DANGER, hard coded maximum number of paraemters and dimensions, DANGER, DANGER
-        INTEGER, PARAMETER :: MAXDIMENSIONS = 50, MAXPARAMETERS = 200
+        INTEGER, PARAMETER :: MAXDIMENSIONS = 50, MAXPARAMETERS = 240, MAXVARIABLES = 500
         INTEGER, SAVE :: Num_parameters, Num_dimensions, Num_variables  !, Total_parameters
  
         TYPE PRMS_parameter
@@ -118,14 +118,14 @@
       CHARACTER(LEN=*), INTENT(IN) :: Modname, Paramname, Dimenname, Datatype
       CHARACTER(LEN=*), INTENT(IN) :: Defvalue, Minvalue, Maxvalue, Descshort, Desclong, Units
       ! INTRINSIC
-      INTRINSIC INDEX, TRIM
+      INTRINSIC :: INDEX, TRIM
       ! Functions
       INTEGER, EXTERNAL :: numchars, isdeclared, getdim
-      EXTERNAL :: check_parameters_declared, read_error
+      EXTERNAL :: check_parameters_declared, read_error, error_stop
       ! Local Variables
       INTEGER :: comma, ndimen, nval, nvals, nvals2, declared, numvalues, type_flag, iset, i, itemp
       REAL :: temp
-      CHARACTER(LEN=MAXCONTROL_LENGTH) dimen1, dimen2
+      CHARACTER(LEN=MAXCONTROL_LENGTH) :: dimen1, dimen2
 !***********************************************************************
       !!!!!!!!!!!! check to see if already in data structure
       ! doesn't check to see if declared the same, uses first values
@@ -214,7 +214,7 @@
           Parameter_data(Num_parameters)%maximum_int = nvals
           Parameter_data(Num_parameters)%minimum_int = Parameter_data(Num_parameters)%default_int
         ELSE
-          STOP 'ERROR, bounded parameter not real type'
+          CALL error_stop('bounded parameter not real type')
         ENDIF
       ELSE
         IF ( type_flag==1 ) THEN
@@ -233,6 +233,7 @@
 ! Set data type flag
 !***********************************************************************
       SUBROUTINE set_data_type(Data_type, Type_flag)
+      USE PRMS_CONSTANTS, ONLY: ERROR_var
       IMPLICIT NONE
       ! Arguments
       CHARACTER(LEN=*), INTENT(IN) :: Data_type
@@ -240,7 +241,7 @@
       ! Functions
       INTEGER, EXTERNAL :: numchars
       ! Local Variables
-      INTEGER string_length
+      INTEGER :: string_length
 !***********************************************************************
       string_length = numchars( Data_type )
       IF ( string_length>3 .AND. Data_type(:4)=='real' ) THEN
@@ -254,7 +255,7 @@
       ELSE
         PRINT *, 'ERROR, invalid data type: ', Data_type
         PRINT *, '       valid values are real, double, string, integer'
-        STOP
+        ERROR STOP ERROR_var
       ENDIF
       END SUBROUTINE set_data_type
 
@@ -269,10 +270,10 @@
       CHARACTER(LEN=*), INTENT(IN) :: Parmname, Modname
       INTEGER, INTENT(OUT) :: Iret
       ! Functions
-      INTRINSIC TRIM
+      INTRINSIC :: TRIM
       INTEGER, EXTERNAL :: numchars
       ! Local Variables
-      INTEGER i, nchars
+      INTEGER :: i, nchars
 !***********************************************************************
       Iret = 0
       nchars = numchars(Parmname)
@@ -298,27 +299,31 @@
 ! declvar - set up memory for variables
 !***********************************************************************
       SUBROUTINE declvar(Modname, Varname, Dimenname, Numvalues, Data_type, Desc, Units)
-      USE PRMS_MMFAPI, ONLY: Variable_data, Num_variables
+      USE PRMS_CONSTANTS, ONLY: ERROR_var
+      USE PRMS_MMFAPI, ONLY: Variable_data, Num_variables, MAXVARIABLES
       IMPLICIT NONE
       ! Arguments
       CHARACTER(LEN=*), INTENT(IN) :: Modname, Varname, Dimenname, Data_type, Desc, Units
       INTEGER, INTENT(IN) :: Numvalues
       ! Functions
       INTEGER, EXTERNAL :: numchars
-      EXTERNAL set_data_type
+      EXTERNAL :: set_data_type, error_stop
       ! Local Variables
-      INTEGER type_flag
+      INTEGER :: type_flag
       INTEGER, SAVE :: init
-      DATA init/0/
+      DATA :: init/0/
 !***********************************************************************
       IF ( init==0 ) THEN
         init = 1
         Num_variables = 0
-        ALLOCATE ( Variable_data(400) ) ! don't know how many, need to read var_name file
+        ALLOCATE ( Variable_data(MAXVARIABLES) ) ! don't know how many, need to read var_name file
       ENDIF
       ! need to declare parameters first, but don't know how many, know how many in Parameter File
       Num_variables = Num_variables + 1
-      IF ( Num_variables>400 ) STOP 'PRMS ERROR, maximum number of declared variables (400) exceeded'
+      IF ( Num_variables>MAXVARIABLES ) THEN
+        PRINT '(A,I0)', 'PRMS ERROR, maximum number of declared variables exceeded: ', MAXVARIABLES
+        CALL error_stop('maximum number of declared variables exceeded')
+      ENDIF
       Variable_data(Num_variables)%get_flag = 0
       Variable_data(Num_variables)%decl_flag = 1
       Variable_data(Num_variables)%variable_name = Varname
@@ -334,7 +339,7 @@
       IF ( type_flag<1 .OR. type_flag>3 ) THEN
         PRINT *, 'ERROR, data type not implemented: ', Data_type, ' Variable: ', &
      &           Varname(:Variable_data(Num_variables)%var_name_nchars)
-        STOP
+        ERROR STOP ERROR_var
       ENDIF
       Variable_data(Num_variables)%data_flag = type_flag
 
@@ -343,17 +348,17 @@
 !***********************************************************************
 ! declvar_dble - set up memory for double precision variables
 !***********************************************************************
-      SUBROUTINE declvar_dble(Modname, Varname, Dimenname, Numvalues, Data_type, Desc, Units, Values)
+      SUBROUTINE declvar_dble(Modname, Varname, Dimenname, Numvalues, Desc, Units, Values)
       USE PRMS_MMFAPI, ONLY: Num_variables, Variable_data
       IMPLICIT NONE
       ! Arguments
-      CHARACTER(LEN=*), INTENT(IN) :: Modname, Varname, Dimenname, Data_type, Desc, Units
+      CHARACTER(LEN=*), INTENT(IN) :: Modname, Varname, Dimenname, Desc, Units
       INTEGER, INTENT(IN) :: Numvalues
       DOUBLE PRECISION, TARGET :: Values(*)
       ! Functions
-      EXTERNAL declvar
+      EXTERNAL :: declvar
 !***********************************************************************
-      CALL declvar( Modname, Varname, Dimenname, Numvalues, Data_type, Desc, Units )
+      CALL declvar( Modname, Varname, Dimenname, Numvalues, 'double', Desc, Units )
       ALLOCATE ( Variable_data(Num_variables)%values_dble(Numvalues) )
       Variable_data(Num_variables)%values_dble => Values(:Numvalues)
       END SUBROUTINE declvar_dble
@@ -361,17 +366,17 @@
 !***********************************************************************
 ! declvar_real - set up memory for real variables
 !***********************************************************************
-      SUBROUTINE declvar_real(Modname, Varname, Dimenname, Numvalues, Data_type, Desc, Units, Values)
+      SUBROUTINE declvar_real(Modname, Varname, Dimenname, Numvalues, Desc, Units, Values)
       USE PRMS_MMFAPI, ONLY: Num_variables, Variable_data
       IMPLICIT NONE
       ! Arguments
-      CHARACTER(LEN=*), INTENT(IN) :: Modname, Varname, Dimenname, Data_type, Desc, Units
+      CHARACTER(LEN=*), INTENT(IN) :: Modname, Varname, Dimenname, Desc, Units
       INTEGER, INTENT(IN) :: Numvalues
       REAL, TARGET :: Values(*)
       ! Functions
-      EXTERNAL declvar
+      EXTERNAL :: declvar
 !***********************************************************************
-      CALL declvar( Modname, Varname, Dimenname, Numvalues, Data_type, Desc, Units )
+      CALL declvar( Modname, Varname, Dimenname, Numvalues, 'real', Desc, Units )
       ALLOCATE ( Variable_data(Num_variables)%values_real(Numvalues) )
       Variable_data(Num_variables)%values_real => Values(:Numvalues)
       END SUBROUTINE declvar_real
@@ -379,17 +384,17 @@
 !***********************************************************************
 ! declvar_int - set up memory for integer variables
 !***********************************************************************
-      SUBROUTINE declvar_int(Modname, Varname, Dimenname, Numvalues, Data_type, Desc, Units, Values)
+      SUBROUTINE declvar_int(Modname, Varname, Dimenname, Numvalues, Desc, Units, Values)
       USE PRMS_MMFAPI, ONLY: Num_variables, Variable_data
       IMPLICIT NONE
       ! Arguments
-      CHARACTER(LEN=*), INTENT(IN) :: Modname, Varname, Dimenname, Data_type, Desc, Units
+      CHARACTER(LEN=*), INTENT(IN) :: Modname, Varname, Dimenname, Desc, Units
       INTEGER, INTENT(IN) :: Numvalues
       INTEGER, TARGET :: Values(*)
       ! Functions
-      EXTERNAL declvar
+      EXTERNAL :: declvar
 !***********************************************************************
-      CALL declvar( Modname, Varname, Dimenname, Numvalues, Data_type, Desc, Units )
+      CALL declvar( Modname, Varname, Dimenname, Numvalues, 'integer', Desc, Units )
       ALLOCATE ( Variable_data(Num_variables)%values_int(Numvalues) )
       Variable_data(Num_variables)%values_int => Values(:Numvalues)
       END SUBROUTINE declvar_int
@@ -463,7 +468,7 @@
       ! values could be any data type
       REAL, INTENT(OUT) :: Values(Numvalues)
       ! Functions
-      !INTRINSIC TRANSFER
+      !INTRINSIC :: TRANSFER
       INTEGER, EXTERNAL :: find_variable
       ! Local Variables
       INTEGER :: var_id, var_type
@@ -514,7 +519,7 @@
       CHARACTER(LEN=*), INTENT(IN) :: Modname, Varname, Data_type
       INTEGER, INTENT(IN) :: Numvalues
       ! Functions
-      INTRINSIC TRIM
+      INTRINSIC :: TRIM
       ! Local Variables
       INTEGER :: found, i, ierr
 !***********************************************************************
@@ -542,7 +547,7 @@
         PRINT *, 'ERROR in: ', Modname, ', Variable: ', Varname, ' not declared'
         ierr = 1
       ENDIF
-      IF ( ierr==1 ) STOP
+      IF ( ierr==1 ) ERROR STOP ERROR_var
 
       END FUNCTION find_variable
 
@@ -555,7 +560,7 @@
       ! Arguments
       CHARACTER(LEN=*), INTENT(IN) :: Varname
       ! Functions
-      INTRINSIC TRIM
+      INTRINSIC :: TRIM
       ! Local Variables
       INTEGER :: i
 !***********************************************************************
@@ -567,7 +572,7 @@
         ENDIF
       ENDDO
       PRINT *, 'ERROR variable: ', Varname, ' not available'
-      STOP
+      ERROR STOP ERROR_var
       END FUNCTION getvar_id
 
 !***********************************************************************
@@ -592,7 +597,7 @@
         ENDIF
       ENDDO
       PRINT *, 'ERROR variable: ', Varname, ' not available'
-      STOP
+      ERROR STOP ERROR_var
       END FUNCTION getvartype
 
 !***********************************************************************
@@ -604,7 +609,7 @@
       ! Arguments
       CHARACTER(LEN=*), INTENT(IN) :: Varname
       ! Functions
-      INTRINSIC TRIM
+      INTRINSIC :: TRIM
       ! Local Variables
       INTEGER :: i
 !***********************************************************************
@@ -616,7 +621,7 @@
         ENDIF
       ENDDO
       PRINT *, 'ERROR in: getvarnvals, Variable: ', Varname, ' not declared'
-      STOP
+      ERROR STOP ERROR_var
       END FUNCTION getvarnvals
 
 !***********************************************************************
@@ -632,7 +637,8 @@
       ! values could be any data type
       REAL, INTENT(OUT) :: Values(Numvalues)
       ! Functions
-      INTRINSIC TRIM
+      INTRINSIC :: TRIM
+      EXTERNAL :: error_stop
       ! Local Variables
       INTEGER :: type_flag, found, param_id, i, ierr
 !***********************************************************************
@@ -660,7 +666,7 @@
         PRINT *, 'ERROR in: ', Modname, ', Parameter: ', Paramname, ' not declared'
         ierr = 1
       ENDIF
-      IF ( ierr==1 ) STOP
+      IF ( ierr==1 ) ERROR STOP ERROR_var
 
       type_flag = Parameter_data(param_id)%data_flag
 
@@ -670,12 +676,12 @@
         IF ( Parameter_check_flag==1 ) THEN
           DO i = 1, Numvalues
             IF ( Parameter_data(param_id)%values(i) > Parameter_data(param_id)%maximum ) THEN
-              PRINT *, 'WARNING, value > maximum value for parameter: ', Paramname, '; index:', param_id
-              PRINT *, '         value:', Parameter_data(param_id)%values(i), '; maximum value:', Parameter_data(param_id)%maximum
+              PRINT '(/,3A,I0)', 'WARNING, value > maximum value for parameter: ', Paramname, '; index: ', param_id
+              PRINT '(A,F0.5,A,F0.5)', '         value: ', Parameter_data(param_id)%values(i), '; maximum value: ', Parameter_data(param_id)%maximum
             ENDIF
             IF ( Parameter_data(param_id)%values(i) < Parameter_data(param_id)%minimum ) THEN
-              PRINT *, 'WARNING, value < minimum value for parameter: ', Paramname, '; index:', param_id
-              PRINT *, '         value:', Parameter_data(param_id)%values(i), '; minimum value:', Parameter_data(param_id)%minimum
+              PRINT '(/,3A,I0)', 'WARNING, value < minimum value for parameter: ', Paramname, '; index: ', param_id
+              PRINT '(A,F0.5,A,F0.5)', '         value: ', Parameter_data(param_id)%values(i), '; minimum value: ', Parameter_data(param_id)%minimum
             ENDIF
           ENDDO
         ENDIF
@@ -684,7 +690,7 @@
         CALL getvalues_int(param_id, Numvalues, Values)
       ELSE
         PRINT *, 'Paramname: ', Paramname, ' type: ', type_flag
-        STOP 'Parameter type not implemented'
+        CALL error_stop('Parameter type not implemented')
       ENDIF
 
       getparam = 0
@@ -747,7 +753,6 @@
 !***********************************************************************
       DOUBLE PRECISION FUNCTION deltim()
       IMPLICIT NONE
-      ! Functions
 !***********************************************************************
       !deltim = lisfunction() ! need to make routine to get time step increment
       deltim = 24.0D0
@@ -763,9 +768,9 @@
       ! Arguments
       CHARACTER(LEN=*), INTENT(IN) :: String
       INTEGER, INTENT(OUT) :: Datetime(6)
-      EXTERNAL compute_gregorian
+      EXTERNAL :: compute_gregorian, error_stop
       ! Local variable
-      INTEGER string_length
+      INTEGER :: string_length
 !***********************************************************************
       Datetime = 0
       string_length = LEN(String)
@@ -781,7 +786,7 @@
         IF ( String(:5)=='start' ) THEN
           Datetime = Starttime
         ELSE
-          STOP 'ERROR, invalid call to dattim'
+          CALL error_stop('invalid call to dattim')
         ENDIF
       ENDIF
       END SUBROUTINE dattim
@@ -798,9 +803,10 @@
       CHARACTER(LEN=*), INTENT(IN) :: Dimname, Desc
       ! Functions
       INTEGER, EXTERNAL :: numchars
+      EXTERNAL :: error_stop
 !***********************************************************************
       Num_dimensions = Num_dimensions + 1
-      IF ( Num_dimensions>MAXDIMENSIONS ) STOP 'ERROR, hard-coded number of dimensions exceeded, report to developers'
+      IF ( Num_dimensions>MAXDIMENSIONS ) CALL error_stop('hard-coded number of dimensions exceeded, report to developers')
       Dimension_data(Num_dimensions)%name = Dimname
       Dimension_data(Num_dimensions)%default = Defval
       Dimension_data(Num_dimensions)%maximum = Maxval
@@ -841,7 +847,7 @@
       ! Functions
       INTEGER, EXTERNAL :: numchars
       ! Local Variables
-      INTEGER i, nchars, nlen
+      INTEGER :: i, nchars, nlen
 !***********************************************************************
       nchars = numchars(Dimname)
       DO i = 1, Num_dimensions
@@ -867,7 +873,7 @@
       ! Functions
       INTEGER, EXTERNAL :: numchars
       ! Local Variables
-      INTEGER i, nchars, nlen
+      INTEGER :: i, nchars, nlen
 !***********************************************************************
       getdim = -1
       nchars = numchars(Dimname)
@@ -896,6 +902,7 @@
       INTEGER, INTENT(OUT) :: Parmval
       ! Functions
       INTRINSIC :: TRIM
+      EXTERNAL :: error_stop
       ! Local Variables
       INTEGER :: i, found
 !***********************************************************************
@@ -909,7 +916,7 @@
       ENDDO
       IF ( found==0 ) THEN
         Num_control_parameters = Num_control_parameters + 1
-        IF ( Num_control_parameters > Max_num_control_parameters ) STOP 'ERROR, exceeded maximum number of control parameters'
+        IF ( Num_control_parameters > Max_num_control_parameters ) CALL error_stop('exceeded maximum number of control parameters')
         PRINT *, 'WARNING, control parameter not in Control File: ', TRIM(Paramname), ', set to 0'
         Control_parameter_data(Num_control_parameters)%read_flag = 2 ! set to default
         Control_parameter_data(Num_control_parameters)%data_type = 1
@@ -934,6 +941,8 @@
       INTEGER, INTENT(IN) :: Array_index
       CHARACTER(LEN=*), INTENT(IN) :: Paramname
       INTEGER, INTENT(OUT) :: Parmval
+      ! Functions
+      EXTERNAL :: error_stop
       ! Local Variables
       INTEGER :: found, i
 !***********************************************************************
@@ -946,8 +955,8 @@
         ENDIF
       ENDDO
       IF ( found==0 ) THEN
-        PRINT *, 'ERROR, invalid array control parameter: ', TRIM(Paramname)
-        STOP 'execution terminated'
+        PRINT *, 'invalid array control parameter: ', TRIM(Paramname)
+        CALL error_stop('execution terminated')
       ENDIF
 
       control_integer_array = 0
@@ -1003,6 +1012,8 @@
       INTEGER, INTENT(IN) :: Array_index
       CHARACTER(LEN=*), INTENT(IN) :: Paramname
       CHARACTER(LEN=*), INTENT(OUT) :: Parmval
+      ! Functions
+      EXTERNAL :: error_stop
       ! Local Variables
       INTEGER :: found, i
 !***********************************************************************
@@ -1015,8 +1026,8 @@
         ENDIF
       ENDDO
       IF ( found==0 ) THEN
-        PRINT *, 'ERROR, invalid array control parameter: ', TRIM(Paramname)
-        STOP 'execution terminated'
+        PRINT *, 'invalid array control parameter: ', TRIM(Paramname)
+        CALL error_stop('execution terminated')
       ENDIF
 
       control_string_array = 0
@@ -1035,7 +1046,7 @@
       INTEGER, INTENT(IN) :: Numvalues, Array_index
       CHARACTER(LEN=*), INTENT(OUT) :: String
       ! Functions
-      INTRINSIC INDEX
+      INTRINSIC :: INDEX
       ! Local Variables
       INTEGER nchars, nchars_param, type_flag, num_values, i, j
       CHARACTER(LEN=16) :: dimenname
@@ -1050,7 +1061,7 @@
         PRINT *, 'ERROR, number of values does not equal values for the dimension'
         PRINT *, '       parameter: ', Dimenname(:nchars), ' dimension value:', num_values
         PRINT *, '       dimension: ', Paramname(:nchars_param), ' number of values:', Numvalues
-        STOP
+        ERROR STOP ERROR_var
       ENDIF
       nchars = INDEX( Data_type, ' ') - 1
       ! Data_type(:nchars)
@@ -1082,10 +1093,10 @@
       CHARACTER(LEN=*), INTENT(IN) :: Paramname, Dim_string(Num_dims)
       REAL, INTENT(IN) :: Values(*)
       ! Functions
-      INTRINSIC TRIM, INDEX
+      INTRINSIC :: TRIM, INDEX
       ! Local Variables
       INTEGER :: found, i, ii, j, k, ierr, iflg, comma, nvals
-      CHARACTER(LEN=MAXCONTROL_LENGTH) dimen1
+      CHARACTER(LEN=MAXCONTROL_LENGTH) :: dimen1
 !***********************************************************************
       ierr = 0
       found = 0
@@ -1129,7 +1140,7 @@
                   PRINT *, 'ERROR, parameter not evenly divisible by 12'
                   PRINT *, '       number of parameter values expected:', Parameter_data(i)%numvals
                   PRINT *, '       number of parameter values specified:', Numvalues
-                  STOP
+                  ERROR STOP ERROR_var
                 ENDIF
               ENDIF
               comma = INDEX(Parameter_data(found)%dimen_names,',')
@@ -1193,7 +1204,7 @@
         PRINT *, 'ERROR, Parameter: ', Paramname, ' not declared'
         ierr = 1
       ENDIF
-      IF ( ierr==1 ) STOP
+      IF ( ierr==1 ) ERROR STOP ERROR_var
  
       END SUBROUTINE setparam
 
@@ -1206,7 +1217,7 @@
       ! Arguments
       CHARACTER(LEN=*), INTENT(IN) :: Varname
       ! Functions
-      INTRINSIC TRIM
+      INTRINSIC :: TRIM
       ! Local Variables
       INTEGER :: found, i
 !***********************************************************************
@@ -1221,7 +1232,7 @@
 
       IF ( found==0 ) THEN
         PRINT *, 'ERROR, Variable: ', Varname, ' not declared'
-        STOP
+        ERROR STOP ERROR_var
       ENDIF
  
       END FUNCTION getvarsize
