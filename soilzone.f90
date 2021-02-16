@@ -25,7 +25,7 @@
 !   Local Variables
       character(len=*), parameter :: MODDESC = 'Soilzone Computations'
       character(len=8), parameter :: MODNAME = 'soilzone'
-      character(len=*), parameter :: Version_soilzone = '2021-02-08'
+      character(len=*), parameter :: Version_soilzone = '2021-02-16'
       INTEGER, SAVE :: DBGUNT, Iter_aet, Soil_iter
       INTEGER, SAVE :: Max_gvrs, Et_type, Pref_flag
       REAL, SAVE, ALLOCATABLE :: Gvr2pfr(:), Swale_limit(:)
@@ -648,21 +648,21 @@
         IF ( Cascade_flag>OFF ) ALLOCATE ( Ag_upslope_dunnian(Nhru) )
 
         ALLOCATE ( Ag_actet(Nhru) )
-        CALL decl_real(MODNAME, 'ag_actet', 'nhru', Nhru, 'real', &
+        CALL declvar_real(MODNAME, 'ag_actet', 'nhru', Nhru, 'real', &
      &       'Actual ET for agriculture reservoir for each HRU', &
      &       'inches', Ag_actet)
 
         ALLOCATE ( Unused_ag_et(Nhru) )
-        CALL decl_real(MODNAME, 'unused_ag_et', 'nhru', Nhru, 'real', &
+        CALL declvar_real(MODNAME, 'unused_ag_et', 'nhru', Nhru, 'real', &
      &       'Actual ET for agriculture reservoir for each HRU', &
      &       'inches', Unused_ag_et)
 
         ALLOCATE (  Ag_hortonian(Nhru) )
-        CALL decl_real(MODNAME, 'ag_hortonian', 'nhru', Nhru, 'real', &
+        CALL declvar_real(MODNAME, 'ag_hortonian', 'nhru', Nhru, 'real', &
      &       'Hortonian surface runoff that flows to the stream network from the agricultural fraction of each HRU', &
      &       'inches', Ag_hortonian)
 
-        CALL decl_dble(MODNAME, 'basin_agwaterin', 'one', 1, 'double', &
+        CALL declvar_dble(MODNAME, 'basin_agwaterin', 'one', 1, 'double', &
      &       'Basin area-weighted average infiltration,'// &
      &       ' cascading interflow and Dunnian flow added to agriculture reservoir storage', &
      &       'inches', Basin_agwaterin)
@@ -670,31 +670,31 @@
         IF ( Model==PRMS_AG .OR. Model==GSFLOW_AG .OR. Model==DOCUMENTATION ) THEN
           Iter_aet = ACTIVE
           ALLOCATE ( Ag_irrigation_add(Nhru), Hrus_iterating(Nhru) )
-          CALL decl_real(MODNAME, 'ag_irrigation_add', 'nhru', Nhru, 'real', &
+          CALL declvar_real(MODNAME, 'ag_irrigation_add', 'nhru', Nhru, 'real', &
      &         'Irrigation water added to agriculture fraction when ag_actet < PET_external for each HRU', &
      &         'inche-acres', Ag_irrigation_add)
         ENDIF
 
         ALLOCATE ( Ag_soil_lower(Nhru), Ag_soil_lower_stor_max(Nhru) )
-        CALL decl_real(MODNAME, 'ag_soil_lower', 'nhru', Nhru, 'real', &
+        CALL declvar_real(MODNAME, 'ag_soil_lower', 'nhru', Nhru, 'real', &
      &     'Storage in the lower zone of the agriculture'// &
      &     ' reservoir that is only available for transpiration for each HRU', &
      &     'inches', Ag_soil_lower)
 
         IF ( GSFLOW_flag==ACTIVE .OR. Model==DOCUMENTATION ) THEN
           ALLOCATE ( Ag_replenish_frac(Nhru) )
-          CALL decl_real(MODNAME, 'ag_gvr2sm', 'nhru', Nhru, 'real', & ! allocated above
+          CALL declvar_real(MODNAME, 'ag_gvr2sm', 'nhru', Nhru, 'real', & ! allocated above
      &         'Gravity flow to irrigated soil replenishment for each HRU', &
      &         'inches', Ag_gvr2sm)
         ENDIF
 
         ALLOCATE ( Ag_potet_lower(Nhru) )
-        CALL decl_real(MODNAME, 'ag_potet_lower', 'nhru', Nhru, 'real', &
+        CALL declvar_real(MODNAME, 'ag_potet_lower', 'nhru', Nhru, 'real', &
      &       'Potential ET in the lower zone of the agriculture reservoir for each HRU', &
      &       'inches', Ag_potet_lower)
 
         ALLOCATE ( Ag_potet_rechr(Nhru) )
-        CALL decl_real(MODNAME, 'ag_potet_rechr', 'nhru', Nhru, 'real', &
+        CALL declvar_real(MODNAME, 'ag_potet_rechr', 'nhru', Nhru, 'real', &
      &       'Potential ET in the recharge zone of the agriculture reservoir for each HRU', &
      &       'inches', Ag_potet_rechr)
 
@@ -1309,7 +1309,7 @@
               PRINT *, 'ag_frac=0.0 for HRU:', i
               CALL error_stop('irrigation specified and ag_frac=0', ERROR_param)
             ENDIF
-            ag_water_maxin = Hru_ag_irr(i) ! Hru_ag_irr is in inches over Ag_area
+            ag_water_maxin = Hru_ag_irr(i)/perv_area ! Hru_ag_irr is in inches over Ag_area
           ENDIF
         ENDIF
         IF ( Iter_aet==ACTIVE ) ag_water_maxin = ag_water_maxin + Ag_irrigation_add(i) ! units of inches over Ag_area
