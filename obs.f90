@@ -4,14 +4,14 @@
       MODULE PRMS_OBS
       USE PRMS_CONSTANTS, ONLY: DOCUMENTATION, ACTIVE, OFF, xyz_dist_module, &
      &    MONTHS_PER_YEAR, CMS, CFS, CFS2CMS_CONV
-      USE PRMS_MODULE, ONLY: Model, Nratetbl, Ntemp, Nrain, Nsol, Nobs, Nevap, Nsnow, &
+      USE PRMS_MODULE, ONLY: Model, Nratetbl, Ntemp, Nrain, Nsol, Nobs, Nevap, &
      &    Precip_flag
       IMPLICIT NONE
 !   Local Variables
       character(len=*), parameter :: MODDESC = 'Time Series Data'
       character(len=*), parameter :: MODNAME = 'obs'
       character(len=*), parameter :: Version_obs = '2020-12-02'
-      INTEGER, SAVE :: Nlakeelev, Nwind, Nhumid, Rain_flag
+      INTEGER, SAVE :: Nsnow, Nlakeelev, Nwind, Nhumid, Rain_flag
 !   Declared Variables
       INTEGER, SAVE :: Rain_day
       REAL, SAVE, ALLOCATABLE :: Pan_evap(:), Runoff(:), Precip(:)
@@ -59,6 +59,7 @@
 !***********************************************************************
       obssetdims = 0
 
+      IF ( decldim('nsnow', 0, MAXDIM, 'Number of snow-depth-measurement stations')/=0 ) CALL read_error(7, 'nsnow')
       IF ( decldim('nlakeelev', 0, MAXDIM, &
      &     'Maximum number of lake elevations for any rating table data set')/=0 ) CALL read_error(7, 'nlakeelev')
       IF ( decldim('nwind', 0, MAXDIM, 'Number of wind-speed measurement stations')/=0 ) CALL read_error(7, 'nwind')
@@ -127,6 +128,8 @@
      &       'Langleys', Solrad)
       ENDIF
 
+      Nsnow = getdim('nsnow')
+      IF ( Nsnow==-1 ) CALL read_error(6, 'nsnow')
       Nhumid = getdim('nhumid')
       IF ( Nhumid==-1 ) CALL read_error(6, 'nhumid')
       Nwind = getdim('nwind')
@@ -166,7 +169,7 @@
         ALLOCATE ( Wind_speed(Nwind) )
         CALL declvar_real(MODNAME, 'wind_speed', 'nwind', Nwind, 'real', &
      &       'Wind speed at each measurement station', &
-     &       'mph', Wind_speed)
+     &       'meters per second', Wind_speed)
       ENDIF
 
 !   Declared Parameters

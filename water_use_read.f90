@@ -60,7 +60,7 @@
 ! Functions
       INTRINSIC :: SNGL, DBLE
       INTEGER, EXTERNAL :: control_string, decldim, getdim
-      EXTERNAL :: CALL declvar_real, CALL declvar_dble
+      EXTERNAL :: declvar_real, declvar_dble
       EXTERNAL :: read_error, find_header_end, find_current_file_time, read_event, print_module, PRMS_open_module_file, error_stop
 ! Control Parameters
       CHARACTER(LEN=MAXFILE_LENGTH) :: Segment_transfer_file, Gwr_transfer_file, Dprst_transfer_file

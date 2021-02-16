@@ -313,7 +313,7 @@
      &     'none', Keep_gl)
 
       ALLOCATE ( Ikeep_gl(Nhru,Four) )
-      ICALL decl_int(MODNAME, 'ikeep_gl', 'nhru,four', Nhru*Four, 'integer', &
+      CALL decl_int(MODNAME, 'ikeep_gl', 'nhru,four', Nhru*Four, 'integer', &
      &     'Glacier integer variables keeping from first year', &
      &     'none', Ikeep_gl)
 

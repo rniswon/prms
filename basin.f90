@@ -86,11 +86,11 @@
      &       'HRU elevation for timestep, which can change for glaciers', &
      &       'elev_units', Hru_elev_ts)
 
-        CALL declvar_double(MODNAME, 'basin_gl_ice_cfs', 'one', 1, 'double', &
+        CALL declvar_dble(MODNAME, 'basin_gl_ice_cfs', 'one', 1, 'double', &
      &       'Basin glacier ice (firn) melt leaving the basin through the stream network', &
      &       'cfs', Basin_gl_ice_cfs)
 
-        CALL declvar_double(MODNAME, 'basin_gl_cfs', 'one', 1, 'double', &
+        CALL declvar_dble(MODNAME, 'basin_gl_cfs', 'one', 1, 'double', &
      &       'Basin glacier surface melt (rain, snow, ice) leaving the basin through the stream network', &
      &       'cfs', Basin_gl_cfs)
       ENDIF

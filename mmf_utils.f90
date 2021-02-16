@@ -311,9 +311,8 @@
       ! Local Variables
       INTEGER :: type_flag
       INTEGER, SAVE :: init
-      DATA :: init/0/
 !***********************************************************************
-      IF ( init==0 ) THEN
+      IF ( init==0 ) THEN !???, need to set init
         init = 1
         Num_variables = 0
         ALLOCATE ( Variable_data(MAXVARIABLES) ) ! don't know how many, need to read var_name file
@@ -1039,6 +1038,7 @@
 ! function checks to be sure a required parameter has a value (read or default)
 !***********************************************************************
       INTEGER FUNCTION getparamstring(Module_name, Paramname, Numvalues, Data_type, Array_index, String)
+      USE PRMS_CONSTANTS, ONLY: ERROR_var
       USE PRMS_MMFAPI, ONLY: Num_parameters
       IMPLICIT NONE
       ! Arguments

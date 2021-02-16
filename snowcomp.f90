@@ -198,7 +198,7 @@
        ALLOCATE ( Glacr_air_5avtemp(Nhru) )
         CALL declvar_real(MODNAME, 'glacr_air_5avtemp', 'nhru', Nhru, 'real', &
      &       'Current 5-yr average summer (June July Aug) air temperature over glacier or glacierette HRUs', &
-     &       'degrees Celsius', Glacr_air_5avtemp))
+     &       'degrees Celsius', Glacr_air_5avtemp)
 
         ALLOCATE ( Glacr_air_5avtemp1(Nhru) )
         CALL declvar_real(MODNAME, 'glacr_air_5avtemp1', 'nhru', Nhru, 'real', &
@@ -370,12 +370,12 @@
       ALLOCATE ( Pkwater_ante(Nhru) )
       CALL declvar_dble(MODNAME, 'pkwater_ante', 'nhru', Nhru, 'double', &
      &     'Antecedent snowpack water equivalent on each HRU', &
-     &     'inches', Pkwater_ante))
+     &     'inches', Pkwater_ante)
 
       ALLOCATE ( Snowcov_area(Nhru) )
       CALL declvar_real(MODNAME, 'snowcov_area', 'nhru', Nhru, 'real', &
      &     'Snow-covered area on each HRU prior to melt and sublimation unless snowpack depleted', &
-     &     'decimal fraction', Snowcov_area))
+     &     'decimal fraction', Snowcov_area)
 
       CALL declvar_dble(MODNAME, 'basin_snowevap', 'one', 1, 'double', &
      &     'Basin area-weighted average evaporation and sublimation from snowpack (not including glacier)', &

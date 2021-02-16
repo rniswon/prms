@@ -289,8 +289,7 @@
       IMPLICIT NONE
 ! FUNCTIONS AND SUBROUTINES
       INTRINSIC :: SNGL, DBLE
-      INTEGER, EXTERNAL :: getvar_real, getvar_dble
-      EXTERNAL :: read_error
+      EXTERNAL :: read_error, getvar_real, getvar_dble
 ! Local Variables
       INTEGER :: j, i, jj, write_month, last_day, k
 !***********************************************************************

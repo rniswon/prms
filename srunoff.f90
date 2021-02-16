@@ -316,7 +316,7 @@
 
 ! frozen ground variables and parameters
       ALLOCATE ( Frozen(Nhru) )
-        ALLOCATE ( Frozen(Nhru) )
+      IF ( Frozen_flag==ACTIVE .OR. Model==DOCUMENTATION ) THEN
         CALL declvar_int(MODNAME, 'frozen', 'nhru', Nhru, 'integer', &
      &       'Flag for frozen ground (0=no; 1=yes)', &
      &       'none', Frozen)

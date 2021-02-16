@@ -201,11 +201,11 @@
 ! check_data_variables - Check data variables and dimensions
 !***********************************************************************
       SUBROUTINE check_data_variables(Varname, Numvalues, Values, Iflag, Iret)
-      USE PRMS_MODULE, ONLY: Ntemp, Nrain, Nsol, Nobs, Nevap, Nsnow
-      USE PRMS_OBS, ONLY: Nlakeelev, Nwind, Nhumid, &
+      USE PRMS_CONSTANTS, ONLY: CFS2CMS_CONV
+      USE PRMS_MODULE, ONLY: Ntemp, Nrain, Nsol, Nobs, Nevap
+      USE PRMS_OBS, ONLY: Nlakeelev, Nwind, Nhumid, Nsnow, &
      &    Tmin, Tmax, Precip, Snowdepth, Runoff, Pan_evap, Wind_speed, Humidity, Solrad, &
      &    Gate_ht, Lake_elev, Rain_day, Runoff_units, Streamflow_cfs, Streamflow_cms
-      USE PRMS_BASIN, ONLY: CFS2CMS_CONV
 	  USE PRMS_CLIMATEVARS, ONLY: Ppt_zero_thresh
       IMPLICIT NONE
       ! Arguments

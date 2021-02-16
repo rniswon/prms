@@ -291,7 +291,7 @@
 
       CALL declvar_int(Transp_module, 'basin_transp_on', 'one', 1,'integer', &
      &     'Flag indicating whether transpiration is occurring anywhere in the basin (0=no; 1=yes)', &
-     &     'none', Basin_transp_on)/=0 ) CALL read_error(3, 'basin_transp_on')
+     &     'none', Basin_transp_on)
 
 ! Potential ET Variables
       ALLOCATE ( Potet(Nhru) )

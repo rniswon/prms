@@ -494,7 +494,7 @@
 !     &     'decimal fraction', Snowevap_aet_frac)
 
       IF ( GSFLOW_flag==ACTIVE .OR. Model==DOCUMENTATION ) THEN
-        IF ( Nhrucell<-1 ) STOP 'ERROR, dimension nhrucell not specified > 0'
+        IF ( Nhrucell<-1 ) CALL error_stop('dimension nhrucell not specified > 0', ERROR_dim)
         ALLOCATE ( Gravity_stor_res(Nhrucell) )
         CALL declvar_real(MODNAME, 'gravity_stor_res', 'nhrucell', Nhrucell, 'real', &
      &       'Storage in each gravity-flow reservoir', &
@@ -1098,7 +1098,7 @@
       USE PRMS_SNOW, ONLY: Snowcov_area, Snow_evap
       USE PRMS_SRUNOFF, ONLY: Hru_impervevap, Strm_seg_in, Dprst_evap_hru, Dprst_seep_hru, Frozen, Infil_ag
       USE GSFMODFLOW, ONLY: Hru_ag_irr
-      USE PRMS_SET_TIME, ONLY: Nowtime
+!      USE PRMS_SET_TIME, ONLY: Nowtime
       IMPLICIT NONE
 ! Arguments
       LOGICAL, INTENT(IN) :: AFR
@@ -1145,7 +1145,7 @@
           IF ( GSFLOW_flag==ACTIVE ) Gravity_stor_res = It0_gravity_stor_res
           IF ( Pref_flag==ACTIVE ) Pref_flow_stor = It0_pref_flow_stor
           IF ( Nlake>0 ) Potet = It0_potet
-        ELSEIF ( AFR )
+        ELSEIF ( AFR ) THEN
           It0_ssres_stor = Ssres_stor
           It0_slow_stor = Slow_stor
           IF ( GSFLOW_flag==ACTIVE ) THEN
@@ -1168,7 +1168,7 @@
           ! computed in srunoff
           Sroff = It0_sroff
           IF ( Call_cascade==ACTIVE ) Strm_seg_in = It0_strm_seg_in
-        ELSEIF ( AFR )
+        ELSEIF ( AFR ) THEN
           It0_soil_rechr = Soil_rechr
           It0_soil_moist = Soil_moist
           IF ( Agriculture_flag>OFF ) THEN
@@ -1183,7 +1183,7 @@
       IF ( Kkiter>1 ) THEN
         Basin_soil_moist = It0_basin_soil_moist
         Basin_ssstor = It0_basin_ssstor
-      ELSEIF ( AFR ) ! don't need for iter_aet
+      ELSEIF ( AFR ) THEN ! don't need for iter_aet
         It0_basin_soil_moist = Basin_soil_moist
         It0_basin_ssstor = Basin_ssstor
       ENDIF

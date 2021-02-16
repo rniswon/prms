@@ -129,7 +129,7 @@
      &     'inches', Net_ppt)
 
       CALL declvar_dble(MODNAME, 'basin_net_ppt', 'one', 1, 'double', &
-     &     'Basin area-weighted average throughfall', &
+     &     'Basin area-weighted average net precipitation', &
      &     'inches', Basin_net_ppt)
 
       CALL declvar_dble(MODNAME, 'basin_net_snow', 'one', 1, 'double', &

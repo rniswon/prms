@@ -13,7 +13,8 @@
      &      Dyn_covtype_flag, Dyn_potet_flag, Dyn_transp_flag, Dyn_soil_flag, Dyn_radtrncf_flag, Dyn_transp_on_flag, &
      &      Dyn_sro2dprst_perv_flag, Dyn_sro2dprst_imperv_flag, Dyn_fallfrost_flag, NsegmentOutON_OFF, &
      &      Dyn_springfrost_flag, Dyn_snareathresh_flag, Dyn_covden_flag, Segment_transferON_OFF, Gwr_transferON_OFF, &
-     &      Lake_transferON_OFF, External_transferON_OFF, Dprst_transferON_OFF, BasinOutON_OFF
+     &      Lake_transferON_OFF, External_transferON_OFF, Dprst_transferON_OFF, BasinOutON_OFF, &
+     &      xyFileName, mappingFileName
         USE GSFMODFLOW, ONLY: Modflow_name, Modflow_time_zero
         USE PRMS_CLIMATE_HRU, ONLY: Precip_day, Tmax_day, Tmin_day, Potet_day, Transp_day, Swrad_day, &
      &      Cbh_check_flag, Cbh_binary_flag, Windspeed_day, Humidity_day
@@ -32,7 +33,6 @@
      &      covden_sum_dynamic, covden_win_dynamic, sro2dprst_perv_dyn, sro2dprst_imperv_dyn, Dynamic_param_log_file
         USE PRMS_SOILZONE, ONLY: Soilzone_aet_flag
         USE PRMS_SNOW, ONLY: Snarea_curve_flag
-
         INTEGER, PARAMETER :: Max_num_control_parameters = 200 ! WARNING, hard coded, DANGER, DANGER
         CHARACTER(LEN=MAXFILE_LENGTH), SAVE :: Data_file, Var_init_file, Stat_var_file, Ani_out_file
         CHARACTER(LEN=MAXFILE_LENGTH), SAVE :: Executable_desc, Executable_model, Var_save_file
@@ -58,7 +58,7 @@
 
       SUBROUTINE read_control_file()
       USE PRMS_CONTROL_FILE
-      USE PRMS_MODULE, ONLY: Version_read_control_file, Print_debug, Model_output_file, Model_control_file
+      USE PRMS_MODULE, ONLY: Print_debug, Model_output_file, Model_control_file
       IMPLICIT NONE
       ! Functions
       INTRINSIC TRIM
@@ -73,7 +73,6 @@
       CHARACTER(LEN=MAXCONTROL_LENGTH) :: paramstring
       REAL, ALLOCATABLE :: real_parameter_values(:)
 !***********************************************************************
-      Version_read_control_file = 'read_control_file.f90 2021-02-10 10:44:00Z'
 
       ! control filename cannot include blanks
       CALL get_control_filename(Model_control_file, nchars)
